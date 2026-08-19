@@ -11,7 +11,7 @@
         <downloads>
             <downloadurl type="full" format="zip">https://github.com/jaydenrussell/club-leadership/releases/download/v2.0.0/pkg_clubleadership.zip</downloadurl>
         </downloads>
-        <sha256>ff6d8647c1e6aefe1d83ea5be8a9e23a49ee2143ce7cb2d9301b09c9b7d51720</sha256>
+        <sha256>f2336a3f52f536ab7b60c77824d4d3936a22f4ecf821ab62af3e2790da167815</sha256>
         <maintainer>Jayden Russell</maintainer>
         <maintainerurl>https://simcoecurlingclub.ca</maintainerurl>
         <targetplatform name="joomla" version="3.[0-9]+" />
