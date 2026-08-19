@@ -57,6 +57,30 @@ class ClubleaddirHelper
         );
     }
 
+    /**
+     * Normalise a stored photo path to a root-absolute URL path so it resolves
+     * correctly from both the administrator and site front end. Stored values
+     * may be "images/..." (no leading slash, legacy) or "/images/..." (current).
+     *
+     * @param   string  $path
+     * @return  string
+     */
+    public static function photoUrl($path)
+    {
+        $path = (string) $path;
+        if ($path === '') {
+            return '';
+        }
+        if ($path[0] === '/') {
+            return $path;
+        }
+        // Already a scheme/absolute URL?
+        if (preg_match('#^[a-z]+://#i', $path) || strpos($path, '//') === 0) {
+            return $path;
+        }
+        return '/' . ltrim($path, '/');
+    }
+
     public static function getActions()
     {
         $user  = Factory::getUser();

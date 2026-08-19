@@ -99,7 +99,7 @@ Joomla.submitbutton = function (task) {
                         <div class="control-group">
                             <div class="controls">
                                 <?php if ($item->photo): ?>
-                                    <img src="<?php echo $this->escape($item->photo); ?>" alt="<?php echo $this->escape($item->name); ?>"
+                                    <img src="<?php echo $this->escape(ClubleaddirHelper::photoUrl($item->photo)); ?>" alt="<?php echo $this->escape($item->name); ?>"
                                          class="thumbnail" style="max-width:150px;max-height:150px;display:inline-block;margin-bottom:8px;">
                                     <p class="help-block" style="word-break:break-all;font-size:11px;"><?php echo $this->escape($item->photo); ?></p>
                                 <?php else: ?>

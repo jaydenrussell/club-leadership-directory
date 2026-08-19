@@ -25,7 +25,11 @@ function clubleaddirRenderCard($person, $showPhoto, $showContact, $contactHidden
     $initials  = clubleaddirGetInitials($person->name);
     $photoHtml = '<div class="' . ($showPhoto ? 'clubleaddir-card-photo is-visible' : 'clubleaddir-card-photo') . '">';
     if (!empty($person->photo)) {
-        $photoHtml .= '<img src="' . htmlspecialchars($person->photo, ENT_QUOTES, 'UTF-8') . '" alt="" loading="lazy" width="120" height="120">';
+        $src = $person->photo;
+        if ($src !== '' && $src[0] !== '/' && !preg_match('#^[a-z]+://#i', $src) && strpos($src, '//') !== 0) {
+            $src = '/' . ltrim($src, '/');
+        }
+        $photoHtml .= '<img src="' . htmlspecialchars($src, ENT_QUOTES, 'UTF-8') . '" alt="" loading="lazy" width="120" height="120">';
     } else {
         $photoHtml .= '<div class="clubleaddir-card-photo--initials">' . $initials . '</div>';
     }

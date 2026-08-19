@@ -183,7 +183,7 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
             return false;
         }
 
-        return 'images/clubleaddir/photos/' . $filename;
+        return '/images/clubleaddir/photos/' . $filename;
     }
 
     public function delete(array $pks)

@@ -77,7 +77,7 @@ $search            = $this->filters['search'];
                     </div>
                     <div class="clble-photo">
                         <?php if (!empty($item->photo)): ?>
-                            <img src="<?php echo $this->escape($item->photo); ?>" alt="<?php echo $this->escape($item->name); ?>" class="clble-avatar">
+                            <img src="<?php echo $this->escape(ClubleaddirHelper::photoUrl($item->photo)); ?>" alt="<?php echo $this->escape($item->name); ?>" class="clble-avatar">
                         <?php else: ?>
                             <span class="clble-avatar clble-avatar-empty"><span class="icon-user"></span></span>
                         <?php endif; ?>
