@@ -128,6 +128,10 @@ class ClubleaddirStoreSqlite extends ClubleaddirStoreBackend
             $sql .= ' AND status = :status';
             $binds[':status'] = $filters['status'];
         }
+        if (!empty($filters['term'])) {
+            $sql .= ' AND term LIKE :term';
+            $binds[':term'] = '%' . $filters['term'] . '%';
+        }
         if (!empty($filters['search'])) {
             $sql .= ' AND (name LIKE :search OR role LIKE :search)';
             $binds[':search'] = '%' . $filters['search'] . '%';
@@ -327,6 +331,11 @@ class ClubleaddirStoreJson extends ClubleaddirStoreBackend
             if (!empty($filters['search'])) {
                 $s = strtolower($filters['search']);
                 if (stripos($r['name'], $s) === false && stripos($r['role'], $s) === false) {
+                    continue;
+                }
+            }
+            if (!empty($filters['term'])) {
+                if (stripos((string) ($r['term'] ?? ''), (string) $filters['term']) === false) {
                     continue;
                 }
             }

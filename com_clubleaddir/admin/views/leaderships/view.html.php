@@ -21,6 +21,7 @@ class ClubleaddirViewLeaderships extends HtmlView
     protected $typeOptions;
     protected $publishedOptions;
     protected $statusOptions;
+    protected $termOptions;
     protected $backendName;
     protected $filters = array();
 
@@ -32,11 +33,13 @@ class ClubleaddirViewLeaderships extends HtmlView
         $this->typeOptions      = $model->getTypeOptions();
         $this->publishedOptions = $model->getPublishedOptions();
         $this->statusOptions    = $model->getStatusOptions();
+        $this->termOptions      = $model->getTermOptions();
         $this->backendName      = $model->getBackendName();
         $this->filters = array(
             'type'      => $model->getFilterValue('type'),
             'published' => $model->getFilterValue('published'),
             'status'    => $model->getFilterValue('status'),
+            'term'      => $model->getFilterValue('term'),
             'search'    => $model->getFilterValue('search'),
         );
 

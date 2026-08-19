@@ -58,6 +58,32 @@ class ClubleaddirHelper
     }
 
     /**
+     * Build a filter dropdown of distinct terms (e.g. 2025-2027) present in the store.
+     *
+     * @return array
+     */
+    public static function getTermOptions()
+    {
+        $options = array('' => Text::_('COM_CLUBLEADDIR_FILTER_ALL_TERMS'));
+        try {
+            $store = ClubleaddirStore::getInstance();
+            $rows  = $store->getAll(array());
+            $seen  = array();
+            foreach ($rows as $row) {
+                $term = is_object($row) ? ($row->term ?? '') : ($row['term'] ?? '');
+                $term = trim((string) $term);
+                if ($term !== '' && !isset($seen[$term])) {
+                    $seen[$term]  = true;
+                    $options[$term] = $term;
+                }
+            }
+        } catch (\Throwable $e) {
+            // Store unavailable — return just the "all" option.
+        }
+        return $options;
+    }
+
+    /**
      * Normalise a stored photo path to a root-absolute URL path so it resolves
      * correctly from both the administrator and site front end. Stored values
      * may be "images/..." (no leading slash, legacy) or "/images/..." (current).

@@ -40,6 +40,7 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
             'type'      => $app->input->get('filter_type', '', 'string'),
             'published' => $app->input->get('filter_published', '', 'string'),
             'status'    => $app->input->get('filter_status', '', 'string'),
+            'term'      => $app->input->get('filter_term', '', 'string'),
             'search'    => $app->input->get('filter_search', '', 'string'),
         );
 
@@ -65,6 +66,7 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
             case 'type':      return $app->input->get('filter_type', '', 'string');
             case 'published': return $app->input->get('filter_published', '', 'string');
             case 'status':    return $app->input->get('filter_status', '', 'string');
+            case 'term':      return $app->input->get('filter_term', '', 'string');
             case 'search':    return $app->input->get('filter_search', '', 'string');
             default:          return '';
         }
@@ -94,6 +96,11 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
     public function getStatusOptions()
     {
         return ClubleaddirHelper::getStatusOptions();
+    }
+
+    public function getTermOptions()
+    {
+        return ClubleaddirHelper::getTermOptions();
     }
 
     public function getBackendName()

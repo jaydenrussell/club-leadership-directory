@@ -18,6 +18,7 @@ use Joomla\CMS\Router\Route;
 $typeFilter        = $this->filters['type'];
 $publishedFilter   = $this->filters['published'];
 $statusFilter      = $this->filters['status'];
+$termFilter        = $this->filters['term'];
 $search            = $this->filters['search'];
 ?>
 
@@ -44,6 +45,11 @@ $search            = $this->filters['search'];
             </div>
         </div>
         <div class="span4" style="text-align:right;">
+            <select name="filter_term" id="filter_term" class="inputbox" style="width:auto;margin-bottom:0;" onchange="this.form.submit();">
+                <?php foreach ($this->termOptions as $value => $label): ?>
+                <option value="<?php echo $value; ?>" <?php echo $termFilter === $value ? 'selected' : ''; ?>><?php echo $this->escape($label); ?></option>
+                <?php endforeach; ?>
+            </select>
             <select name="filter_type" id="filter_type" class="inputbox" style="width:auto;margin-bottom:0;" onchange="this.form.submit();">
                 <?php foreach ($this->typeOptions as $value => $label): ?>
                 <option value="<?php echo $value; ?>" <?php echo $typeFilter === $value ? 'selected' : ''; ?>><?php echo $label; ?></option>
@@ -71,6 +77,7 @@ $search            = $this->filters['search'];
                 <th><?php echo Text::_('COM_CLUBLEADDIR_HEADING_NAME'); ?></th>
                 <th><?php echo Text::_('COM_CLUBLEADDIR_HEADING_ROLE'); ?></th>
                 <th><?php echo Text::_('COM_CLUBLEADDIR_HEADING_TYPE'); ?></th>
+                <th><?php echo Text::_('COM_CLUBLEADDIR_HEADING_TERM'); ?></th>
                 <th width="8%" class="center nowrap"><?php echo Text::_('JSTATUS'); ?></th>
             </tr>
         </thead>
@@ -106,6 +113,7 @@ $search            = $this->filters['search'];
                             <div class="muted" style="font-size:11px;"><?php echo $this->escape($item->league_name); ?></div>
                         <?php endif; ?>
                     </td>
+                    <td class="nowrap"><?php echo $this->escape($item->term ?: '—'); ?></td>
                     <td class="center"><?php echo HTMLHelper::_('jgrid.published', $item->published, $i, 'leadership.', true); ?></td>
                 </tr>
                 <?php endforeach; ?>
