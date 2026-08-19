@@ -12,7 +12,9 @@ use Joomla\CMS\HTML\HTMLHelper;
 use Joomla\CMS\Language\Text;
 use Joomla\CMS\Router\Route;
 
-HTMLHelper::_('behavior.core');
+// Note: do NOT call HTMLHelper::_('behavior.core') — the JHtmlBehavior helper
+// was removed in Joomla 3.10 and calling it fatals the admin view. Core
+// front-end behaviors load automatically via the framework.
 
 $typeFilter        = $this->filters['type'];
 $publishedFilter   = $this->filters['published'];

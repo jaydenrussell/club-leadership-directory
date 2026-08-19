@@ -22,11 +22,19 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
     public function __construct($config = array())
     {
         parent::__construct($config);
-        $this->store = ClubleaddirStore::getInstance();
+        try {
+            $this->store = ClubleaddirStore::getInstance();
+        } catch (\Throwable $e) {
+            $this->store = null;
+        }
     }
 
     public function getItem($pk = null)
     {
+        if ($this->store === null) {
+            return (object) array();
+        }
+
         $id = (int) $pk;
 
         if ($id) {

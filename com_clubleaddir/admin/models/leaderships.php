@@ -22,11 +22,19 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
     public function __construct($config = array())
     {
         parent::__construct($config);
-        $this->store = ClubleaddirStore::getInstance();
+        try {
+            $this->store = ClubleaddirStore::getInstance();
+        } catch (\Throwable $e) {
+            $this->store = null;
+        }
     }
 
     public function getItems()
     {
+        if ($this->store === null) {
+            return array();
+        }
+
         $app = Factory::getApplication();
         $filters = array(
             'type'      => $app->input->get('filter_type', '', 'string'),
