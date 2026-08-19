@@ -13,6 +13,7 @@ use Joomla\CMS\Language\Text;
 use Joomla\CMS\MVC\Model\BaseDatabaseModel;
 
 require_once __DIR__ . '/../store/Store.php';
+require_once __DIR__ . '/../helpers.php';
 
 class ClubleaddirModelLeaderships extends BaseDatabaseModel
 {
