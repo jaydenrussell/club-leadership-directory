@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<extension type="module" version="2.5" client="site" method="upgrade">
+    <name>MOD_CLUBLEADERSHIP</name>
+    <author>Simcoe Curling Club</author>
+    <creationDate>August 2026</creationDate>
+    <copyright>Simcoe Curling Club</copyright>
+    <license>GNU General Public License version 2 or later</license>
+    <authorEmail>info@simcoecurlingclub.ca</authorEmail>
+    <authorUrl>https://simcoecurlingclub.ca</authorUrl>
+    <version>2.0.0</version>
+    <description>MOD_CLUBLEADERSHIP_DESC</description>
+
+    <files>
+        <filename module="mod_clubleadership">mod_clubleadership.php</filename>
+        <filename>helper.php</filename>
+        <folder>tmpl</folder>
+        <folder>media</folder>
+        <folder>language</folder>
+    </files>
+
+    <languages folder="language">
+        <language tag="en-GB">en-GB/mod_clubleadership.ini</language>
+        <language tag="en-GB">en-GB/mod_clubleadership.sys.ini</language>
+    </languages>
+
+    <config>
+        <fields name="params">
+            <fieldset name="basic">
+                <field name="display_title" type="text" label="MOD_CLUBLEADERSHIP_FIELD_DISPLAY_TITLE_LABEL" default="Club Leadership" filter="string" />
+                <field name="show_officers" type="radio" label="MOD_CLUBLEADERSHIP_FIELD_SHOW_OFFICERS_LABEL" default="1" class="btn-group btn-group-yesno">
+                    <option value="1">JYES</option>
+                    <option value="0">JNO</option>
+                </field>
+                <field name="show_directors" type="radio" label="MOD_CLUBLEADERSHIP_FIELD_SHOW_DIRECTORS_LABEL" default="1" class="btn-group btn-group-yesno">
+                    <option value="1">JYES</option>
+                    <option value="0">JNO</option>
+                </field>
+                <field name="show_staff" type="radio" label="MOD_CLUBLEADERSHIP_FIELD_SHOW_STAFF_LABEL" default="1" class="btn-group btn-group-yesno">
+                    <option value="1">JYES</option>
+                    <option value="0">JNO</option>
+                </field>
+            </fieldset>
+
+            <fieldset name="display_options">
+                <field name="show_photos_officers" type="radio" label="MOD_CLUBLEADERSHIP_FIELD_SHOW_PHOTOS_OFFICERS_LABEL" default="1" class="btn-group btn-group-yesno">
+                    <option value="1">JYES</option>
+                    <option value="0">JNO</option>
+                </field>
+                <field name="show_photos_directors" type="radio" label="MOD_CLUBLEADERSHIP_FIELD_SHOW_PHOTOS_DIRECTORS_LABEL" default="0" class="btn-group btn-group-yesno">
+                    <option value="1">JYES</option>
+                    <option value="0">JNO</option>
+                </field>
+                <field name="show_photos_staff" type="radio" label="MOD_CLUBLEADERSHIP_FIELD_SHOW_PHOTOS_STAFF_LABEL" default="0" class="btn-group btn-group-yesno">
+                    <option value="1">JYES</option>
+                    <option value="0">JNO</option>
+                </field>
+                <field name="module_class_sfx" type="text" label="COM_MODULES_FIELD_MODULECLASS_SFX_LABEL" />
+            </fieldset>
+
+            <fieldset name="contact_settings">
+                <field name="require_login_for_contact" type="radio" label="MOD_CLUBLEADERSHIP_FIELD_REQUIRE_LOGIN_LABEL" default="1" class="btn-group btn-group-yesno">
+                    <option value="1">JYES</option>
+                    <option value="0">JNO</option>
+                </field>
+                <field name="contact_hidden_text" type="text" label="MOD_CLUBLEADERSHIP_FIELD_CONTACT_HIDDEN_TEXT_LABEL" default="Login to view contact info" filter="string" />
+            </fieldset>
+        </fields>
+    </config>
+</extension>
