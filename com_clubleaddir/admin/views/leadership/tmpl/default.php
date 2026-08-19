@@ -282,11 +282,20 @@ Joomla.submitbutton = function (task) {
             <?php if ($item->id): ?>
             <fieldset class="adminform">
                 <legend><?php echo Text::_('JMETADATA'); ?></legend>
-                <table class="table table-condensed">
+                <table class="table table-condensed" style="margin-bottom:0;">
                     <tbody>
-                        <tr><td><?php echo Text::_('COM_CLUBLEADDIR_FIELD_ID'); ?></td><td><?php echo (int) $item->id; ?></td></tr>
-                        <tr><td><?php echo Text::_('COM_CLUBLEADDIR_FIELD_CREATED'); ?></td><td><?php echo $this->escape($item->created); ?></td></tr>
-                        <tr><td><?php echo Text::_('COM_CLUBLEADDIR_FIELD_MODIFIED'); ?></td><td><?php echo $this->escape($item->modified); ?></td></tr>
+                        <tr style="font-size:12px;">
+                            <td style="border-top:none;color:#666;width:40%;"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_ID'); ?></td>
+                            <td style="border-top:none;"><?php echo (int) $item->id; ?></td>
+                        </tr>
+                        <tr style="font-size:12px;">
+                            <td style="border-top:none;color:#666;"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_CREATED'); ?></td>
+                            <td style="border-top:none;"><?php echo $this->escape($item->created); ?></td>
+                        </tr>
+                        <tr style="font-size:12px;">
+                            <td style="border-top:none;color:#666;"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_MODIFIED'); ?></td>
+                            <td style="border-top:none;"><?php echo $this->escape($item->modified); ?></td>
+                        </tr>
                     </tbody>
                 </table>
             </fieldset>
