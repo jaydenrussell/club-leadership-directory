@@ -104,6 +104,32 @@ class ComClubleaddirInstallerScript
         return true;
     }
 
+    /**
+     * Force the component to enabled state after install/update.
+     *
+     * A prior broken install can leave a disabled (enabled = 0) extension row
+     * in #__extensions. Because this package uses method="upgrade", Joomla
+     * reuses that row and inherits the disabled flag, which makes every admin
+     * request fail with "404 Component not found" even though the files are
+     * present. Re-enabling here makes the package self-healing.
+     */
+    public function postflight($type, $parent)
+    {
+        try {
+            $db = \Joomla\CMS\Factory::getDbo();
+            $query = $db->getQuery(true)
+                ->update($db->quoteName('#__extensions'))
+                ->set($db->quoteName('enabled') . ' = 1')
+                ->where($db->quoteName('element') . ' = ' . $db->quote('com_clubleaddir'))
+                ->where($db->quoteName('type') . ' = ' . $db->quote('component'));
+            $db->setQuery($query)->execute();
+        } catch (\Throwable $e) {
+            // Non-fatal: a clean install already enables the component.
+        }
+
+        return true;
+    }
+
     public function uninstall($parent)
     {
         // Leave the data file in place on uninstall so board history is not
