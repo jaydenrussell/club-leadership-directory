@@ -176,6 +176,32 @@ class ClubleaddirControllerLeadership extends BaseController
         $this->setRedirect('index.php?option=com_clubleaddir&view=leaderships');
     }
 
+    public function saveorder()
+    {
+        if (!$this->guardState()) {
+            return false;
+        }
+
+        $pks   = array_map('intval', (array) $this->input->post->get('cid', array(), 'array'));
+        $order = array_map('intval', (array) $this->input->post->get('order', array(), 'array'));
+        $pks   = array_filter($pks, function ($id) { return $id > 0; });
+
+        if (empty($pks)) {
+            Factory::getApplication()->enqueueMessage(Text::_('JERROR_NO_ITEMS_SELECTED'), 'error');
+            $this->setRedirect('index.php?option=com_clubleaddir&view=leaderships');
+            return false;
+        }
+
+        $model = $this->getModel('Leadership', 'ClubleaddirModel');
+        if ($model->saveOrder($pks, $order)) {
+            $this->setMessage(Text::_('JSUCCESS_SAVE_ORDER'));
+        } else {
+            $this->setMessage(Text::_('COM_CLUBLEADDIR_ERROR_SAVING'), 'error');
+        }
+
+        $this->setRedirect('index.php?option=com_clubleaddir&view=leaderships');
+    }
+
     /**
      * Cast/whitelist incoming form fields so nothing unexpected reaches the store.
      */

@@ -138,6 +138,10 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
             $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_INVALID_TYPE'));
             return false;
         }
+        if ($data['type'] === 'director_league' && empty(trim($data['league_name'] ?? ''))) {
+            $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_LEAGUE_REQUIRED'));
+            return false;
+        }
         return $data;
     }
 
@@ -207,6 +211,18 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
     public function reorderSingle($id, $direction = 1)
     {
         return $this->store->reorderSingle((int) $id, (int) $direction);
+    }
+
+    public function saveOrder(array $pks, array $order)
+    {
+        if ($this->store === null) {
+            return false;
+        }
+        foreach ($pks as $i => $pk) {
+            $ord = isset($order[$i]) ? (int) $order[$i] : 0;
+            $this->store->setOrdering((int) $pk, $ord);
+        }
+        return true;
     }
 
     public function setError($msg)

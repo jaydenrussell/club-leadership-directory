@@ -56,6 +56,9 @@ abstract class ClubleaddirStoreBackend
     /** Move a record up (-1) or down (+1) within its type group. Returns bool. */
     abstract public function reorderSingle($id, $direction);
 
+    /** Set an explicit ordering value for one record (native Save Order). Returns bool. */
+    abstract public function setOrdering($id, $ordering);
+
     /** Which backend is in use (for admin display). */
     abstract public function getBackendName();
 }
@@ -245,6 +248,15 @@ class ClubleaddirStoreSqlite extends ClubleaddirStoreBackend
 
         return true;
     }
+
+    public function setOrdering($id, $ordering)
+    {
+        $stmt = $this->pdo->prepare('UPDATE records SET ordering = :o WHERE id = :id');
+        $stmt->bindValue(':o', (int) $ordering, PDO::PARAM_INT);
+        $stmt->bindValue(':id', (int) $id, PDO::PARAM_INT);
+
+        return $stmt->execute();
+    }
 }
 
 /**
@@ -427,6 +439,18 @@ class ClubleaddirStoreJson extends ClubleaddirStoreBackend
         $this->update($neighbor['id'], array('ordering' => $tmp));
 
         return true;
+    }
+
+    public function setOrdering($id, $ordering)
+    {
+        foreach ($this->data['records'] as &$r) {
+            if ((int) $r['id'] === (int) $id) {
+                $r['ordering'] = (int) $ordering;
+                $this->save();
+                return true;
+            }
+        }
+        return false;
     }
 }
 
