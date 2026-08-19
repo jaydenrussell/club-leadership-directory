@@ -62,10 +62,10 @@ class ClubleaddirModelLeaderships
     protected function getTypeLabel($type)
     {
         $labels = array(
-            'officer'         => Text::_('COM_CLUBLEADDIRECTION_TYPE_OFFICER'),
-            'director'        => Text::_('COM_CLUBLEADDIRECTION_TYPE_DIRECTOR'),
-            'director_league' => Text::_('COM_CLUBLEADDIRECTION_TYPE_DIRECTOR_LEAGUE'),
-            'staff'           => Text::_('COM_CLUBLEADDIRECTION_TYPE_STAFF'),
+            'officer'         => Text::_('COM_CLUBLEADDIR_TYPE_OFFICER'),
+            'director'        => Text::_('COM_CLUBLEADDIR_TYPE_DIRECTOR'),
+            'director_league' => Text::_('COM_CLUBLEADDIR_TYPE_DIRECTOR_LEAGUE'),
+            'staff'           => Text::_('COM_CLUBLEADDIR_TYPE_STAFF'),
         );
         return $labels[$type] ?? $type;
     }

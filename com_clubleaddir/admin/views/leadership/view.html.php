@@ -33,7 +33,7 @@ class ClubleaddirViewLeadership extends HtmlView
         $isNew = empty($this->item->id);
 
         ToolbarHelper::title(
-            Text::_($isNew ? 'COM_CLUBLEADDIRECTION_ADD_LEADERSHIP' : 'COM_CLUBLEADDIRECTION_EDIT_LEADERSHIP'),
+            Text::_($isNew ? 'COM_CLUBLEADDIR_ADD_LEADERSHIP' : 'COM_CLUBLEADDIR_EDIT_LEADERSHIP'),
             'users'
         );
 

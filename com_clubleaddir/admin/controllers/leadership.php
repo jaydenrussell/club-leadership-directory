@@ -50,9 +50,9 @@ class ClubleaddirControllerLeadership extends BaseController
         $model = $this->getModel('Leadership', 'ClubleaddirModel');
 
         if ($model->save($data)) {
-            $this->setMessage(Text::_('COM_CLUBLEADDIRECTION_ITEM_SAVED'));
+            $this->setMessage(Text::_('COM_CLUBLEADDIR_ITEM_SAVED'));
         } else {
-            $this->setMessage(Text::_('COM_CLUBLEADDIRECTION_ERROR_SAVING'), 'error');
+            $this->setMessage(Text::_('COM_CLUBLEADDIR_ERROR_SAVING'), 'error');
         }
 
         $task = (string) $this->input->getCmd('task');
@@ -113,9 +113,9 @@ class ClubleaddirControllerLeadership extends BaseController
         }
 
         if ($model->delete($ids)) {
-            $this->setMessage(Text::_('COM_CLUBLEADDIRECTION_ITEMS_DELETED'));
+            $this->setMessage(Text::_('COM_CLUBLEADDIR_ITEMS_DELETED'));
         } else {
-            $this->setMessage(Text::_('COM_CLUBLEADDIRECTION_ERROR_DELETING'), 'error');
+            $this->setMessage(Text::_('COM_CLUBLEADDIR_ERROR_DELETING'), 'error');
         }
 
         $this->setRedirect('index.php?option=com_clubleaddir&view=leaderships');
@@ -147,7 +147,7 @@ class ClubleaddirControllerLeadership extends BaseController
         }
 
         if ($model->publish($ids, $state)) {
-            $this->setMessage(Text::_('COM_CLUBLEADDIRECTION_ITEMS_UPDATED'));
+            $this->setMessage(Text::_('COM_CLUBLEADDIR_ITEMS_UPDATED'));
         }
 
         $this->setRedirect('index.php?option=com_clubleaddir&view=leaderships');
@@ -170,7 +170,7 @@ class ClubleaddirControllerLeadership extends BaseController
         }
 
         if ($model->reorderSingle($id, $direction)) {
-            $this->setMessage(Text::_('COM_CLUBLEADDIRECTION_ITEM_REORDERED'));
+            $this->setMessage(Text::_('COM_CLUBLEADDIR_ITEM_REORDERED'));
         }
 
         $this->setRedirect('index.php?option=com_clubleaddir&view=leaderships');

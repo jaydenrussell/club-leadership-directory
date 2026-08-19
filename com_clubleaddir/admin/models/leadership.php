@@ -116,16 +116,16 @@ class ClubleaddirModelLeadership
     private function validate(array $data)
     {
         if (empty(trim($data['name'] ?? ''))) {
-            $this->setError(Text::_('COM_CLUBLEADDIRECTION_ERROR_NAME_REQUIRED'));
+            $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_NAME_REQUIRED'));
             return false;
         }
         if (empty(trim($data['type'] ?? ''))) {
-            $this->setError(Text::_('COM_CLUBLEADDIRECTION_ERROR_TYPE_REQUIRED'));
+            $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_TYPE_REQUIRED'));
             return false;
         }
         $valid = array('officer', 'director', 'director_league', 'staff');
         if (!in_array($data['type'], $valid, true)) {
-            $this->setError(Text::_('COM_CLUBLEADDIRECTION_ERROR_INVALID_TYPE'));
+            $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_INVALID_TYPE'));
             return false;
         }
         return $data;
@@ -137,7 +137,7 @@ class ClubleaddirModelLeadership
         $maxSize      = 2 * 1024 * 1024;
 
         if ($fileInfo['size'] > $maxSize) {
-            $this->setError(Text::_('COM_CLUBLEADDIRECTION_ERROR_PHOTO_TOO_LARGE'));
+            $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_PHOTO_TOO_LARGE'));
             return false;
         }
 
@@ -145,7 +145,7 @@ class ClubleaddirModelLeadership
         $mimeType = $finfo->file($fileInfo['tmp_name']);
 
         if (!in_array($mimeType, $allowedMimes, true)) {
-            $this->setError(Text::_('COM_CLUBLEADDIRECTION_ERROR_PHOTO_INVALID_TYPE'));
+            $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_PHOTO_INVALID_TYPE'));
             return false;
         }
 
@@ -165,7 +165,7 @@ class ClubleaddirModelLeadership
         $destPath = $destDir . '/' . $filename;
 
         if (!move_uploaded_file($fileInfo['tmp_name'], $destPath)) {
-            $this->setError(Text::_('COM_CLUBLEADDIRECTION_ERROR_PHOTO_UPLOAD_FAILED'));
+            $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_PHOTO_UPLOAD_FAILED'));
             return false;
         }
 

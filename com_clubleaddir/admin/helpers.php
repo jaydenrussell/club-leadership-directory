@@ -19,7 +19,7 @@ class ClubleaddirHelper extends ContentHelper
     public static function addSubmenu($submenu = null)
     {
         HTMLHelper::_('sidebar.addEntry',
-            Text::_('COM_CLUBLEADDIRECTION_MENU_LEADERSHIP'),
+            Text::_('COM_CLUBLEADDIR_MENU_LEADERSHIP'),
             Route::_('index.php?option=com_clubleaddir&view=leaderships'),
             $submenu == 'leaderships'
         );
@@ -28,18 +28,18 @@ class ClubleaddirHelper extends ContentHelper
     public static function getTypeOptions()
     {
         return array(
-            ''                => Text::_('COM_CLUBLEADDIRECTION_FILTER_ALL_TYPES'),
-            'officer'         => Text::_('COM_CLUBLEADDIRECTION_TYPE_OFFICER'),
-            'director'        => Text::_('COM_CLUBLEADDIRECTION_TYPE_DIRECTOR'),
-            'director_league' => Text::_('COM_CLUBLEADDIRECTION_TYPE_DIRECTOR_LEAGUE'),
-            'staff'           => Text::_('COM_CLUBLEADDIRECTION_TYPE_STAFF'),
+            ''                => Text::_('COM_CLUBLEADDIR_FILTER_ALL_TYPES'),
+            'officer'         => Text::_('COM_CLUBLEADDIR_TYPE_OFFICER'),
+            'director'        => Text::_('COM_CLUBLEADDIR_TYPE_DIRECTOR'),
+            'director_league' => Text::_('COM_CLUBLEADDIR_TYPE_DIRECTOR_LEAGUE'),
+            'staff'           => Text::_('COM_CLUBLEADDIR_TYPE_STAFF'),
         );
     }
 
     public static function getPublishedOptions()
     {
         return array(
-            ''   => Text::_('COM_CLUBLEADDIRECTION_FILTER_ALL_STATUS'),
+            ''   => Text::_('COM_CLUBLEADDIR_FILTER_ALL_STATUS'),
             '1'  => Text::_('JPUBLISHED'),
             '0'  => Text::_('JUNPUBLISHED'),
         );
@@ -48,9 +48,9 @@ class ClubleaddirHelper extends ContentHelper
     public static function getStatusOptions()
     {
         return array(
-            ''         => Text::_('COM_CLUBLEADDIRECTION_FILTER_ALL_BOARD'),
-            'active'   => Text::_('COM_CLUBLEADDIRECTION_STATUS_ACTIVE'),
-            'archived' => Text::_('COM_CLUBLEADDIRECTION_STATUS_ARCHIVED'),
+            ''         => Text::_('COM_CLUBLEADDIR_FILTER_ALL_BOARD'),
+            'active'   => Text::_('COM_CLUBLEADDIR_STATUS_ACTIVE'),
+            'archived' => Text::_('COM_CLUBLEADDIR_STATUS_ARCHIVED'),
         );
     }
 

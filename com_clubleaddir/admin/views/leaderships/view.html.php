@@ -47,7 +47,7 @@ class ClubleaddirViewLeaderships extends HtmlView
     {
         $canDo = ClubleaddirHelper::getActions();
 
-        ToolbarHelper::title(Text::_('COM_CLUBLEADDIRECTION_MENU_LEADERSHIP'), 'users');
+        ToolbarHelper::title(Text::_('COM_CLUBLEADDIR_MENU_LEADERSHIP'), 'users');
 
         if ($canDo->get('core.create')) {
             ToolbarHelper::addNew('leadership.add');

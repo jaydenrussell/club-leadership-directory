@@ -21,7 +21,7 @@ $search            = $this->filters['search'];
 ?>
 
 <div class="clubleaddir-backend-note alert alert-info" style="margin-bottom:1rem;">
-    <?php echo Text::sprintf('COM_CLUBLEADDIRECTION_BACKEND_NOTE', $this->escape($this->backendName)); ?>
+    <?php echo Text::sprintf('COM_CLUBLEADDIR_BACKEND_NOTE', $this->escape($this->backendName)); ?>
 </div>
 
 <form action="<?php echo Route::_('index.php?option=com_clubleaddir'); ?>" method="post" name="adminForm" id="adminForm">
@@ -31,7 +31,7 @@ $search            = $this->filters['search'];
             <div class="form-inline mb-3">
                 <div class="input-group">
                     <input type="text" name="filter_search" id="filter_search" class="form-control"
-                           placeholder="<?php echo Text::_('COM_CLUBLEADDIRECTION_SEARCH_PLACEHOLDER'); ?>"
+                           placeholder="<?php echo Text::_('COM_CLUBLEADDIR_SEARCH_PLACEHOLDER'); ?>"
                            value="<?php echo $this->escape($search); ?>">
                     <button type="submit" class="btn btn-primary">
                         <span class="icon-search" aria-hidden="true"></span>
@@ -70,19 +70,19 @@ $search            = $this->filters['search'];
             <thead>
                 <tr>
                     <th width="1%" class="text-center"><input type="checkbox" name="checkall-toggle" value="" onclick="Joomla.checkAll(this)"></th>
-                    <th width="5%" class="text-center"><?php echo Text::_('COM_CLUBLEADDIRECTION_HEADING_ORDERING'); ?></th>
-                    <th><?php echo Text::_('COM_CLUBLEADDIRECTION_HEADING_NAME'); ?></th>
-                    <th width="12%"><?php echo Text::_('COM_CLUBLEADDIRECTION_HEADING_TYPE'); ?></th>
-                    <th width="15%"><?php echo Text::_('COM_CLUBLEADDIRECTION_HEADING_ROLE'); ?></th>
-                    <th width="10%"><?php echo Text::_('COM_CLUBLEADDIRECTION_HEADING_BOARD'); ?></th>
+                    <th width="5%" class="text-center"><?php echo Text::_('COM_CLUBLEADDIR_HEADING_ORDERING'); ?></th>
+                    <th><?php echo Text::_('COM_CLUBLEADDIR_HEADING_NAME'); ?></th>
+                    <th width="12%"><?php echo Text::_('COM_CLUBLEADDIR_HEADING_TYPE'); ?></th>
+                    <th width="15%"><?php echo Text::_('COM_CLUBLEADDIR_HEADING_ROLE'); ?></th>
+                    <th width="10%"><?php echo Text::_('COM_CLUBLEADDIR_HEADING_BOARD'); ?></th>
                     <th width="10%" class="text-center"><?php echo Text::_('JSTATUS'); ?></th>
-                    <th width="5%" class="text-center"><?php echo Text::_('COM_CLUBLEADDIRECTION_HEADING_ID'); ?></th>
+                    <th width="5%" class="text-center"><?php echo Text::_('COM_CLUBLEADDIR_HEADING_ID'); ?></th>
                 </tr>
             </thead>
             <tbody>
                 <?php if (empty($this->items)): ?>
                 <tr>
-                    <td colspan="8" class="text-center"><?php echo Text::_('COM_CLUBLEADDIRECTION_NO_ITEMS_FOUND'); ?></td>
+                    <td colspan="8" class="text-center"><?php echo Text::_('COM_CLUBLEADDIR_NO_ITEMS_FOUND'); ?></td>
                 </tr>
                 <?php else: ?>
                 <?php foreach ($this->items as $i => $item): ?>
@@ -115,9 +115,9 @@ $search            = $this->filters['search'];
                     </td>
                     <td>
                         <?php if (($item->status ?? 'active') === 'archived'): ?>
-                            <span class="badge bg-secondary"><?php echo Text::_('COM_CLUBLEADDIRECTION_STATUS_ARCHIVED'); ?></span>
+                            <span class="badge bg-secondary"><?php echo Text::_('COM_CLUBLEADDIR_STATUS_ARCHIVED'); ?></span>
                         <?php else: ?>
-                            <span class="badge bg-success"><?php echo Text::_('COM_CLUBLEADDIRECTION_STATUS_ACTIVE'); ?></span>
+                            <span class="badge bg-success"><?php echo Text::_('COM_CLUBLEADDIR_STATUS_ACTIVE'); ?></span>
                         <?php endif; ?>
                     </td>
                     <td class="text-center"><?php echo HTMLHelper::_('jgrid.published', $item->published, $i, 'leadership.', true); ?></td>

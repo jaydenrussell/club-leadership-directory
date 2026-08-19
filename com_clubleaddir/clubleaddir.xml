@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <extension type="component" version="3.0" method="upgrade">
-    <name>COM_CLUBLEADDIRECTION</name>
+    <name>COM_CLUBLEADDIR</name>
     <author>Jayden Russell</author>
     <creationDate>August 2026</creationDate>
     <copyright>Jayden Russell</copyright>
@@ -8,14 +8,15 @@
     <authorEmail>info@simcoecurlingclub.ca</authorEmail>
     <authorUrl>https://simcoecurlingclub.ca</authorUrl>
     <version>2.0.0</version>
-    <description>COM_CLUBLEADDIRECTION_DESC</description>
+    <description>COM_CLUBLEADDIR_DESC</description>
 
     <administration>
-        <menu img="class:icon-users">COM_CLUBLEADDIRECTION</menu>
+        <menu img="class:icon-users">COM_CLUBLEADDIR</menu>
         <submenu>
-            <menu link="option=com_clubleaddir&amp;view=leaderships">COM_CLUBLEADDIRECTION_MENU_LEADERSHIP</menu>
+            <menu link="option=com_clubleaddir&amp;view=leaderships">COM_CLUBLEADDIR_MENU_LEADERSHIP</menu>
         </submenu>
         <files folder="admin">
+            <filename>clubleaddir.php</filename>
             <filename>controller.php</filename>
             <filename>helpers.php</filename>
             <filename>script.php</filename>
@@ -30,4 +31,9 @@
         </languages>
         <scriptfile>script.php</scriptfile>
     </administration>
+
+    <files folder="site">
+        <filename>clubleaddir.php</filename>
+        <filename>controller.php</filename>
+    </files>
 </extension>
