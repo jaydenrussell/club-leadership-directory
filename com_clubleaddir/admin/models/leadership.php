@@ -10,16 +10,18 @@ defined('_JEXEC') or die;
 
 use Joomla\CMS\Factory;
 use Joomla\CMS\Language\Text;
+use Joomla\CMS\MVC\Model\BaseDatabaseModel;
 
 require_once __DIR__ . '/../store/Store.php';
 
-class ClubleaddirModelLeadership
+class ClubleaddirModelLeadership extends BaseDatabaseModel
 {
     private $store;
     public $item;
 
-    public function __construct()
+    public function __construct($config = array())
     {
+        parent::__construct($config);
         $this->store = ClubleaddirStore::getInstance();
     }
 
