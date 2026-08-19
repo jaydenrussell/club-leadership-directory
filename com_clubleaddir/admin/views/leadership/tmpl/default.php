@@ -52,19 +52,47 @@ $leagueOptions = array(
     'evening_ladies'   => Text::_('COM_CLUBLEADDIR_LEAGUE_EVENING_LADIES'),
     'senior_men'       => Text::_('COM_CLUBLEADDIR_LEAGUE_SENIOR_MEN'),
 );
+
+// Officer role/title is restricted to these (per club governance).
+$officerRoles = array(
+    'President'       => Text::_('COM_CLUBLEADDIR_ROLE_PRESIDENT'),
+    'Vice President'  => Text::_('COM_CLUBLEADDIR_ROLE_VICE_PRESIDENT'),
+    'Secretary'       => Text::_('COM_CLUBLEADDIR_ROLE_SECRETARY'),
+    'Treasurer'      => Text::_('COM_CLUBLEADDIR_ROLE_TREASURER'),
+);
 ?>
 
 <script>
-function toggleLeagueFields(type) {
-    var wrap = document.getElementById('league-fields');
+function toggleTypeFields(type) {
+    // League reps only.
+    var leagueWrap = document.getElementById('league-fields');
     if (type === 'director_league') {
-        wrap.style.display = 'block';
+        leagueWrap.style.display = 'block';
     } else {
-        wrap.style.display = 'none';
-        var sel = document.getElementById('league_name');
-        if (sel) { sel.value = ''; }
+        leagueWrap.style.display = 'none';
+        var lsel = document.getElementById('league_name');
+        if (lsel) { lsel.value = ''; }
+    }
+    // Officer role is a restricted dropdown; other types use free text.
+    var isOfficer = (type === 'officer');
+    var roleSelect = document.getElementById('role_select');
+    var roleText   = document.getElementById('role_text');
+    var roleHidden = document.getElementById('role');
+    if (isOfficer) {
+        roleSelect.style.display = 'block';
+        roleText.style.display = 'none';
+        roleText.value = '';
+        roleHidden.value = roleSelect.value;
+    } else {
+        roleSelect.style.display = 'none';
+        roleText.style.display = 'block';
+        // Leaving officer: clear any restricted role so it isn't inherited by another type.
+        roleHidden.value = '';
+        roleText.value = '';
+        roleSelect.value = '';
     }
 }
+function toggleLeagueFields(type) { toggleTypeFields(type); }
 
 // Joomla 3.10 submit shim (replaces behavior.formvalidator).
 if (typeof Joomla === 'undefined') { var Joomla = {}; }
@@ -217,7 +245,7 @@ function jClubleaddirSelectContact(id, name) {
                                 <label for="type" class="required"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_TYPE'); ?> <span class="star">*</span></label>
                             </div>
                             <div class="controls">
-                                <select name="jform[type]" id="type" class="inputbox clble-w-main" required onchange="toggleLeagueFields(this.value)">
+                                <select name="jform[type]" id="type" class="inputbox clble-w-main" required onchange="toggleTypeFields(this.value)">
                                     <option value="officer" <?php echo $item->type === 'officer' ? 'selected' : ''; ?>><?php echo Text::_('COM_CLUBLEADDIR_TYPE_OFFICER'); ?></option>
                                     <option value="director" <?php echo $item->type === 'director' ? 'selected' : ''; ?>><?php echo Text::_('COM_CLUBLEADDIR_TYPE_DIRECTOR'); ?></option>
                                     <option value="director_league" <?php echo $item->type === 'director_league' ? 'selected' : ''; ?>><?php echo Text::_('COM_CLUBLEADDIR_TYPE_DIRECTOR_LEAGUE'); ?></option>
@@ -231,7 +259,24 @@ function jClubleaddirSelectContact(id, name) {
                                 <label for="role"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_ROLE'); ?></label>
                             </div>
                             <div class="controls">
-                                <input type="text" name="jform[role]" id="role" class="inputbox clble-w-main" value="<?php echo $this->escape($item->role); ?>">
+                                <?php
+                                $isOfficer = ($item->type === 'officer');
+                                $officerRoleVal = array_key_exists($item->role, $officerRoles) ? $item->role : '';
+                                ?>
+                                <!-- Hidden carries the actual submitted value. -->
+                                <input type="hidden" name="jform[role]" id="role" value="<?php echo $this->escape($item->role); ?>">
+                                <!-- Officer: restricted dropdown. -->
+                                <select id="role_select" class="inputbox clble-w-main" style="display:<?php echo $isOfficer ? 'block' : 'none'; ?>;"
+                                        onchange="document.getElementById('role').value = this.value;">
+                                    <option value=""><?php echo Text::_('COM_CLUBLEADDIR_SELECT_ROLE'); ?></option>
+                                    <?php foreach ($officerRoles as $val => $label): ?>
+                                        <option value="<?php echo $this->escape($val); ?>" <?php echo $officerRoleVal === $val ? 'selected' : ''; ?>><?php echo $label; ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <!-- Other types: free text. -->
+                                <input type="text" id="role_text" class="inputbox clble-w-main" style="display:<?php echo !$isOfficer ? 'block' : 'none'; ?>;"
+                                       value="<?php echo $this->escape($item->role); ?>" placeholder="<?php echo Text::_('COM_CLUBLEADDIR_FIELD_ROLE_PLACEHOLDER'); ?>"
+                                       oninput="document.getElementById('role').value = this.value;">
                             </div>
                         </div>
                     </div>

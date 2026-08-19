@@ -142,6 +142,15 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
             $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_LEAGUE_REQUIRED'));
             return false;
         }
+        // Officers may only use the four club governance titles.
+        if ($data['type'] === 'officer') {
+            $allowed = array('President', 'Vice President', 'Secretary', 'Treasurer');
+            $role = trim($data['role'] ?? '');
+            if ($role === '' || !in_array($role, $allowed, true)) {
+                $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_OFFICER_ROLE_INVALID'));
+                return false;
+            }
+        }
         return $data;
     }
 
