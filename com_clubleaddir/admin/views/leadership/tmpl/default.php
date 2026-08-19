@@ -93,18 +93,34 @@ Joomla.submitbutton = function (task) {
             <fieldset class="adminform">
                 <legend><?php echo Text::_('COM_CLUBLEADDIR_LEADERSHIP_DETAILS'); ?></legend>
 
-                <div class="control-group">
-                    <div class="control-label">
-                        <label for="name" class="required"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_NAME'); ?> <span class="star">*</span></label>
-                    </div>
-                    <div class="controls">
-                        <input type="text" name="jform[name]" id="name" class="input-xxlarge"
-                               value="<?php echo $this->escape($item->name); ?>" required>
-                    </div>
-                </div>
-
+                <!-- Photo + identity grid -->
                 <div class="row-fluid">
-                    <div class="span6">
+                    <div class="span3" style="text-align:center;">
+                        <div class="control-group">
+                            <div class="controls">
+                                <?php if ($item->photo): ?>
+                                    <img src="<?php echo $this->escape($item->photo); ?>" alt="<?php echo $this->escape($item->name); ?>"
+                                         class="thumbnail" style="max-width:150px;max-height:150px;display:inline-block;margin-bottom:8px;">
+                                    <p class="help-block" style="word-break:break-all;font-size:11px;"><?php echo $this->escape($item->photo); ?></p>
+                                <?php else: ?>
+                                    <div class="thumbnail" style="width:150px;height:150px;line-height:150px;text-align:center;color:#bbb;margin:0 auto 8px;"><span class="icon-user" style="font-size:48px;"></span></div>
+                                <?php endif; ?>
+                                <input type="file" name="jform[photo]" id="photo" class="inputbox" accept="image/*">
+                                <p class="help-block"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_PHOTO_HELP'); ?></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="span9">
+                        <div class="control-group">
+                            <div class="control-label">
+                                <label for="name" class="required"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_NAME'); ?> <span class="star">*</span></label>
+                            </div>
+                            <div class="controls">
+                                <input type="text" name="jform[name]" id="name" class="input-xxlarge"
+                                       value="<?php echo $this->escape($item->name); ?>" required>
+                            </div>
+                        </div>
+
                         <div class="control-group">
                             <div class="control-label">
                                 <label for="type" class="required"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_TYPE'); ?> <span class="star">*</span></label>
@@ -119,15 +135,14 @@ Joomla.submitbutton = function (task) {
                                 </select>
                             </div>
                         </div>
-                    </div>
-                    <div class="span6">
+
                         <div class="control-group">
                             <div class="control-label">
                                 <label for="role"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_ROLE'); ?></label>
                             </div>
                             <div class="controls">
-                                <input type="text" name="jform[role]" id="role" class="inputbox"
-                                       style="width:100%;" value="<?php echo $this->escape($item->role); ?>">
+                                <input type="text" name="jform[role]" id="role" class="input-xxlarge"
+                                       value="<?php echo $this->escape($item->role); ?>">
                             </div>
                         </div>
                     </div>
@@ -170,37 +185,36 @@ Joomla.submitbutton = function (task) {
                 </div>
             </fieldset>
 
-            <!-- CONTACT GROUP -->
+            <!-- CONTACT INFO -->
             <fieldset class="adminform">
                 <legend><?php echo Text::_('COM_CLUBLEADDIR_CONTACT_INFO'); ?></legend>
 
-                <div class="control-group">
-                    <div class="control-label">
-                        <label for="contact_id"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_CONTACT_ID'); ?></label>
-                    </div>
-                    <div class="controls">
-                        <input type="number" name="jform[contact_id]" id="contact_id" class="input-medium"
-                               value="<?php echo (int) $item->contact_id; ?>">
-                        <p class="help-block"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_CONTACT_ID_HELP'); ?></p>
-                    </div>
-                </div>
-
                 <div class="row-fluid">
-                    <div class="span6">
+                    <div class="span4">
+                        <div class="control-group">
+                            <div class="control-label">
+                                <label for="contact_id"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_CONTACT_ID'); ?></label>
+                            </div>
+                            <div class="controls">
+                                <input type="number" name="jform[contact_id]" id="contact_id" class="input-medium"
+                                       value="<?php echo (int) $item->contact_id; ?>">
+                                <p class="help-block"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_CONTACT_ID_HELP'); ?></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="span4">
                         <div class="control-group">
                             <div class="control-label">
                                 <label for="email"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_EMAIL'); ?></label>
                             </div>
                             <div class="controls">
-                                <div class="input-prepend">
-                                    <input type="email" name="jform[email]" id="email" class="input-medium"
-                                           value="<?php echo $this->escape($item->email); ?>">
-                                </div>
-                                <p class="help-block"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_EMAIL_HELP'); ?></p>
+                                <input type="email" name="jform[email]" id="email" class="input-medium"
+                                       value="<?php echo $this->escape($item->email); ?>">
+                                <p class="help-block muted" style="font-size:11px;">@simcoecurlingclub.ca</p>
                             </div>
                         </div>
                     </div>
-                    <div class="span6">
+                    <div class="span4">
                         <div class="control-group">
                             <div class="control-label">
                                 <label for="phone"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_PHONE'); ?></label>
@@ -212,7 +226,6 @@ Joomla.submitbutton = function (task) {
                         </div>
                     </div>
                 </div>
-                <p class="help-block"><span class="label"><?php echo Text::_('COM_CLUBLEADDIR_EMAIL_CLUB_NOTE'); ?></span> @simcoecurlingclub.ca</p>
             </fieldset>
         </div>
 
@@ -253,28 +266,6 @@ Joomla.submitbutton = function (task) {
                     <div class="controls">
                         <input type="number" name="jform[ordering]" id="ordering" class="input-medium"
                                value="<?php echo (int) $item->ordering; ?>">
-                    </div>
-                </div>
-            </fieldset>
-
-            <fieldset class="adminform">
-                <legend><?php echo Text::_('COM_CLUBLEADDIR_PHOTO'); ?></legend>
-                <?php if ($item->photo): ?>
-                    <div class="control-group">
-                        <div class="controls" style="text-align:center;margin-bottom:10px;">
-                            <img src="<?php echo $this->escape($item->photo); ?>" alt="<?php echo $this->escape($item->name); ?>"
-                                 class="thumbnail" style="max-width:160px;max-height:160px;display:inline-block;">
-                            <p class="help-block"><?php echo $this->escape($item->photo); ?></p>
-                        </div>
-                    </div>
-                <?php endif; ?>
-                <div class="control-group">
-                    <div class="control-label">
-                        <label for="photo"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_PHOTO'); ?></label>
-                    </div>
-                    <div class="controls">
-                        <input type="file" name="jform[photo]" id="photo" class="inputbox" accept="image/*">
-                        <p class="help-block"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_PHOTO_HELP'); ?></p>
                     </div>
                 </div>
             </fieldset>
