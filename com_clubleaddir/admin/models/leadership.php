@@ -209,7 +209,7 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
         return $this->store->reorderSingle((int) $id, (int) $direction);
     }
 
-    private function setError($msg)
+    public function setError($msg)
     {
         Factory::getApplication()->enqueueMessage($msg, 'error');
     }
