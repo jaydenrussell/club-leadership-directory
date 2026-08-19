@@ -17,8 +17,10 @@ class ClubleaddirController extends BaseController
 
     public function display($cachable = false, $urlparams = array())
     {
-        $view = Factory::getApplication()->input->get('view', 'leaderships');
-        Factory::getApplication()->input->set('view', $view);
-        parent::display($cachable, $urlparams);
+        // Force the list view so an empty/missing view param can never fall
+        // back to getName() and 404 (name "clubleaddir" with no view).
+        $this->input->set('view', 'leaderships');
+
+        return parent::display($cachable, $urlparams);
     }
 }

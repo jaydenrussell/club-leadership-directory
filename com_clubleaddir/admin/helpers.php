@@ -8,6 +8,8 @@
 
 defined('_JEXEC') or die;
 
+require_once __DIR__ . '/store/Store.php';
+
 use Joomla\CMS\Factory;
 use Joomla\CMS\HTML\HTMLHelper;
 use Joomla\CMS\Language\Text;
