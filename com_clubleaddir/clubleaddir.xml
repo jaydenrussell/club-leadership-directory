@@ -24,10 +24,9 @@
             <folder>models</folder>
             <folder>views</folder>
             <folder>store</folder>
-            <folder>language</folder>
         </files>
         <languages folder="admin/language">
-            <language tag="en-GB">en-GB/com_clubleaddir.ini</language>
+            <language tag="en-GB">en-GB/en-GB.com_clubleaddir.ini</language>
         </languages>
         <scriptfile>script.php</scriptfile>
     </administration>

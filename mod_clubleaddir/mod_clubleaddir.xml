@@ -15,12 +15,11 @@
         <filename>helper.php</filename>
         <folder>tmpl</folder>
         <folder>media</folder>
-        <folder>language</folder>
     </files>
 
     <languages folder="language">
-        <language tag="en-GB">en-GB/mod_clubleaddir.ini</language>
-        <language tag="en-GB">en-GB/mod_clubleaddir.sys.ini</language>
+        <language tag="en-GB">en-GB/en-GB.mod_clubleaddir.ini</language>
+        <language tag="en-GB">en-GB/en-GB.mod_clubleaddir.sys.ini</language>
     </languages>
 
     <config>
