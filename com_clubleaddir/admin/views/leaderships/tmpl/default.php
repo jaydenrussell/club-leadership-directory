@@ -74,10 +74,10 @@ $search            = $this->filters['search'];
                 <th width="1%" class="center"><?php echo HTMLHelper::_('grid.checkall'); ?></th>
                 <th width="6%" class="center nowrap"><?php echo Text::_('COM_CLUBLEADDIR_HEADING_ORDERING'); ?></th>
                 <th width="6%" class="center nowrap"><?php echo Text::_('COM_CLUBLEADDIR_HEADING_PHOTO'); ?></th>
-                <th><?php echo Text::_('COM_CLUBLEADDIR_HEADING_NAME'); ?></th>
-                <th><?php echo Text::_('COM_CLUBLEADDIR_HEADING_ROLE'); ?></th>
-                <th><?php echo Text::_('COM_CLUBLEADDIR_HEADING_TYPE'); ?></th>
-                <th><?php echo Text::_('COM_CLUBLEADDIR_HEADING_TERM'); ?></th>
+                <th class="clble-col-name"><?php echo Text::_('COM_CLUBLEADDIR_HEADING_NAME'); ?></th>
+                <th class="clble-col-role"><?php echo Text::_('COM_CLUBLEADDIR_HEADING_ROLE'); ?></th>
+                <th class="clble-col-type"><?php echo Text::_('COM_CLUBLEADDIR_HEADING_TYPE'); ?></th>
+                <th class="clble-col-term"><?php echo Text::_('COM_CLUBLEADDIR_HEADING_TERM'); ?></th>
                 <th width="8%" class="center nowrap"><?php echo Text::_('JSTATUS'); ?></th>
             </tr>
         </thead>
@@ -98,7 +98,7 @@ $search            = $this->filters['search'];
                             <span class="clble-avatar-sm clble-avatar-empty"><span class="icon-user"></span></span>
                         <?php endif; ?>
                     </td>
-                    <td>
+                    <td class="clble-col-name">
                         <a href="<?php echo Route::_('index.php?option=com_clubleaddir&view=leadership&id=' . $item->id); ?>">
                             <?php echo $this->escape($item->name); ?>
                         </a>
@@ -106,14 +106,14 @@ $search            = $this->filters['search'];
                             <span class="badge badge-inverse" style="margin-left:6px;"><?php echo Text::_('COM_CLUBLEADDIR_STATUS_ARCHIVED'); ?></span>
                         <?php endif; ?>
                     </td>
-                    <td><?php echo $this->escape($item->role ?: '—'); ?></td>
-                    <td>
+                    <td class="clble-col-role"><?php echo $this->escape($item->role ?: '—'); ?></td>
+                    <td class="clble-col-type">
                         <span class="badge <?php echo $item->type_class; ?>"><?php echo $item->type_label; ?></span>
                         <?php if (!empty($item->league_name)): ?>
                             <div class="muted" style="font-size:11px;"><?php echo $this->escape($item->league_name); ?></div>
                         <?php endif; ?>
                     </td>
-                    <td class="nowrap"><?php echo $this->escape($item->term ?: '—'); ?></td>
+                    <td class="clble-col-term nowrap"><?php echo $this->escape($item->term ?: '—'); ?></td>
                     <td class="center"><?php echo HTMLHelper::_('jgrid.published', $item->published, $i, 'leadership.', true); ?></td>
                 </tr>
                 <?php endforeach; ?>
@@ -125,6 +125,14 @@ $search            = $this->filters['search'];
     <input type="hidden" name="boxchecked" value="0">
     <?php echo HTMLHelper::_('form.token'); ?>
 </form>
+
+<style>
+#clubleaddirList th, #clubleaddirList td { vertical-align: middle; }
+#clubleaddirList .clble-col-name { min-width: 180px; }
+#clubleaddirList .clble-col-role { min-width: 160px; }
+#clubleaddirList .clble-col-type { min-width: 150px; }
+#clubleaddirList .clble-col-term { min-width: 110px; }
+</style>
 
 <style>
 .clble-avatar-sm {

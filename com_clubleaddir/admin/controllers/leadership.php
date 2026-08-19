@@ -44,6 +44,16 @@ class ClubleaddirControllerLeadership extends BaseController
             return false;
         }
 
+        $user = Factory::getUser();
+        $id   = (int) ($this->input->post->get('jform', array(), 'array')['id'] ?? 0);
+        $can  = $id ? $user->authorise('core.edit', 'com_clubleaddir')
+                    : $user->authorise('core.create', 'com_clubleaddir');
+        if (!$can) {
+            Factory::getApplication()->enqueueMessage(Text::_('JERROR_ALERTNOAUTHOR'), 'error');
+            $this->setRedirect('index.php?option=com_clubleaddir&view=leaderships');
+            return false;
+        }
+
         $data = $this->input->post->get('jform', array(), 'array');
         $data = $this->sanitize($data);
 
