@@ -2,7 +2,7 @@
 """Assemble the Club Leadership standalone PACKAGE zip (the only artifact you ship).
 
 The package contains the component zip + module zip nested inside, plus the
-package manifest, so a single `pkg_clubleadership.zip` both installs and
+package manifest, so a single `pkg_clubleaddir.zip` both installs and
 updates the extension. The com_/mod_ zips are NOT shipped on their own.
 
 This script is the one-stop release builder:
@@ -12,15 +12,15 @@ This script is the one-stop release builder:
     manager checksum check always matches (no manual step).
 
 After running, commit build_zips.py + update.xml and publish the new
-pkg_clubleadership.zip to a GitHub release whose tag matches the version in
-pkg/pkg_clubleadership.xml (the download URL in update.xml must point there).
+pkg_clubleaddir.zip to a GitHub release whose tag matches the version in
+pkg/pkg_clubleaddir.xml (the download URL in update.xml must point there).
 """
 import os, re, zipfile, shutil, tempfile, hashlib
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 BUILD = ROOT
 OUT = os.path.join(os.path.dirname(ROOT), 'pkg_out')
-PKG_MANIFEST = os.path.join(BUILD, 'pkg', 'pkg_clubleadership.xml')
+PKG_MANIFEST = os.path.join(BUILD, 'pkg', 'pkg_clubleaddir.xml')
 UPDATE_XML = os.path.join(BUILD, 'update.xml')
 os.makedirs(OUT, exist_ok=True)
 # Nested com/mod zips are intermediates — build them in a temp dir so pkg_out
@@ -49,7 +49,7 @@ def read_version():
     with open(PKG_MANIFEST, 'r', encoding='utf-8') as fh:
         m = re.search(r'<version>(.*?)</version>', fh.read())
     if not m:
-        raise SystemExit('ERROR: no <version> found in pkg/pkg_clubleadership.xml')
+        raise SystemExit('ERROR: no <version> found in pkg/pkg_clubleaddir.xml')
     return m.group(1).strip()
 
 
@@ -67,29 +67,29 @@ def write_checksum_to_update_xml(sha):
 
 def main():
     version = read_version()
-    comp_src = os.path.join(BUILD, 'com_clubleadership')
-    mod_src = os.path.join(BUILD, 'mod_clubleadership')
+    comp_src = os.path.join(BUILD, 'com_clubleaddir')
+    mod_src = os.path.join(BUILD, 'mod_clubleaddir')
 
     # 1. Component zip (nested inside the package, not shipped separately)
-    comp_zip = os.path.join(TMP, 'com_clubleadership.zip')
+    comp_zip = os.path.join(TMP, 'com_clubleaddir.zip')
     if os.path.exists(comp_zip):
         os.remove(comp_zip)
     zip_dir(comp_src, comp_zip)
 
     # 2. Module zip (nested inside the package, not shipped separately)
-    mod_zip = os.path.join(TMP, 'mod_clubleadership.zip')
+    mod_zip = os.path.join(TMP, 'mod_clubleaddir.zip')
     if os.path.exists(mod_zip):
         os.remove(mod_zip)
     zip_dir(mod_src, mod_zip)
 
     # 3. Package zip: pkg manifest + the two zips inside. This is the ONLY file shipped.
-    pkg_zip = os.path.join(OUT, 'pkg_clubleadership.zip')
+    pkg_zip = os.path.join(OUT, 'pkg_clubleaddir.zip')
     if os.path.exists(pkg_zip):
         os.remove(pkg_zip)
     with zipfile.ZipFile(pkg_zip, 'w', zipfile.ZIP_DEFLATED) as z:
-        z.write(os.path.join(BUILD, 'pkg', 'pkg_clubleadership.xml'), 'pkg_clubleadership.xml')
-        z.write(comp_zip, 'com_clubleadership.zip')
-        z.write(mod_zip, 'mod_clubleadership.zip')
+        z.write(os.path.join(BUILD, 'pkg', 'pkg_clubleaddir.xml'), 'pkg_clubleaddir.xml')
+        z.write(comp_zip, 'com_clubleaddir.zip')
+        z.write(mod_zip, 'mod_clubleaddir.zip')
 
     sha = hashlib.sha256(open(pkg_zip, 'rb').read()).hexdigest()
     write_checksum_to_update_xml(sha)

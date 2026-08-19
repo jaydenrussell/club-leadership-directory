@@ -1,10 +1,10 @@
-# Club Leadership — Joomla 3 Standalone Extension
+# Club Leadership Directory — Joomla 3 Standalone Extension
 
 A Joomla 3 component + module that publishes your club's leadership roster
 (officers, directors, league-appointed roles, staff) on the front end.
 
 **Why "standalone"?** The data is stored in its own **SQLite file** under
-`media/com_clubleadership/data/` — completely separate from the Joomla / Community
+`media/com_clubleaddir/data/` — completely separate from the Joomla / Community
 Builder MySQL database. There is no shared table and no CB dependency, so the
 extension can never take down the site database or leak into CB. If the server
 lacks the `pdo_sqlite` PHP extension, it automatically falls back to a **JSON**
@@ -14,14 +14,14 @@ file with identical behaviour.
 
 ## Features
 
-- **Component** (`com_clubleadership`) — administrator CRUD for leadership records:
+- **Component** (`com_clubleaddir`) — administrator CRUD for leadership records:
   name, role type (Officer / Director / League-Appointed / Staff), league name,
   board term, bio, photo, role-based contact fields (email / phone / SMS),
   publish state and a manual ordering.
 - **Status history** — every record is `active` or `archived`. Archiving a board
   keeps it as a permanent record and removes it from the public display, so you
   never lose the record of a previous board.
-- **Module** (`mod_clubleadership`) — drops the current **published** leadership
+- **Module** (`mod_clubleaddir`) — drops the current **published** leadership
   onto any page (typically a sidebar), grouped by role type, ordered by the
   component's ordering field.
 - **Isolated, injection-proof data store** — prepared statements (SQLite) or a
@@ -40,11 +40,11 @@ file with identical behaviour.
 
 ## Install (one file, one click)
 
-The extension ships as a **single package**: **`pkg_clubleadership.zip`**. There
+The extension ships as a **single package**: **`pkg_clubleaddir.zip`**. There
 is no separate component or module zip — the package installs (and contains)
 both.
 
-1. Download **`pkg_clubleadership.zip`** from the
+1. Download **`pkg_clubleaddir.zip`** from the
    [Releases](../../releases) page.
 2. **System → Extensions → Install**, upload the package.
 3. The component installs first (it creates the data file), then the module.
@@ -59,14 +59,14 @@ records `published = Yes` and `status = active`.
 The package is pre-wired to a Joomla update server. After installing, updates
 show up under **Components → Joomla! Update** (or **System → Update** depending
 on your Joomla 3 build) — click **Find Updates** and install, exactly like
-updating core. Re-uploading `pkg_clubleadership.zip` via **Install** also
+updating core. Re-uploading `pkg_clubleaddir.zip` via **Install** also
 upgrades in place (the manifests use `method="upgrade"`).
 
 To cut a new release:
-- bump `<version>` in `pkg/pkg_clubleadership.xml` (and the child manifests if you
+- bump `<version>` in `pkg/pkg_clubleaddir.xml` (and the child manifests if you
   changed them),
 - update `version` and the `downloadurl` in `update.xml`,
-- rebuild + tag + publish the new `pkg_clubleadership.zip` to a matching
+- rebuild + tag + publish the new `pkg_clubleaddir.zip` to a matching
   GitHub release.
 
 ## Build from source
@@ -77,15 +77,15 @@ binary required). It produces **only** the single package zip:
 ```bash
 cd club-leadership
 python3 build_zips.py
-# produces ../pkg_out/pkg_clubleadership.zip  (com + mod nested inside)
+# produces ../pkg_out/pkg_clubleaddir.zip  (com + mod nested inside)
 ```
 
-Install `pkg_out/pkg_clubleadership.zip`.
+Install `pkg_out/pkg_clubleaddir.zip`.
 
 ## Data location & uninstall
 
-- Data file: `media/com_clubleadership/data/clubleadership.sqlite`
-  (or `clubleadership.json` in fallback mode).
+- Data file: `media/com_clubleaddir/data/clubleaddir.sqlite`  (created by the installer)
+  (or `clubleaddir.json` in fallback mode).
 - On **uninstall** the data file is removed — the extension leaves nothing behind
   in the Joomla database.
 
@@ -103,7 +103,7 @@ Install `pkg_out/pkg_clubleadership.zip`.
   add a server rule such as:
 
   ```nginx
-  location ~* /media/com_clubleadership/data/ { deny all; }
+  location ~* /media/com_clubleaddir/data/ { deny all; }
   ```
 
   The PHP store validates the path on every load and refuses to run if the file
