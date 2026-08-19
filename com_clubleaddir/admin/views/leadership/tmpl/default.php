@@ -14,6 +14,11 @@ use Joomla\CMS\Language\Text;
 use Joomla\CMS\Router\Route;
 use Joomla\CMS\Uri\Uri;
 
+// Load the modal behavior so the "Look up Contact" SqueezeBox link opens the
+// Contact Component picker as a modal (search by name -> auto-fill ID).
+// NOTE: behavior.modal exists in J3.10 (only behavior.core was removed).
+HTMLHelper::_('behavior.modal');
+
 // NOTE: do NOT call HTMLHelper::_('behavior.core') / ('behavior.formvalidator').
 // The JHtmlBehavior helper was removed in Joomla 3.10 and calling it fatals the
 // admin (HTTP 500). We use native HTML5 `required` + a submit shim that blocks
