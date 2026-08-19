@@ -16,6 +16,6 @@
     </files>
 
     <updateservers>
-        <server type="extension" name="Club Leadership Update" priority="1">https://raw.githubusercontent.com/jaydenrussell/club-leadership/master/update.xml</server>
+        <server type="extension" name="Club Leadership Directory Update" priority="1">https://raw.githubusercontent.com/jaydenrussell/club-leadership-directory/master/update.xml</server>
     </updateservers>
 </extension>
