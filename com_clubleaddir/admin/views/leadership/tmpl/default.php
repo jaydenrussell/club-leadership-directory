@@ -90,14 +90,17 @@ Joomla.submitbutton = function (task) {
     Joomla.submitform(task, form);
 };
 
-// Contact Component picker: com_contact calls this when a contact is chosen.
-function jSelectContact(id, name) {
+// Contact Component picker: com_contact's modal overwrites window.jSelectContact
+// with its own version that discards the id, so we use a unique callback name
+// passed via the modal's `function` URL param. The modal calls
+// window.parent['jClubleaddirSelectContact'](id, title, null, null, uri, lang, null).
+function jClubleaddirSelectContact(id, name) {
     var field = document.getElementById('contact_id');
     if (field) { field.value = id; }
     var disp = document.getElementById('contact_name_display');
     if (disp) { disp.textContent = name; }
-    if (window.jQuery && jQuery('.modal').length) { jQuery('.modal').modal('hide'); }
-    else if (window.SqueezeBox) { SqueezeBox.close(); }
+    if (window.parent.SqueezeBox) { window.parent.SqueezeBox.close(); }
+    else if (window.parent.jModalClose) { window.parent.jModalClose(); }
     return false;
 }
 </script>
@@ -283,7 +286,7 @@ function jSelectContact(id, name) {
                                    value="<?php echo (int) $item->contact_id; ?>">
                             <?php if ($hasContactComponent): ?>
                             <a class="btn modal btn-contact-pick" title="<?php echo Text::_('COM_CLUBLEADDIR_FIELD_CONTACT_ID_HELP'); ?>"
-                               href="<?php echo Route::_('index.php?option=com_contact&view=contacts&layout=modal&tmpl=component&field=contact_id'); ?>"
+                               href="<?php echo Route::_('index.php?option=com_contact&view=contacts&layout=modal&tmpl=component&function=jClubleaddirSelectContact'); ?>"
                                rel="{handler: 'iframe', size: {x: 800, y: 500}}">
                                 <span class="icon-search"></span> <?php echo Text::_('COM_CLUBLEADDIR_LOOKUP_CONTACT'); ?>
                             </a>
