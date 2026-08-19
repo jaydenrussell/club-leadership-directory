@@ -13,6 +13,8 @@ use Joomla\CMS\Language\Text;
 use Joomla\CMS\MVC\View\HtmlView;
 use Joomla\CMS\Toolbar\ToolbarHelper;
 
+require_once __DIR__ . '/../../helpers.php';
+
 class ClubleaddirViewLeadership extends HtmlView
 {
     protected $item;
