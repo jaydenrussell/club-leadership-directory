@@ -60,7 +60,7 @@ class ClubleaddirViewLeaderships extends HtmlView
             ToolbarHelper::unpublish('leadership.publish', 'JTOOLBAR_UNPUBLISH', true);
             // Joomla 3.10 has no ToolbarHelper::saveorder(); use a custom button
             // that submits the order[] inputs via the leadership.saveorder task.
-            ToolbarHelper::custom('leadership.saveorder', 'icon-menu', '', 'JTOOLBAR_SAVE_ORDER', false);
+            ToolbarHelper::custom('leadership.saveorder', 'icon-menu', '', 'COM_CLUBLEADDIR_TOOLBAR_SAVE_ORDER', false);
         }
         if ($canDo->get('core.delete')) {
             ToolbarHelper::deleteList('JGLOBAL_CONFIRM_DELETE', 'leadership.delete', 'JTOOLBAR_DELETE');

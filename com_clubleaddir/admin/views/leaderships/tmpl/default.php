@@ -62,70 +62,95 @@ $search            = $this->filters['search'];
         </div>
     </div>
 
-    <table class="table table-striped table-hover" id="leadershipList" style="margin-top: 6px;">
-        <thead>
-            <tr>
-                <th width="1%" class="center"><input type="checkbox" name="checkall-toggle" value="" onclick="Joomla.checkAll(this)"></th>
-                <th width="6%" class="center"><?php echo Text::_('COM_CLUBLEADDIR_HEADING_ORDERING'); ?></th>
-                <th width="7%" class="center"><?php echo Text::_('COM_CLUBLEADDIR_HEADING_PHOTO'); ?></th>
-                <th><?php echo Text::_('COM_CLUBLEADDIR_HEADING_NAME'); ?></th>
-                <th width="12%"><?php echo Text::_('COM_CLUBLEADDIR_HEADING_TYPE'); ?></th>
-                <th width="15%"><?php echo Text::_('COM_CLUBLEADDIR_HEADING_ROLE'); ?></th>
-                <th width="10%"><?php echo Text::_('COM_CLUBLEADDIR_HEADING_BOARD'); ?></th>
-                <th width="9%" class="center"><?php echo Text::_('JSTATUS'); ?></th>
-                <th width="5%" class="center"><?php echo Text::_('COM_CLUBLEADDIR_HEADING_ID'); ?></th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php if (empty($this->items)): ?>
-            <tr>
-                <td colspan="9" class="center"><?php echo Text::_('COM_CLUBLEADDIR_NO_ITEMS_FOUND'); ?></td>
-            </tr>
-            <?php else: ?>
+    <?php if (empty($this->items)): ?>
+        <div class="alert alert-no-items"><?php echo Text::_('COM_CLUBLEADDIR_NO_ITEMS_FOUND'); ?></div>
+    <?php else: ?>
+        <div class="clubleaddir-admin-cards">
             <?php foreach ($this->items as $i => $item): ?>
-            <tr class="row<?php echo $i % 2; ?>">
-                <td class="center"><?php echo HTMLHelper::_('grid.id', $i, $item->id); ?></td>
-                <td class="order center">
-                    <input type="text" name="order[]" size="5" value="<?php echo (int) $item->ordering; ?>" class="input-mini" style="text-align:center;">
-                </td>
-                <td class="center">
-                    <?php if (!empty($item->photo)): ?>
-                        <img src="<?php echo $this->escape($item->photo); ?>" alt="<?php echo $this->escape($item->name); ?>" class="thumbnail" style="max-width:48px;max-height:48px;display:inline-block;">
-                    <?php else: ?>
-                        <span class="icon-user" style="opacity:.3;"></span>
-                    <?php endif; ?>
-                </td>
-                <td>
-                    <a href="<?php echo Route::_('index.php?option=com_clubleaddir&view=leadership&id=' . $item->id); ?>">
-                        <?php echo $this->escape($item->name); ?>
-                    </a>
-                    <?php if (!empty($item->league_name)): ?>
-                    <br><small class="muted"><?php echo $this->escape($item->league_name); ?></small>
-                    <?php endif; ?>
-                </td>
-                <td><span class="badge <?php echo $item->type_class; ?>"><?php echo $item->type_label; ?></span></td>
-                <td>
-                    <?php echo $this->escape($item->role); ?>
-                    <?php if (!empty($item->term)): ?>
-                    <br><small class="muted"><?php echo $this->escape($item->term); ?></small>
-                    <?php endif; ?>
-                </td>
-                <td>
-                    <?php if (($item->status ?? 'active') === 'archived'): ?>
-                        <span class="badge badge-inverse"><?php echo Text::_('COM_CLUBLEADDIR_STATUS_ARCHIVED'); ?></span>
-                    <?php else: ?>
-                        <span class="badge badge-success"><?php echo Text::_('COM_CLUBLEADDIR_STATUS_ACTIVE'); ?></span>
-                    <?php endif; ?>
-                </td>
-                <td class="center"><?php echo HTMLHelper::_('jgrid.published', $item->published, $i, 'leadership.', true); ?></td>
-                <td class="center"><?php echo (int) $item->id; ?></td>
-            </tr>
+            <div class="clubleaddir-admin-card<?php echo $i % 2 ? ' odd' : ''; ?>">
+                <div class="clble-row">
+                    <div class="clble-check">
+                        <?php echo HTMLHelper::_('grid.id', $i, $item->id); ?>
+                    </div>
+                    <div class="clble-order">
+                        <input type="text" name="order[]" size="3" value="<?php echo (int) $item->ordering; ?>" class="input-mini" style="text-align:center;">
+                    </div>
+                    <div class="clble-photo">
+                        <?php if (!empty($item->photo)): ?>
+                            <img src="<?php echo $this->escape($item->photo); ?>" alt="<?php echo $this->escape($item->name); ?>" class="clble-avatar">
+                        <?php else: ?>
+                            <span class="clble-avatar clble-avatar-empty"><span class="icon-user"></span></span>
+                        <?php endif; ?>
+                    </div>
+                    <div class="clble-body">
+                        <div class="clble-name">
+                            <a href="<?php echo Route::_('index.php?option=com_clubleaddir&view=leadership&id=' . $item->id); ?>">
+                                <?php echo $this->escape($item->name); ?>
+                            </a>
+                            <?php if (($item->status ?? 'active') === 'archived'): ?>
+                                <span class="badge badge-inverse" style="margin-left:6px;"><?php echo Text::_('COM_CLUBLEADDIR_STATUS_ARCHIVED'); ?></span>
+                            <?php endif; ?>
+                        </div>
+                        <div class="clble-meta">
+                            <span class="badge <?php echo $item->type_class; ?>"><?php echo $item->type_label; ?></span>
+                            <?php if (!empty($item->role)): ?>
+                                <span class="clble-role"><?php echo $this->escape($item->role); ?></span>
+                            <?php endif; ?>
+                            <?php if (!empty($item->league_name)): ?>
+                                <span class="clble-role muted"><?php echo $this->escape($item->league_name); ?></span>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                    <div class="clble-status">
+                        <?php echo HTMLHelper::_('jgrid.published', $item->published, $i, 'leadership.', true); ?>
+                    </div>
+                </div>
+            </div>
             <?php endforeach; ?>
-            <?php endif; ?>
-        </tbody>
-    </table>
+        </div>
+    <?php endif; ?>
 
     <input type="hidden" name="task" value="">
     <input type="hidden" name="boxchecked" value="0">
     <?php echo HTMLHelper::_('form.token'); ?>
 </form>
+
+<style>
+.clubleaddir-admin-cards { margin-top: 6px; }
+.clubleaddir-admin-card {
+    border: 1px solid #e3e3e3;
+    border-radius: 4px;
+    background: #fff;
+    margin-bottom: 8px;
+    padding: 8px 10px;
+}
+.clubleaddir-admin-card.odd { background: #fafafa; }
+.clble-row { display: flex; align-items: center; }
+.clble-check { width: 24px; flex: 0 0 24px; }
+.clble-order { width: 48px; flex: 0 0 48px; padding: 0 6px; }
+.clble-photo { width: 36px; flex: 0 0 36px; margin-right: 12px; }
+.clble-avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    display: inline-block;
+    background: #eee;
+}
+.clble-avatar-empty {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: #e9e9e9;
+    color: #bbb;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+}
+.clble-body { flex: 1 1 auto; min-width: 0; }
+.clble-name { font-weight: 600; font-size: 14px; }
+.clble-name a { color: #333; text-decoration: none; }
+.clble-name a:hover { color: #2a72b3; }
+.clble-meta { margin-top: 2px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.clble-role { color: #555; font-size: 12px; }
+.clble-status { width: 60px; flex: 0 0 60px; text-align: center; }
+</style>
