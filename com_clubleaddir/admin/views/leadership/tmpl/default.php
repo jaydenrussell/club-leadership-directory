@@ -138,6 +138,40 @@ function jSelectContact(id, name) {
     background: #eef0f2; border: 1px solid #e3e7ea; border-radius: 4px;
 }
 .clble-photo-col img.thumbnail { object-fit: cover; }
+
+/* ---- Mobile / responsive (Bootstrap 2 breakpoint at 767px) ---- */
+@media (max-width: 767px) {
+    .clble-edit-grid .row-fluid .span3,
+    .clble-edit-grid .row-fluid .span9,
+    .clble-edit-grid .row-fluid .span6,
+    .clble-edit-grid .row-fluid .span4,
+    .clble-edit-grid .row-fluid .span8 {
+        width: 100% !important;
+        margin-left: 0 !important;
+        float: none !important;
+    }
+    .clble-edit-grid .control-label {
+        width: 100% !important;
+        margin-bottom: 2px;
+        text-align: left !important;
+    }
+    .clble-edit-grid .controls { margin-left: 0 !important; }
+    /* Inputs fill the card on phones instead of fixed 350px. */
+    .clble-w-main, .clble-w-short,
+    .clble-edit-grid input[type="text"],
+    .clble-edit-grid input[type="email"],
+    .clble-edit-grid input[type="tel"],
+    .clble-edit-grid input[type="number"],
+    .clble-edit-grid select,
+    .clble-edit-grid textarea {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box;
+    }
+    .clble-photo-col { text-align: left; }
+    .input-append { display: flex; flex-wrap: wrap; }
+    .input-append .btn { margin-top: 6px; }
+}
 </style>
 
 <form action="<?php echo Route::_('index.php?option=com_clubleaddir&task=leadership.save'); ?>"

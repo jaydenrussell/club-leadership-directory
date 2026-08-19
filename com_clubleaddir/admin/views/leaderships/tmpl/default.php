@@ -28,7 +28,7 @@ $search            = $this->filters['search'];
 
 <form action="<?php echo Route::_('index.php?option=com_clubleaddir'); ?>" method="post" name="adminForm" id="adminForm">
 
-    <div class="row-fluid" style="margin-bottom: 14px;">
+    <div class="row-fluid" id="clubleaddirFilters" style="margin-bottom: 14px;">
         <div class="span8">
             <div class="input-append" style="margin-bottom: 0;">
                 <input type="text" name="filter_search" id="filter_search" class="input-xlarge"
@@ -68,6 +68,7 @@ $search            = $this->filters['search'];
         </div>
     </div>
 
+    <div class="clubleaddir-table-wrap">
     <table class="table table-striped" id="clubleaddirList">
         <thead>
             <tr>
@@ -120,6 +121,7 @@ $search            = $this->filters['search'];
             <?php endif; ?>
         </tbody>
     </table>
+    </div>
 
     <input type="hidden" name="task" value="">
     <input type="hidden" name="boxchecked" value="0">
@@ -132,9 +134,6 @@ $search            = $this->filters['search'];
 #clubleaddirList .clble-col-role { min-width: 160px; }
 #clubleaddirList .clble-col-type { min-width: 150px; }
 #clubleaddirList .clble-col-term { min-width: 110px; }
-</style>
-
-<style>
 .clble-avatar-sm {
     width: 36px; height: 36px;
     border-radius: 50%;
@@ -153,5 +152,22 @@ $search            = $this->filters['search'];
     justify-content: center;
     font-size: 18px;
     vertical-align: middle;
+}
+
+/* ---- Mobile / responsive (Bootstrap 2 breakpoint at 767px) ---- */
+@media (max-width: 767px) {
+    /* Stack the filter bar and let dropdowns fill width. */
+    #clubleaddirFilters .span8,
+    #clubleaddirFilters .span4 {
+        width: 100% !important;
+        margin-left: 0 !important;
+        float: none !important;
+        text-align: left !important;
+    }
+    #clubleaddirFilters select { width: 100% !important; max-width: 100%; box-sizing: border-box; margin-bottom: 6px; }
+    #clubleaddirFilters .input-append { width: 100%; }
+    #clubleaddirFilters .input-xlarge { width: 100%; box-sizing: border-box; }
+    /* Keep the table readable: scroll horizontally instead of crushing columns. */
+    .clubleaddir-table-wrap { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
 }
 </style>
