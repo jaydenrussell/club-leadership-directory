@@ -12,12 +12,36 @@ use Joomla\CMS\HTML\HTMLHelper;
 use Joomla\CMS\Language\Text;
 use Joomla\CMS\Router\Route;
 
-HTMLHelper::_('behavior.core');
-HTMLHelper::_('behavior.formvalidator');
+// NOTE: do NOT call HTMLHelper::_('behavior.core') or
+// HTMLHelper::_('behavior.formvalidator') here. The JHtmlBehavior helper class
+// was removed in Joomla 3.10 and calling either fatals the admin (HTTP 500).
+// Core behaviors and the form validator script are loaded automatically by the
+// framework; we provide a Joomla.submitbutton shim so the toolbar Save/Apply
+// buttons validate + submit via native HTML5 constraints.
 
 $item   = $this->item;
 $isEdit = !empty($item->id);
 ?>
+
+<script>
+function toggleLeagueFields(type) {
+    var leagueFields = document.getElementById('league-fields');
+    if (type === 'director_league') {
+        leagueFields.classList.remove('d-none');
+    } else {
+        leagueFields.classList.add('d-none');
+    }
+}
+// Joomla 3.10 submit shim (replaces behavior.formvalidator).
+if (typeof Joomla === 'undefined') { var Joomla = {}; }
+Joomla.submitbutton = function (task) {
+    if (task === 'leadership.cancel' || document.formvalidator && document.formvalidator.isValid(document.getElementById('adminForm'))) {
+        Joomla.submitform(task, document.getElementById('adminForm'));
+    } else if (document.getElementById('adminForm').checkValidity()) {
+        Joomla.submitform(task, document.getElementById('adminForm'));
+    }
+};
+</script>
 
 <form action="<?php echo Route::_('index.php?option=com_clubleaddir&task=leadership.save'); ?>"
       method="post" name="adminForm" id="adminForm" class="form-validate" enctype="multipart/form-data">
@@ -157,14 +181,3 @@ $isEdit = !empty($item->id);
     <input type="hidden" name="task" value="leadership.save">
     <?php echo HTMLHelper::_('form.token'); ?>
 </form>
-
-<script>
-function toggleLeagueFields(type) {
-    var leagueFields = document.getElementById('league-fields');
-    if (type === 'director_league') {
-        leagueFields.classList.remove('d-none');
-    } else {
-        leagueFields.classList.add('d-none');
-    }
-}
-</script>
