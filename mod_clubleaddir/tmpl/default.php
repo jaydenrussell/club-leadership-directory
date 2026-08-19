@@ -20,7 +20,7 @@ if (!$hasContent) {
     return;
 }
 
-function clubleaddirRenderCard($person, $showPhoto, $showContact, $contactHiddenText)
+function clubleaddirRenderCard($person, $showPhoto, $showContact, $contactHiddenText, $showTerm)
 {
     $initials  = clubleaddirGetInitials($person->name);
     $photoHtml = '<div class="' . ($showPhoto ? 'clubleaddir-card-photo is-visible' : 'clubleaddir-card-photo') . '">';
@@ -39,8 +39,17 @@ function clubleaddirRenderCard($person, $showPhoto, $showContact, $contactHidden
     if (!empty($person->role)) {
         $metaHtml .= '<div class="clubleaddir-card-role">' . htmlspecialchars($person->role, ENT_QUOTES, 'UTF-8') . '</div>';
     }
-    if (!empty($person->term)) {
-        $metaHtml .= '<div class="clubleaddir-card-term">' . htmlspecialchars($person->term, ENT_QUOTES, 'UTF-8') . '</div>';
+    if ($showTerm) {
+        if ($person->type === 'staff') {
+            $sy = (int) ($person->start_year ?? 0);
+            $ey = (int) ($person->end_year ?? 0);
+            if ($sy > 0) {
+                $end = $ey > 0 ? (string) $ey : Text::_('MOD_CLUBLEADDIRECTION_EMPLOYED_CURRENT');
+                $metaHtml .= '<div class="clubleaddir-card-term">' . htmlspecialchars($sy . ' &ndash; ' . $end, ENT_QUOTES, 'UTF-8') . '</div>';
+            }
+        } elseif (!empty($person->term)) {
+            $metaHtml .= '<div class="clubleaddir-card-term">' . htmlspecialchars($person->term, ENT_QUOTES, 'UTF-8') . '</div>';
+        }
     }
 
     $contactHtml = clubleaddirRenderContactHtml($person, $showContact, $contactHiddenText);
@@ -137,7 +146,7 @@ function clubleaddirGetInitials($name)
         </h3>
         <div class="clubleaddir-grid clubleaddir-grid--officers">
             <?php foreach ($officers as $person): ?>
-                <?php echo clubleaddirRenderCard($person, $showPhotosOfficers, $showContact, $contactHiddenText); ?>
+                <?php echo clubleaddirRenderCard($person, $showPhotosOfficers, $showContact, $contactHiddenText, $showTerm); ?>
             <?php endforeach; ?>
         </div>
     </section>
@@ -152,7 +161,7 @@ function clubleaddirGetInitials($name)
         <?php if (!empty($directors)): ?>
         <div class="clubleaddir-grid clubleaddir-grid--directors">
             <?php foreach ($directors as $person): ?>
-                <?php echo clubleaddirRenderCard($person, $showPhotosDirectors, $showContact, $contactHiddenText); ?>
+                <?php echo clubleaddirRenderCard($person, $showPhotosDirectors, $showContact, $contactHiddenText, $showTerm); ?>
             <?php endforeach; ?>
         </div>
         <?php endif; ?>

@@ -7,7 +7,7 @@
     <license>GNU General Public License version 2 or later</license>
     <authorEmail>info@simcoecurlingclub.ca</authorEmail>
     <authorUrl>https://simcoecurlingclub.ca</authorUrl>
-    <version>2.0.25</version>
+    <version>2.0.26</version>
     <description>MOD_CLUBLEADDIRECTION_DESC</description>
 
     <files>
@@ -50,6 +50,10 @@
                     <option value="0">JNO</option>
                 </field>
                 <field name="show_photos_staff" type="radio" label="MOD_CLUBLEADDIRECTION_FIELD_SHOW_PHOTOS_STAFF_LABEL" default="0" class="btn-group btn-group-yesno">
+                    <option value="1">JYES</option>
+                    <option value="0">JNO</option>
+                </field>
+                <field name="show_term" type="radio" label="MOD_CLUBLEADDIRECTION_FIELD_SHOW_TERM_LABEL" description="MOD_CLUBLEADDIRECTION_FIELD_SHOW_TERM_DESC" default="1" class="btn-group btn-group-yesno">
                     <option value="1">JYES</option>
                     <option value="0">JNO</option>
                 </field>

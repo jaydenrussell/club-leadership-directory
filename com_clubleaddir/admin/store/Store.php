@@ -91,6 +91,8 @@ class ClubleaddirStoreSqlite extends ClubleaddirStoreBackend
             'role TEXT NOT NULL DEFAULT \'\', ' .
             'league_name TEXT NOT NULL DEFAULT \'\', ' .
             'term TEXT NOT NULL DEFAULT \'\', ' .
+            'start_year INTEGER NOT NULL DEFAULT 0, ' .
+            'end_year INTEGER NOT NULL DEFAULT 0, ' .
             'bio TEXT NOT NULL DEFAULT \'\', ' .
             'photo TEXT NOT NULL DEFAULT \'\', ' .
             'email TEXT NOT NULL DEFAULT \'\', ' .
@@ -184,7 +186,7 @@ class ClubleaddirStoreSqlite extends ClubleaddirStoreBackend
 
     public function update($id, array $data)
     {
-        $editable = array('name', 'type', 'role', 'league_name', 'term', 'bio', 'photo',
+        $editable = array('name', 'type', 'role', 'league_name', 'term', 'start_year', 'end_year', 'bio', 'photo',
             'email', 'phone', 'ordering', 'published', 'status', 'modified', 'modified_by');
 
         $sets = array();
@@ -319,6 +321,7 @@ class ClubleaddirStoreJson extends ClubleaddirStoreBackend
     {
         $out = array();
         foreach ($this->data['records'] as $r) {
+            $r = $this->withDefaults($r);
             if (isset($filters['type']) && $filters['type'] !== '' && $filters['type'] !== null && $r['type'] !== $filters['type']) {
                 continue;
             }
@@ -355,6 +358,20 @@ class ClubleaddirStoreJson extends ClubleaddirStoreBackend
         return $out;
     }
 
+    private function withDefaults(array $r)
+    {
+        static $defaults = array(
+            'start_year' => 0,
+            'end_year'   => 0,
+        );
+        foreach ($defaults as $k => $v) {
+            if (!isset($r[$k])) {
+                $r[$k] = $v;
+            }
+        }
+        return $r;
+    }
+
     public function getById($id)
     {
         foreach ($this->data['records'] as $r) {
@@ -362,7 +379,7 @@ class ClubleaddirStoreJson extends ClubleaddirStoreBackend
                 continue;
             }
             if ((int) $r['id'] === (int) $id) {
-                return (object) $r;
+                return (object) $this->withDefaults($r);
             }
         }
         return null;

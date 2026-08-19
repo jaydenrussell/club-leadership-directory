@@ -34,6 +34,7 @@ $showPhotosDirectors = (int) $paramsData->get('show_photos_directors', 0);
 $showPhotosStaff     = (int) $paramsData->get('show_photos_staff', 0);
 $showContact     = !$paramsData->get('require_login_for_contact', 1) || !$user->guest;
 $contactHiddenText   = $paramsData->get('contact_hidden_text', Text::_('MOD_CLUBLEADDIRECTION_LOGIN_TO_VIEW'));
+$showTerm        = (int) $paramsData->get('show_term', 1);
 
 $rawData = ModClubleaddirHelper::getLeadership();
 

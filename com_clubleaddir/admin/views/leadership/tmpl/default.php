@@ -60,6 +60,16 @@ $officerRoles = array(
     'Secretary'       => Text::_('COM_CLUBLEADDIR_ROLE_SECRETARY'),
     'Treasurer'      => Text::_('COM_CLUBLEADDIR_ROLE_TREASURER'),
 );
+
+// Default Term for a new (Add) record: current season.
+// Season starts in (assumed) June: on/after June -> YEAR-(YEAR+1), else (YEAR-1)-YEAR.
+$thisYear  = (int) date('Y');
+$thisMonth = (int) date('n');
+if ($thisMonth >= 6) {
+    $defaultTerm = $thisYear . '-' . ($thisYear + 1);
+} else {
+    $defaultTerm = ($thisYear - 1) . '-' . $thisYear;
+}
 ?>
 
 <script>
@@ -90,6 +100,11 @@ function toggleTypeFields(type) {
         roleHidden.value = '';
         roleText.value = '';
         roleSelect.value = '';
+    }
+    // Staff use employment years instead of a "term".
+    var staffWrap = document.getElementById('staff-fields');
+    if (staffWrap) {
+        staffWrap.style.display = (type === 'staff') ? 'block' : 'none';
     }
 }
 function toggleLeagueFields(type) { toggleTypeFields(type); }
@@ -304,7 +319,28 @@ function jClubleaddirSelectContact(id, name) {
                         <label for="term"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_TERM'); ?></label>
                     </div>
                     <div class="controls">
-                        <input type="text" name="jform[term]" id="term" class="inputbox clble-w-short" value="<?php echo $this->escape($item->term); ?>" placeholder="2025-2027">
+                        <input type="text" name="jform[term]" id="term" class="inputbox clble-w-short" value="<?php echo $this->escape($item->term ?: ($isEdit ? '' : $defaultTerm)); ?>" placeholder="2025-2027">
+                    </div>
+                </div>
+
+                <div id="staff-fields" style="display:<?php echo $item->type === 'staff' ? 'block' : 'none'; ?>;">
+                    <div class="control-group">
+                        <div class="control-label">
+                            <label for="start_year"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_START_YEAR'); ?></label>
+                        </div>
+                        <div class="controls">
+                            <input type="number" name="jform[start_year]" id="start_year" class="inputbox clble-w-short" value="<?php echo (int) $item->start_year; ?>" placeholder="<?php echo date('Y'); ?>">
+                            <p class="help-block"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_START_YEAR_HELP'); ?></p>
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <div class="control-label">
+                            <label for="end_year"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_END_YEAR'); ?></label>
+                        </div>
+                        <div class="controls">
+                            <input type="number" name="jform[end_year]" id="end_year" class="inputbox clble-w-short" value="<?php echo (int) $item->end_year; ?>" placeholder="<?php echo Text::_('COM_CLUBLEADDIR_FIELD_END_YEAR_CURRENT'); ?>">
+                            <p class="help-block"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_END_YEAR_HELP'); ?></p>
+                        </div>
                     </div>
                 </div>
 

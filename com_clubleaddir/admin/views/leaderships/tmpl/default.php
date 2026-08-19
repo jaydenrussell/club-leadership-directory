@@ -114,7 +114,21 @@ $search            = $this->filters['search'];
                             <div class="muted" style="font-size:11px;"><?php echo $this->escape($item->league_name); ?></div>
                         <?php endif; ?>
                     </td>
-                    <td class="clble-col-term nowrap"><?php echo $this->escape($item->term ?: '—'); ?></td>
+                    <td class="clble-col-term nowrap">
+                        <?php
+                        if ($item->type === 'staff') {
+                            $sy = (int) ($item->start_year ?? 0);
+                            $ey = (int) ($item->end_year ?? 0);
+                            if ($sy > 0) {
+                                echo $this->escape($sy . ' – ' . ($ey > 0 ? $ey : 'Current'));
+                            } else {
+                                echo '—';
+                            }
+                        } else {
+                            echo $this->escape($item->term ?: '—');
+                        }
+                        ?>
+                    </td>
                     <td class="center"><?php echo HTMLHelper::_('jgrid.published', $item->published, $i, 'leadership.', true); ?></td>
                 </tr>
                 <?php endforeach; ?>
