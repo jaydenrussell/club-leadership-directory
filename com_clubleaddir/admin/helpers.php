@@ -9,12 +9,15 @@
 defined('_JEXEC') or die;
 
 use Joomla\CMS\Factory;
-use Joomla\CMS\Helper\ContentHelper;
 use Joomla\CMS\HTML\HTMLHelper;
 use Joomla\CMS\Language\Text;
 use Joomla\CMS\Router\Route;
 
-class ClubleaddirHelper extends ContentHelper
+// Intentionally NOT extending Joomla\CMS\Helper\ContentHelper: on PHP 8.0 its
+// getActions($component = '', $section = '', $id = 0) signature is enforced
+// strictly and our parameter-less override fatals with "Declaration ... must be
+// compatible". All helper methods are self-contained, so a plain class is used.
+class ClubleaddirHelper
 {
     public static function addSubmenu($submenu = null)
     {
