@@ -1,6 +1,6 @@
 /**
  * Club Leadership Module - Photo Toggle JS
- * Simcoe Curling Club
+ * Jayden Russell
  * Toggles photo visibility and has-photo class on cards
  */
 

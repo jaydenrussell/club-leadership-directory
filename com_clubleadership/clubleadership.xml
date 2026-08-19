@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <extension type="component" version="3.0" method="upgrade">
     <name>COM_CLUBLEADERSHIP</name>
-    <author>Simcoe Curling Club</author>
+    <author>Jayden Russell</author>
     <creationDate>August 2026</creationDate>
-    <copyright>Simcoe Curling Club</copyright>
+    <copyright>Jayden Russell</copyright>
     <license>GNU General Public License version 2 or later</license>
     <authorEmail>info@simcoecurlingclub.ca</authorEmail>
     <authorUrl>https://simcoecurlingclub.ca</authorUrl>
