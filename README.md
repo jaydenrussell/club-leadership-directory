@@ -38,7 +38,11 @@ file with identical behaviour.
 | Storage | `pdo_sqlite` (preferred) — **or** any PHP install for the JSON fallback |
 | Web server | Apache (the data folder is protected by a generated `.htaccess`). On nginx/LiteSpeed add your own `deny` rule — see *Security* below. |
 
-## Installation (end users)
+## Install (one file, one click)
+
+The extension ships as a **single package**: **`pkg_clubleadership.zip`**. There
+is no separate component or module zip — the package installs (and contains)
+both.
 
 1. Download **`pkg_clubleadership.zip`** from the
    [Releases](../../releases) page.
@@ -50,15 +54,30 @@ file with identical behaviour.
 A fresh install starts with an empty roster — add your current board, mark the
 records `published = Yes` and `status = active`.
 
+## Update
+
+The package is pre-wired to a Joomla update server. After installing, updates
+show up under **Components → Joomla! Update** (or **System → Update** depending
+on your Joomla 3 build) — click **Find Updates** and install, exactly like
+updating core. Re-uploading `pkg_clubleadership.zip` via **Install** also
+upgrades in place (the manifests use `method="upgrade"`).
+
+To cut a new release:
+- bump `<version>` in `pkg/pkg_clubleadership.xml` (and the child manifests if you
+  changed them),
+- update `version` and the `downloadurl` in `update.xml`,
+- rebuild + tag + publish the new `pkg_clubleadership.zip` to a matching
+  GitHub release.
+
 ## Build from source
 
-The repo contains the raw extension files plus a small Python assembler (no
-`zip` binary required):
+The repo holds the raw extension files plus a small Python assembler (no `zip`
+binary required). It produces **only** the single package zip:
 
 ```bash
 cd club-leadership
 python3 build_zips.py
-# produces ../pkg_out/com_clubleadership.zip, mod_clubleadership.zip, pkg_clubleadership.zip
+# produces ../pkg_out/pkg_clubleadership.zip  (com + mod nested inside)
 ```
 
 Install `pkg_out/pkg_clubleadership.zip`.

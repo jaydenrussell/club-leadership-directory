@@ -12,6 +12,10 @@
 
     <files>
         <file type="component" id="com_clubleadership" priority="1" src="com_clubleadership.zip">com_clubleadership.zip</file>
-        <file type="module" id="mod_clubleadership" client="site" priority="2" src="mod_clubleadership.zip">mod_clubleadership.zip</module>
+        <file type="module" id="mod_clubleadership" client="site" priority="2" src="mod_clubleadership.zip">mod_clubleadership.zip</file>
     </files>
+
+    <updateservers>
+        <server type="extension" name="Club Leadership Update" priority="1">https://raw.githubusercontent.com/jaydenrussell/club-leadership/master/update.xml</server>
+    </updateservers>
 </extension>
