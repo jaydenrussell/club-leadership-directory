@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<config>
+	<fieldset name="component" label="COM_CLUBLEADDIR_CONFIG_COMPONENT_LABEL">
+		<field
+			name="note"
+			type="note"
+			label="COM_CLUBLEADDIR_CONFIG_NOTE_LABEL"
+			description="COM_CLUBLEADDIR_CONFIG_NOTE_DESC"
+		/>
+	</fieldset>
+</config>
