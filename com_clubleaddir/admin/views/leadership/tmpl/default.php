@@ -98,10 +98,41 @@ function jSelectContact(id, name) {
 </script>
 
 <style>
+/* Lightly themed cards to group sections (off-white, slightly different from white). */
+.clble-card {
+    background: #f7f8fa;
+    border: 1px solid #e3e7ea;
+    border-radius: 6px;
+    padding: 16px 18px 4px;
+    margin-bottom: 18px;
+}
+.clble-card > legend,
+.clble-card-title {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #44515e;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    margin: 0 0 12px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #e3e7ea;
+}
 .clble-invalid { border-color: #b94a48 !important; box-shadow: 0 0 0 1px #b94a48 !important; }
-.clble-edit-grid .control-label { width: 180px; }
-.clble-edit-grid .controls { margin-left: 200px; }
+/* Uniform field widths so the form reads consistently. */
+.clble-w-main { width: 350px; max-width: 100%; }
+.clble-w-short { width: 160px; max-width: 100%; }
+.clble-edit-grid .control-label { width: 160px; }
+.clble-edit-grid .controls { margin-left: 180px; }
 .clble-contact-picked { font-size: 12px; color: #555; margin-top: 4px; }
+.clble-photo-col { text-align: center; }
+.clble-photo-col .thumbnail,
+.clble-photo-col .clble-photo-placeholder {
+    width: 140px; height: 140px; line-height: 140px;
+    text-align: center; color: #bbb; margin: 0 auto 8px;
+    background: #eef0f2; border: 1px solid #e3e7ea; border-radius: 4px;
+}
+.clble-photo-col img.thumbnail { object-fit: cover; }
 </style>
 
 <form action="<?php echo Route::_('index.php?option=com_clubleaddir&task=leadership.save'); ?>"
@@ -110,19 +141,19 @@ function jSelectContact(id, name) {
     <div class="row-fluid clble-edit-grid">
         <!-- MAIN COLUMN -->
         <div class="span8">
-            <fieldset class="adminform">
-                <legend><?php echo Text::_('COM_CLUBLEADDIR_LEADERSHIP_DETAILS'); ?></legend>
+            <fieldset class="adminform clble-card">
+                <legend class="clble-card-title"><?php echo Text::_('COM_CLUBLEADDIR_LEADERSHIP_DETAILS'); ?></legend>
 
                 <div class="row-fluid">
-                    <div class="span3" style="text-align:center;">
+                    <div class="span3 clble-photo-col">
                         <div class="control-group">
                             <div class="controls">
                                 <?php if ($item->photo): ?>
                                     <img src="<?php echo $this->escape(ClubleaddirHelper::photoUrl($item->photo)); ?>" alt="<?php echo $this->escape($item->name); ?>"
-                                         class="thumbnail" style="max-width:150px;max-height:150px;display:inline-block;margin-bottom:8px;">
+                                         class="thumbnail" style="max-width:140px;max-height:140px;display:inline-block;margin-bottom:8px;">
                                     <p class="help-block" style="word-break:break-all;font-size:11px;"><?php echo $this->escape($item->photo); ?></p>
                                 <?php else: ?>
-                                    <div class="thumbnail" style="width:150px;height:150px;line-height:150px;text-align:center;color:#bbb;margin:0 auto 8px;"><span class="icon-user" style="font-size:48px;"></span></div>
+                                    <div class="clble-photo-placeholder"><span class="icon-user" style="font-size:46px;"></span></div>
                                 <?php endif; ?>
                                 <input type="file" name="jform[photo]" id="photo" class="inputbox" accept="image/*">
                                 <p class="help-block"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_PHOTO_HELP'); ?></p>
@@ -135,7 +166,7 @@ function jSelectContact(id, name) {
                                 <label for="name" class="required"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_NAME'); ?> <span class="star">*</span></label>
                             </div>
                             <div class="controls">
-                                <input type="text" name="jform[name]" id="name" class="input-xxlarge" value="<?php echo $this->escape($item->name); ?>" required>
+                                <input type="text" name="jform[name]" id="name" class="inputbox clble-w-main" value="<?php echo $this->escape($item->name); ?>" required>
                             </div>
                         </div>
 
@@ -144,7 +175,7 @@ function jSelectContact(id, name) {
                                 <label for="type" class="required"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_TYPE'); ?> <span class="star">*</span></label>
                             </div>
                             <div class="controls">
-                                <select name="jform[type]" id="type" class="input-xxlarge" required onchange="toggleLeagueFields(this.value)">
+                                <select name="jform[type]" id="type" class="inputbox clble-w-main" required onchange="toggleLeagueFields(this.value)">
                                     <option value="officer" <?php echo $item->type === 'officer' ? 'selected' : ''; ?>><?php echo Text::_('COM_CLUBLEADDIR_TYPE_OFFICER'); ?></option>
                                     <option value="director" <?php echo $item->type === 'director' ? 'selected' : ''; ?>><?php echo Text::_('COM_CLUBLEADDIR_TYPE_DIRECTOR'); ?></option>
                                     <option value="director_league" <?php echo $item->type === 'director_league' ? 'selected' : ''; ?>><?php echo Text::_('COM_CLUBLEADDIR_TYPE_DIRECTOR_LEAGUE'); ?></option>
@@ -158,7 +189,7 @@ function jSelectContact(id, name) {
                                 <label for="role"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_ROLE'); ?></label>
                             </div>
                             <div class="controls">
-                                <input type="text" name="jform[role]" id="role" class="input-xxlarge" value="<?php echo $this->escape($item->role); ?>">
+                                <input type="text" name="jform[role]" id="role" class="inputbox clble-w-main" value="<?php echo $this->escape($item->role); ?>">
                             </div>
                         </div>
                     </div>
@@ -170,7 +201,7 @@ function jSelectContact(id, name) {
                             <label for="league_name" class="required"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_LEAGUE_NAME'); ?> <span class="star">*</span></label>
                         </div>
                         <div class="controls">
-                            <select name="jform[league_name]" id="league_name" class="input-xxlarge">
+                            <select name="jform[league_name]" id="league_name" class="inputbox clble-w-main">
                                 <option value=""><?php echo Text::_('COM_CLUBLEADDIR_SELECT_LEAGUE'); ?></option>
                                 <?php foreach ($leagueOptions as $val => $label): ?>
                                     <option value="<?php echo $val; ?>" <?php echo ($item->league_name ?? '') === $val ? 'selected' : ''; ?>><?php echo $label; ?></option>
@@ -186,7 +217,7 @@ function jSelectContact(id, name) {
                         <label for="term"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_TERM'); ?></label>
                     </div>
                     <div class="controls">
-                        <input type="text" name="jform[term]" id="term" class="input-medium" value="<?php echo $this->escape($item->term); ?>" placeholder="2025-2027">
+                        <input type="text" name="jform[term]" id="term" class="inputbox clble-w-short" value="<?php echo $this->escape($item->term); ?>" placeholder="2025-2027">
                     </div>
                 </div>
 
@@ -195,13 +226,13 @@ function jSelectContact(id, name) {
                         <label for="bio"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_BIO'); ?></label>
                     </div>
                     <div class="controls">
-                        <textarea name="jform[bio]" id="bio" class="input-xxlarge" rows="4"><?php echo $this->escape($item->bio); ?></textarea>
+                        <textarea name="jform[bio]" id="bio" class="inputbox clble-w-main" rows="4" style="height:auto;"><?php echo $this->escape($item->bio); ?></textarea>
                     </div>
                 </div>
             </fieldset>
 
-            <fieldset class="adminform">
-                <legend><?php echo Text::_('COM_CLUBLEADDIR_CONTACT_INFO'); ?></legend>
+            <fieldset class="adminform clble-card">
+                <legend class="clble-card-title"><?php echo Text::_('COM_CLUBLEADDIR_CONTACT_INFO'); ?></legend>
 
                 <div class="control-group">
                     <div class="control-label">
@@ -209,7 +240,7 @@ function jSelectContact(id, name) {
                     </div>
                     <div class="controls">
                         <div class="input-append">
-                            <input type="number" name="jform[contact_id]" id="contact_id" class="input-medium" style="width:120px;"
+                            <input type="number" name="jform[contact_id]" id="contact_id" class="inputbox clble-w-short" style="width:140px;"
                                    value="<?php echo (int) $item->contact_id; ?>">
                             <?php if ($hasContactComponent): ?>
                             <a class="btn modal btn-contact-pick" title="<?php echo Text::_('COM_CLUBLEADDIR_FIELD_CONTACT_ID_HELP'); ?>"
@@ -247,7 +278,7 @@ function jSelectContact(id, name) {
                                 <label for="email"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_EMAIL'); ?></label>
                             </div>
                             <div class="controls">
-                                <input type="email" name="jform[email]" id="email" class="input-xxlarge" value="<?php echo $this->escape($item->email); ?>">
+                                <input type="email" name="jform[email]" id="email" class="inputbox clble-w-main" value="<?php echo $this->escape($item->email); ?>">
                                 <p class="help-block muted" style="font-size:11px;">@simcoecurlingclub.ca</p>
                             </div>
                         </div>
@@ -258,7 +289,7 @@ function jSelectContact(id, name) {
                                 <label for="phone"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_PHONE'); ?></label>
                             </div>
                             <div class="controls">
-                                <input type="tel" name="jform[phone]" id="phone" class="input-xxlarge" value="<?php echo $this->escape($item->phone); ?>" placeholder="705-555-0100">
+                                <input type="tel" name="jform[phone]" id="phone" class="inputbox clble-w-main" value="<?php echo $this->escape($item->phone); ?>" placeholder="705-555-0100">
                             </div>
                         </div>
                     </div>
@@ -268,15 +299,15 @@ function jSelectContact(id, name) {
 
         <!-- SIDE COLUMN -->
         <div class="span4">
-            <fieldset class="adminform">
-                <legend><?php echo Text::_('COM_CLUBLEADDIR_PUBLISHING'); ?></legend>
+            <fieldset class="adminform clble-card">
+                <legend class="clble-card-title"><?php echo Text::_('COM_CLUBLEADDIR_PUBLISHING'); ?></legend>
 
                 <div class="control-group">
                     <div class="control-label">
                         <label for="status"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_BOARD_STATUS'); ?></label>
                     </div>
                     <div class="controls">
-                        <select name="jform[status]" id="status" class="inputbox" style="width:100%;">
+                        <select name="jform[status]" id="status" class="inputbox clble-w-main">
                             <option value="active" <?php echo ($item->status ?? 'active') === 'active' ? 'selected' : ''; ?>><?php echo Text::_('COM_CLUBLEADDIR_STATUS_ACTIVE'); ?></option>
                             <option value="archived" <?php echo ($item->status ?? 'active') === 'archived' ? 'selected' : ''; ?>><?php echo Text::_('COM_CLUBLEADDIR_STATUS_ARCHIVED'); ?></option>
                         </select>
@@ -289,7 +320,7 @@ function jSelectContact(id, name) {
                         <label for="published"><?php echo Text::_('JSTATUS'); ?></label>
                     </div>
                     <div class="controls">
-                        <select name="jform[published]" id="published" class="inputbox" style="width:100%;">
+                        <select name="jform[published]" id="published" class="inputbox clble-w-main">
                             <option value="1" <?php echo $item->published ? 'selected' : ''; ?>><?php echo Text::_('JPUBLISHED'); ?></option>
                             <option value="0" <?php echo !$item->published ? 'selected' : ''; ?>><?php echo Text::_('JUNPUBLISHED'); ?></option>
                         </select>
@@ -301,7 +332,7 @@ function jSelectContact(id, name) {
                         <label for="ordering"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_ORDERING'); ?></label>
                     </div>
                     <div class="controls">
-                        <input type="number" name="jform[ordering]" id="ordering" class="input-medium" value="<?php echo (int) $item->ordering; ?>">
+                        <input type="number" name="jform[ordering]" id="ordering" class="inputbox clble-w-short" value="<?php echo (int) $item->ordering; ?>">
                     </div>
                 </div>
 
