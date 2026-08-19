@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <extension type="package" version="3.0" method="upgrade">
     <name>Club Leadership Directory</name>
+    <packagename>pkg_clubleaddir</packagename>
     <author>Jayden Russell</author>
     <creationDate>August 2026</creationDate>
     <copyright>Jayden Russell</copyright>
