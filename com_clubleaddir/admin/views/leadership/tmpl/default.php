@@ -20,6 +20,24 @@ use Joomla\CMS\Uri\Uri;
 // submit on empty required fields and outlines them with a red border.
 
 $item   = $this->item;
+// Normalise: legacy records in the store may lack newer columns. Provide safe
+// defaults so every property access below is defined (PHP 8.0 warns on reads
+// of undefined stdClass properties).
+$itemDefaults = array(
+    'id' => 0, 'name' => '', 'type' => 'director', 'role' => '', 'league_name' => '',
+    'term' => '', 'bio' => '', 'photo' => '', 'email' => '', 'phone' => '',
+    'contact_id' => 0, 'ordering' => 0, 'published' => 1, 'status' => 'active',
+    'created' => '', 'modified' => '',
+);
+if (is_object($item)) {
+    foreach ($itemDefaults as $k => $v) {
+        if (!property_exists($item, $k)) {
+            $item->$k = $v;
+        }
+    }
+} else {
+    $item = (object) $itemDefaults;
+}
 $isEdit = !empty($item->id);
 $hasContactComponent = ComponentHelper::isEnabled('com_contact');
 
@@ -209,6 +227,12 @@ function jSelectContact(id, name) {
                             <?php if ($hasContactComponent): ?>
                                 <?php echo Text::_('COM_CLUBLEADDIR_FIELD_CONTACT_ID_HELP'); ?>
                                 <span id="contact_name_display"><?php echo ((int)$item->contact_id ? Text::_('COM_CLUBLEADDIR_CONTACT_ID_SET') : ''); ?></span>
+                                <?php if ((int) $item->contact_id): ?>
+                                    <a class="btn btn-small" style="margin-left:8px;"
+                                       href="<?php echo Route::_('index.php?option=com_contact&task=contact.edit&id=' . (int) $item->contact_id); ?>" target="_blank">
+                                        <span class="icon-link"></span> <?php echo Text::_('COM_CLUBLEADDIR_VIEW_CONTACT'); ?>
+                                    </a>
+                                <?php endif; ?>
                             <?php else: ?>
                                 <?php echo Text::_('COM_CLUBLEADDIR_CONTACT_COMPONENT_MISSING'); ?>
                             <?php endif; ?>
