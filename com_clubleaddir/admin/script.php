@@ -25,16 +25,64 @@ class ComClubleaddirInstallerScript
             @mkdir($dir, 0755, true);
         }
 
-        // Apache: deny direct web access to the data file.
+        // Apache: deny direct web access to the data file, using syntax that
+        // works on both Apache 2.2 and 2.4.
         $ht = $dir . '/.htaccess';
         if (is_dir($dir) && !is_file($ht)) {
-            @file_put_contents($ht, "Deny from all\n");
+            @file_put_contents($ht,
+                "<Files *>\n"
+              . "    Require all denied\n"
+              . "</Files>\n"
+              . "# Apache 2.2 fallback\n"
+              . "<IfModule !mod_authz_core.c>\n"
+              . "    Deny from all\n"
+              . "</IfModule>\n"
+            );
         }
 
         // Any other server: empty index to prevent directory listing.
         $idx = $dir . '/index.html';
         if (is_dir($dir) && !is_file($idx)) {
             @file_put_contents($idx, '');
+        }
+
+        $this->initUploadDir();
+    }
+
+    /**
+     * Create the public photo upload directory and lock down script execution
+     * inside it as defense-in-depth (uploads are MIME-checked, so no RCE is
+     * possible, but we never want a user-supplied file executed as code).
+     */
+    private function initUploadDir()
+    {
+        $dir = JPATH_ROOT . '/images/clubleaddir/photos';
+
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0755, true);
+        }
+
+        if (is_dir($dir)) {
+            $ht = $dir . '/.htaccess';
+            if (!is_file($ht)) {
+                @file_put_contents($ht,
+                    "<IfModule mod_php.c>\n"
+                  . "    php_flag engine off\n"
+                  . "</IfModule>\n"
+                  . "<IfModule mod_negotiation.c>\n"
+                  . "    Options -MultiViews\n"
+                  . "</IfModule>\n"
+                  . "AddType text/plain .php .phtml .php3 .php4 .php5 .php7 .pht .phps .cgi .pl .py .asp .aspx .jsp .shtml\n"
+                  . "<FilesMatch \"\\.(php|phtml|pht|phps|cgi|pl|py|asp|aspx|jsp|shtml)$\">\n"
+                  . "    Require all denied\n"
+                  . "</FilesMatch>\n"
+                );
+            }
+
+            $idx = $dir . '/index.html';
+            if (!is_file($idx)) {
+                @file_put_contents($idx, '');
+            }
         }
     }
 

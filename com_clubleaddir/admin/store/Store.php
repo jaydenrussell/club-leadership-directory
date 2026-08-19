@@ -264,8 +264,12 @@ class ClubleaddirStoreJson extends ClubleaddirStoreBackend
         }
         if (is_file($this->file)) {
             $raw = file_get_contents($this->file);
-            $dec = json_decode($raw, true);
-            if (is_array($dec) && isset($dec['records'])) {
+            try {
+                $dec = json_decode($raw, true, 512, JSON_THROW_ON_ERROR);
+            } catch (\JsonException $e) {
+                $dec = null;
+            }
+            if (is_array($dec) && isset($dec['records']) && is_array($dec['records'])) {
                 $this->data = $dec;
             }
         }
@@ -333,6 +337,9 @@ class ClubleaddirStoreJson extends ClubleaddirStoreBackend
     public function getById($id)
     {
         foreach ($this->data['records'] as $r) {
+            if (!is_array($r) || !isset($r['id'])) {
+                continue;
+            }
             if ((int) $r['id'] === (int) $id) {
                 return (object) $r;
             }
