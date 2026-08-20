@@ -67,16 +67,30 @@ def write_checksum_to_update_xml(sha):
 
 
 def bump_update_xml_versions(version):
-    """Keep the extensionset wrapper and the full update payload on the same version."""
-    for path in (UPDATE_XML, UPDATE_FULL_XML):
-        with open(path, 'r', encoding='utf-8') as fh:
-            xml = fh.read()
-        xml = re.sub(r'<version>(.*?)</version>', f'<version>{version}</version>', xml, count=1)
-        # Keep download URL pointed at the matching release tag.
-        xml = re.sub(r'/releases/download/v[\d.]+(/pkg_clubleaddir\.zip)',
-                     f'/releases/download/{version}\\1', xml)
-        with open(path, 'w', encoding='utf-8') as fh:
-            fh.write(xml)
+    """Keep the extensionset wrapper and the full update payload on the same version.
+
+    update.xml is an <extensionset> wrapper: its <extension> version is an ATTRIBUTE
+    (version="..."). update-full.xml is the <updates><update> payload: its version is
+    an ELEMENT (<version>...</version>). Both must match or the collection site will
+    advertise a stale (often lower) version than what's installed.
+    """
+    # extensionset wrapper: bump the version="..." attribute on <extension>
+    with open(UPDATE_XML, 'r', encoding='utf-8') as fh:
+        xml = fh.read()
+    xml = re.sub(r'(<extension\b[^>]*\bversion=")[^"]*(")', r'\g<1>' + version + r'\g<2>', xml, count=1)
+    xml = re.sub(r'/releases/download/v[\d.]+(/pkg_clubleaddir\.xml)',
+                 f'/releases/download/{version}\\1', xml)
+    with open(UPDATE_XML, 'w', encoding='utf-8') as fh:
+        fh.write(xml)
+
+    # payload: bump the <version> element + download URL (tag is vX.Y.Z)
+    with open(UPDATE_FULL_XML, 'r', encoding='utf-8') as fh:
+        full = fh.read()
+    full = re.sub(r'<version>(.*?)</version>', f'<version>{version}</version>', full, count=1)
+    full = re.sub(r'/releases/download/[v]?[\d.]+(/pkg_clubleaddir\.zip)',
+                  f'/releases/download/v{version}\\1', full)
+    with open(UPDATE_FULL_XML, 'w', encoding='utf-8') as fh:
+        fh.write(full)
 
 
 def main():
