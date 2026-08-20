@@ -186,7 +186,7 @@ function clubleaddirGetInitials($name)
         </h3>
         <div class="clubleaddir-grid clubleaddir-grid--staff">
             <?php foreach ($staff as $person): ?>
-                <?php echo clubleaddirRenderCard($person, $showPhotosStaff, $showContact, $contactHiddenText); ?>
+                <?php echo clubleaddirRenderCard($person, $showPhotosStaff, $showContact, $contactHiddenText, $showTerm); ?>
             <?php endforeach; ?>
         </div>
     </section>
