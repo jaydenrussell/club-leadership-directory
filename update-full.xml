@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<updates>
+    <update>
+        <name>Club Leadership Directory</name>
+        <description>Joomla 3 package: component (standalone SQLite/JSON store) + module.</description>
+        <element>pkg_clubleaddir</element>
+        <type>package</type>
+        <client>0</client>
+        <version>2.0.54</version>
+        <infourl title="Club Leadership">https://github.com/jaydenrussell/club-leadership-directory</infourl>
+        <downloads>
+            <downloadurl type="full" format="zip">https://github.com/jaydenrussell/club-leadership-directory/releases/download/2.0.54/pkg_clubleaddir.zip</downloadurl>
+        </downloads>
+        <sha256>deabb0a4352fcf0f3e84f15fcf3fe13c7c398c47610eb2879c0983978102701b</sha256>
+        <maintainer>Jayden Russell</maintainer>
+        <maintainerurl>https://simcoecurlingclub.ca</maintainerurl>
+        <targetplatform name="joomla" version="3.[0-9]+" />
+    </update>
+</updates>

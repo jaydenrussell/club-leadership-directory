@@ -22,6 +22,7 @@ BUILD = ROOT
 OUT = os.path.join(os.path.dirname(ROOT), 'pkg_out')
 PKG_MANIFEST = os.path.join(BUILD, 'pkg', 'pkg_clubleaddir.xml')
 UPDATE_XML = os.path.join(BUILD, 'update.xml')
+UPDATE_FULL_XML = os.path.join(BUILD, 'update-full.xml')
 os.makedirs(OUT, exist_ok=True)
 # Nested com/mod zips are intermediates — build them in a temp dir so pkg_out
 # ends up containing ONLY the single shipped package zip.
@@ -54,19 +55,33 @@ def read_version():
 
 
 def write_checksum_to_update_xml(sha):
-    with open(UPDATE_XML, 'r', encoding='utf-8') as fh:
+    # SHA goes into update-full.xml (the actual <updates><update> payload).
+    with open(UPDATE_FULL_XML, 'r', encoding='utf-8') as fh:
         xml = fh.read()
     if re.search(r'<sha256>', xml):
         xml = re.sub(r'<sha256>.*?</sha256>', f'<sha256>{sha}</sha256>', xml, count=1)
     else:
-        # Insert before <maintainer> as a sensible sibling of <downloads>.
         xml = xml.replace('<maintainer>', f'<sha256>{sha}</sha256>\n        <maintainer>', 1)
-    with open(UPDATE_XML, 'w', encoding='utf-8') as fh:
+    with open(UPDATE_FULL_XML, 'w', encoding='utf-8') as fh:
         fh.write(xml)
+
+
+def bump_update_xml_versions(version):
+    """Keep the extensionset wrapper and the full update payload on the same version."""
+    for path in (UPDATE_XML, UPDATE_FULL_XML):
+        with open(path, 'r', encoding='utf-8') as fh:
+            xml = fh.read()
+        xml = re.sub(r'<version>(.*?)</version>', f'<version>{version}</version>', xml, count=1)
+        # Keep download URL pointed at the matching release tag.
+        xml = re.sub(r'/releases/download/v[\d.]+(/pkg_clubleaddir\.zip)',
+                     f'/releases/download/{version}\\1', xml)
+        with open(path, 'w', encoding='utf-8') as fh:
+            fh.write(xml)
 
 
 def main():
     version = read_version()
+    bump_update_xml_versions(version)
     comp_src = os.path.join(BUILD, 'com_clubleaddir')
     mod_src = os.path.join(BUILD, 'mod_clubleaddir')
 
