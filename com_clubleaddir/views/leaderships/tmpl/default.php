@@ -27,27 +27,152 @@ $sections = array(
     'directors_league' => Text::_('MOD_CLUBLEADDIRECTION_LEAGUE_APPOINTED_DIRECTORS'),
     'staff'            => Text::_('MOD_CLUBLEADDIRECTION_STAFF'),
 );
+
+$icon = array(
+    'officers'         => '&#9733;',
+    'directors'        => '&#128101;',
+    'directors_league' => '&#128101;',
+    'staff'            => '&#9881;',
+);
 ?>
+<style>
+/* Club Leadership Directory — front-end styling (scoped to this view only). */
+.com-clubleaddir, .com-clubleaddir * { box-sizing: border-box; }
+.com-clubleaddir {
+    font-family: 'Muli', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    color: #555;
+    line-height: 1.6;
+    width: 100%;
+}
+.com-clubleaddir .clubleadership-section { padding: 1.75rem 1rem; }
+.com-clubleaddir .clubleadership-section:nth-of-type(odd) { background: #fff; }
+.com-clubleaddir .clubleadership-section:nth-of-type(even) { background: #f5f7fa; }
+.com-clubleaddir .clubleadership-section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #15324A;
+    margin: 0 auto 1rem;
+    max-width: 1100px;
+    padding-bottom: 0.4rem;
+    border-bottom: 2px solid #305789;
+}
+.com-clubleaddir .section-icon { color: #b8963e; font-size: 1em; }
+.com-clubleaddir .clubleadership-subsection { margin-top: 1.25rem; }
+.com-clubleaddir .clubleadership-subsection-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #305789;
+    margin: 0 auto 0.75rem;
+    max-width: 1100px;
+    padding-left: 0.5rem;
+    border-left: 3px solid #b8963e;
+}
+.com-clubleaddir .clubleadership-grid { display: grid; gap: 1.25rem; max-width: 1100px; margin: 0 auto; }
+.com-clubleaddir .grid-officers { grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+.com-clubleaddir .grid-directors { grid-template-columns: repeat(4, 230px); justify-content: space-evenly; }
+.com-clubleaddir .grid-staff { grid-template-columns: repeat(4, 230px); justify-content: space-evenly; }
+.com-clubleaddir .clubleadership-card {
+    position: relative;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(21, 50, 74, 0.08);
+    border: 1px solid #d5dfe8;
+    overflow: hidden;
+    transition: box-shadow 0.2s, transform 0.2s;
+}
+.com-clubleaddir .clubleadership-card:hover {
+    box-shadow: 0 6px 24px rgba(21, 50, 74, 0.14);
+    transform: translateY(-2px);
+}
+.com-clubleaddir .clubleadership-card--officer { text-align: center; }
+.com-clubleaddir .clubleadership-card--director,
+.com-clubleaddir .clubleadership-card--staff { display: flex; flex-direction: column; min-height: 110px; }
+.com-clubleaddir .clubleadership-card--officer .clubleadership-card-photo {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    overflow: hidden;
+    margin: 0.875rem auto 0;
+    background: #e8f0f8;
+    border: none;
+}
+.com-clubleaddir .clubleadership-card--officer .clubleadership-card-photo img { width: 100%; height: 100%; object-fit: cover; }
+.com-clubleaddir .clubleadership-card-photo--initials {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #305789;
+    color: #fff;
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+.com-clubleaddir .clubleadership-card-photo {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    background: #f5f7fa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.com-clubleaddir .clubleadership-card-photo img { width: 100%; height: 100%; object-fit: cover; }
+.com-clubleaddir .clubleadership-card-content {
+    padding: 0.625rem 0.75rem 0.75rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    flex: 1;
+}
+.com-clubleaddir .clubleadership-card--officer .clubleadership-card-content { padding: 0.5rem 0.75rem 0.875rem; justify-content: flex-start; }
+.com-clubleaddir .clubleadership-card-name { font-size: 0.8rem; font-weight: 600; color: #1a2a3a; margin: 0 0 0.1rem; line-height: 1.3; }
+.com-clubleaddir .clubleadership-card--officer .clubleadership-card-name { font-size: 1rem; margin-top: 0.35rem; }
+.com-clubleaddir .clubleadership-card-role { font-size: 0.7rem; font-weight: 600; color: #305789; }
+.com-clubleaddir .clubleadership-card--officer .clubleadership-card-role { color: #b8963e; font-size: 0.8rem; }
+.com-clubleaddir .clubleadership-card-term { font-size: 0.65rem; color: #999; }
+.com-clubleaddir .clubleadership-card-league { font-size: 0.68rem; color: #555; font-style: italic; margin-top: 0.1rem; }
+@media (max-width: 1100px) {
+    .com-clubleaddir .grid-officers { grid-template-columns: repeat(2, 1fr); }
+    .com-clubleaddir .grid-directors { grid-template-columns: repeat(3, 1fr); }
+    .com-clubleaddir .grid-staff { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 640px) {
+    .com-clubleaddir .grid-officers { grid-template-columns: repeat(2, 1fr); }
+    .com-clubleaddir .grid-directors { grid-template-columns: repeat(2, 1fr); }
+    .com-clubleaddir .grid-staff { grid-template-columns: 1fr; }
+}
+@media (max-width: 480px) {
+    .com-clubleaddir .grid-officers,
+    .com-clubleaddir .grid-directors { grid-template-columns: 1fr; }
+}
+</style>
 
 <div class="com-clubleaddir">
     <?php foreach ($sections as $key => $title): ?>
         <?php if (!empty($this->groups[$key])): ?>
-            <section class="clubleaddir-section">
-                <h2 class="clubleaddir-section-title"><?php echo $title; ?></h2>
-                <div class="clubleaddir-grid">
+            <section class="clubleadership-section">
+                <h2 class="clubleadership-section-title">
+                    <span class="section-icon" aria-hidden="true"><?php echo $icon[$key]; ?></span>
+                    <?php echo $title; ?>
+                </h2>
+                <div class="clubleadership-grid grid-<?php echo $key === 'directors_league' ? 'directors' : ($key === 'officers' ? 'officers' : ($key === 'staff' ? 'staff' : 'directors')); ?>">
                     <?php foreach ($this->groups[$key] as $person): ?>
-                        <article class="clubleaddir-card clubleaddir-card--<?php echo $this->escape($person->type); ?>">
-                            <div class="clubleaddir-card-photo">
+                        <article class="clubleadership-card clubleaddir-card--<?php echo $this->escape($person->type); ?>">
+                            <div class="clubleadership-card-photo">
                                 <?php if (!empty($person->photo)): ?>
                                     <img src="<?php echo $this->escape(clubleaddirSitePhoto($person->photo)); ?>" alt="" loading="lazy" width="120" height="120">
                                 <?php else: ?>
-                                    <div class="clubleaddir-card-photo--initials"><?php echo $this->escape(substr($person->name, 0, 2)); ?></div>
+                                    <div class="clubleadership-card-photo--initials"><?php echo $this->escape(substr($person->name, 0, 2)); ?></div>
                                 <?php endif; ?>
                             </div>
-                            <div class="clubleaddir-card-content">
-                                <h3 class="clubleaddir-card-name"><?php echo $this->escape($person->name); ?></h3>
+                            <div class="clubleadership-card-content">
+                                <h3 class="clubleadership-card-name"><?php echo $this->escape($person->name); ?></h3>
                                 <?php if (!empty($person->role)): ?>
-                                    <div class="clubleaddir-card-role"><?php echo $this->escape($person->role); ?></div>
+                                    <div class="clubleadership-card-role"><?php echo $this->escape($person->role); ?></div>
                                 <?php endif; ?>
                                 <?php if ($person->type === 'staff'): ?>
                                     <?php
@@ -56,10 +181,13 @@ $sections = array(
                                     if ($sy > 0):
                                         $end = $ey > 0 ? (string) $ey : Text::_('MOD_CLUBLEADDIRECTION_EMPLOYED_CURRENT');
                                     ?>
-                                        <div class="clubleaddir-card-term"><?php echo $this->escape($sy . ' – ' . $end); ?></div>
+                                        <div class="clubleadership-card-term"><?php echo $this->escape($sy . ' – ' . $end); ?></div>
                                     <?php endif; ?>
                                 <?php elseif (!empty($person->term)): ?>
-                                    <div class="clubleaddir-card-term"><?php echo $this->escape($person->term); ?></div>
+                                    <div class="clubleadership-card-term"><?php echo $this->escape($person->term); ?></div>
+                                <?php endif; ?>
+                                <?php if (!empty($person->league_name)): ?>
+                                    <div class="clubleadership-card-league"><?php echo $this->escape($person->league_name); ?></div>
                                 <?php endif; ?>
                             </div>
                         </article>
