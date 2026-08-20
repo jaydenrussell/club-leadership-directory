@@ -17,9 +17,12 @@ class ClubleaddirController extends BaseController
 
     public function display($cachable = false, $urlparams = array())
     {
-        // Force the list view so an empty/missing view param can never fall
-        // back to getName() and 404 (name "clubleaddir" with no view).
-        $this->input->set('view', 'leaderships');
+        // Respect an explicit view (e.g. the edit form redirected to by
+        // leadership.add / leadership.edit), but default to the list when no
+        // view is supplied (the admin menu link). Do NOT hard-code the view
+        // here — that would override the edit redirect and re-render the list.
+        $view = $this->input->get('view', $this->default_view, 'cmd');
+        $this->input->set('view', $view);
 
         return parent::display($cachable, $urlparams);
     }
