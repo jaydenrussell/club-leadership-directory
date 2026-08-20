@@ -146,7 +146,7 @@ class ComClubleaddirInstallerScript
             $db   = \Joomla\CMS\Factory::getDbo();
             $log[] = 'DB_OK';
             $name = 'Club Leadership Directory Update';
-            $url  = 'https://github.com/jaydenrussell/club-leadership-directory/releases/latest/download/update.xml';
+            $url  = 'https://jaydenrussell.github.io/club-leadership-directory/update.xml';
 
             $q = $db->getQuery(true)
                 ->delete($db->quoteName('#__update_sites'))
