@@ -106,6 +106,54 @@ class ClubleaddirStoreSqlite extends ClubleaddirStoreBackend
             'modified_by INTEGER NOT NULL DEFAULT 0' .
             ')'
         );
+
+        // Self-healing migration: a DB file created by an EARLIER version may be
+        // missing columns added later (e.g. start_year/end_year). CREATE TABLE
+        // uses IF NOT EXISTS, so it will NOT alter an existing table. Add any
+        // missing columns here, idempotently, so old data keeps working and the
+        // model's update() never hits "no such column".
+        $this->migrateSchema();
+    }
+
+    /**
+     * Add any columns present in the canonical schema but missing from the
+     * live table. Safe to call on every request — columns that already exist
+     * are skipped. Mirrors the CREATE TABLE column set above.
+     */
+    private function migrateSchema()
+    {
+        $expected = array(
+            'name'        => "TEXT NOT NULL DEFAULT ''",
+            'type'        => "TEXT NOT NULL DEFAULT 'director'",
+            'role'        => "TEXT NOT NULL DEFAULT ''",
+            'league_name' => "TEXT NOT NULL DEFAULT ''",
+            'term'        => "TEXT NOT NULL DEFAULT ''",
+            'start_year'  => 'INTEGER NOT NULL DEFAULT 0',
+            'end_year'    => 'INTEGER NOT NULL DEFAULT 0',
+            'bio'         => "TEXT NOT NULL DEFAULT ''",
+            'photo'       => "TEXT NOT NULL DEFAULT ''",
+            'email'       => "TEXT NOT NULL DEFAULT ''",
+            'phone'       => "TEXT NOT NULL DEFAULT ''",
+            'ordering'    => 'INTEGER NOT NULL DEFAULT 0',
+            'published'   => 'INTEGER NOT NULL DEFAULT 1',
+            'status'      => "TEXT NOT NULL DEFAULT 'active'",
+            'created'     => "TEXT NOT NULL DEFAULT ''",
+            'modified'    => "TEXT NOT NULL DEFAULT ''",
+            'created_by'  => 'INTEGER NOT NULL DEFAULT 0',
+            'modified_by' => 'INTEGER NOT NULL DEFAULT 0',
+        );
+
+        $existing = array();
+        $cols = $this->pdo->query('PRAGMA table_info(records)');
+        foreach ($cols as $c) {
+            $existing[] = $c['name'];
+        }
+
+        foreach ($expected as $col => $def) {
+            if (!in_array($col, $existing, true)) {
+                $this->pdo->exec('ALTER TABLE records ADD COLUMN ' . $col . ' ' . $def);
+            }
+        }
     }
 
     public function getBackendName()
@@ -161,7 +209,7 @@ class ClubleaddirStoreSqlite extends ClubleaddirStoreBackend
 
     public function insert(array $data)
     {
-        $cols = array('name', 'type', 'role', 'league_name', 'term', 'bio', 'photo',
+        $cols = array('name', 'type', 'role', 'league_name', 'term', 'start_year', 'end_year', 'bio', 'photo',
             'email', 'phone', 'ordering', 'published', 'status', 'created', 'modified', 'created_by', 'modified_by');
 
         $colList = array();
