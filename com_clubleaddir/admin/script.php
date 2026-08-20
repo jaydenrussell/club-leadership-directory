@@ -127,7 +127,63 @@ class ComClubleaddirInstallerScript
             // Non-fatal: a clean install already enables the component.
         }
 
+        $this->fixUpdateSite();
+
         return true;
+    }
+
+    /**
+     * Ensure exactly one ENABLED update site pointing at the github.com-hosted
+     * update.xml. raw.githubusercontent.com is blocked on some hosting, so we
+     * serve the XML from releases/latest/download (github.com, reachable).
+     * Joomla otherwise registers package <updateservers> as disabled, which
+     * silently breaks update detection.
+     */
+    private function fixUpdateSite()
+    {
+        try {
+            $db   = \Joomla\CMS\Factory::getDbo();
+            $name = 'Club Leadership Directory Update';
+            $url  = 'https://github.com/jaydenrussell/club-leadership-directory/releases/latest/download/update.xml';
+
+            // Remove any stale raw.githubusercontent.com entry.
+            $q = $db->getQuery(true)
+                ->delete($db->quoteName('#__update_sites'))
+                ->where($db->quoteName('name') . ' = ' . $db->quote($name))
+                ->where($db->quoteName('location') . ' LIKE ' . $db->quote('%raw.githubusercontent.com%'));
+            $db->setQuery($q)->execute();
+
+            // Re-point / enable any existing entry to the github.com URL.
+            $q = $db->getQuery(true)
+                ->update($db->quoteName('#__update_sites'))
+                ->set($db->quoteName('location') . ' = ' . $db->quote($url))
+                ->set($db->quoteName('enabled') . ' = 1')
+                ->where($db->quoteName('name') . ' = ' . $db->quote($name));
+            $db->setQuery($q)->execute();
+
+            // Create it if it still does not exist.
+            $q = $db->getQuery(true)
+                ->select('COUNT(*)')
+                ->from($db->quoteName('#__update_sites'))
+                ->where($db->quoteName('name') . ' = ' . $db->quote($name));
+            $db->setQuery($q);
+            if ((int) $db->loadResult() === 0) {
+                $q = $db->getQuery(true)
+                    ->insert($db->quoteName('#__update_sites'))
+                    ->columns(array(
+                        $db->quoteName('name'), $db->quoteName('type'),
+                        $db->quoteName('location'), $db->quoteName('enabled'),
+                        $db->quoteName('last_check_timestamp'), $db->quoteName('extra_query'),
+                    ))
+                    ->values(
+                        $db->quote($name) . ', ' . $db->quote('extension') . ', ' .
+                        $db->quote($url) . ', 1, 0, ' . $db->quote('')
+                    );
+                $db->setQuery($q)->execute();
+            }
+        } catch (\Throwable $e) {
+            // Non-fatal.
+        }
     }
 
     public function uninstall($parent)
