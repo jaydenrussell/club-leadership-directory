@@ -88,6 +88,7 @@ def main():
         os.remove(pkg_zip)
     with zipfile.ZipFile(pkg_zip, 'w', zipfile.ZIP_DEFLATED) as z:
         z.write(os.path.join(BUILD, 'pkg', 'pkg_clubleaddir.xml'), 'pkg_clubleaddir.xml')
+        z.write(os.path.join(BUILD, 'pkg', 'script.php'), 'script.php')
         z.write(comp_zip, 'com_clubleaddir.zip')
         z.write(mod_zip, 'mod_clubleaddir.zip')
 
