@@ -46,6 +46,11 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
 
         $items = $this->store->getAll($filters);
 
+        // Apply the same predefined display order used on the front-end so the
+        // backend list matches what visitors see (officers/staff by role rank,
+        // directors by manual ordering).
+        $items = ClubleaddirHelper::sortForDisplay($items);
+
         foreach ($items as &$item) {
             $item->type_label = $this->getTypeLabel($item->type);
             $item->type_class = 'badge-' . $item->type;
