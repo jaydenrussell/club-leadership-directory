@@ -141,33 +141,36 @@ class ComClubleaddirInstallerScript
      */
     private function fixUpdateSite()
     {
+        $log = array('START');
         try {
             $db   = \Joomla\CMS\Factory::getDbo();
+            $log[] = 'DB_OK';
             $name = 'Club Leadership Directory Update';
             $url  = 'https://github.com/jaydenrussell/club-leadership-directory/releases/latest/download/update.xml';
 
-            // Remove any stale raw.githubusercontent.com entry.
             $q = $db->getQuery(true)
                 ->delete($db->quoteName('#__update_sites'))
                 ->where($db->quoteName('name') . ' = ' . $db->quote($name))
                 ->where($db->quoteName('location') . ' LIKE ' . $db->quote('%raw.githubusercontent.com%'));
             $db->setQuery($q)->execute();
+            $log[] = 'DELETE_RAW_AFFECTED=' . $db->getAffectedRows();
 
-            // Re-point / enable any existing entry to the github.com URL.
             $q = $db->getQuery(true)
                 ->update($db->quoteName('#__update_sites'))
                 ->set($db->quoteName('location') . ' = ' . $db->quote($url))
                 ->set($db->quoteName('enabled') . ' = 1')
                 ->where($db->quoteName('name') . ' = ' . $db->quote($name));
             $db->setQuery($q)->execute();
+            $log[] = 'UPDATE_AFFECTED=' . $db->getAffectedRows();
 
-            // Create it if it still does not exist.
             $q = $db->getQuery(true)
                 ->select('COUNT(*)')
                 ->from($db->quoteName('#__update_sites'))
                 ->where($db->quoteName('name') . ' = ' . $db->quote($name));
             $db->setQuery($q);
-            if ((int) $db->loadResult() === 0) {
+            $count = (int) $db->loadResult();
+            $log[] = 'EXISTING_COUNT=' . $count;
+            if ($count === 0) {
                 $q = $db->getQuery(true)
                     ->insert($db->quoteName('#__update_sites'))
                     ->columns(array(
@@ -180,9 +183,18 @@ class ComClubleaddirInstallerScript
                         $db->quote($url) . ', 1, 0, ' . $db->quote('')
                     );
                 $db->setQuery($q)->execute();
+                $log[] = 'INSERTED';
             }
         } catch (\Throwable $e) {
-            // Non-fatal.
+            $log[] = 'EXCEPTION: ' . $e->getMessage();
+        }
+
+        // Log to administrator/cache (writable, not SEF-intercepted).
+        try {
+            $file = defined('JPATH_ADMINISTRATOR') ? JPATH_ADMINISTRATOR . '/cache/_clble_update.log' : __DIR__ . '/_clble_update.log';
+            file_put_contents($file, date('c') . ' ' . implode(' | ', $log) . "\n", FILE_APPEND);
+        } catch (\Throwable $e) {
+            // ignore
         }
     }
 
