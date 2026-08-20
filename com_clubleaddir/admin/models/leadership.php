@@ -90,7 +90,6 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
             'start_year'  => (int) ($data['start_year'] ?? 0),
             'end_year'    => (int) ($data['end_year'] ?? 0),
             'bio'         => $data['bio'] ?? '',
-            'photo'       => $data['photo'] ?? '',
             'email'       => $data['email'] ?? '',
             'phone'       => $data['phone'] ?? '',
             'contact_id'  => (int) ($data['contact_id'] ?? 0),
@@ -109,6 +108,14 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
             // $photoPaths = [original, squareAvatar]
             $record['photo_full'] = $photoPaths[0];
             $record['photo']      = $photoPaths[1];
+        } elseif (!empty($data['id'])) {
+            // No new file chosen on an edit: keep the photo paths already stored
+            // for this record so saving without changing the photo doesn't wipe it.
+            $existing = $this->store->getById((int) $data['id']);
+            if ($existing) {
+                $record['photo']      = $existing->photo;
+                $record['photo_full'] = $existing->photo_full;
+            }
         }
 
         $record['modified']    = $date;
