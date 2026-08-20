@@ -40,6 +40,10 @@ $photoSize       = (int) $paramsData->get('photo_size', 120);
 if ($photoSize < 40) { $photoSize = 40; }
 if ($photoSize > 320) { $photoSize = 320; }
 $maxItems        = (int) $paramsData->get('max_items', 0);
+$headerTag       = preg_replace('/[^a-z0-9]/i', '', $paramsData->get('header_tag', 'h3'));
+if (!in_array($headerTag, array('h1','h2','h3','h4','p','div'), true)) {
+    $headerTag = 'h3';
+}
 
 $rawData = ModClubleaddirHelper::getLeadership();
 if ($maxItems > 0) {

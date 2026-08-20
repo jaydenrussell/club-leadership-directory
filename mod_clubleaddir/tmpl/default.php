@@ -298,7 +298,7 @@ function clubleaddirRenderContactHtml($person, $showContact, $contactHiddenText)
 <div class="mod-clubleadership<?php echo $moduleClassSfx ? ' ' . $moduleClassSfx : ''; ?>">
     <?php if ($displayTitle): ?>
     <header class="clubleadership-header">
-        <h2 class="clubleadership-title"><?php echo htmlspecialchars($displayTitle, ENT_QUOTES, 'UTF-8'); ?></h2>
+        <<?php echo $headerTag; ?> class="clubleadership-title"><?php echo htmlspecialchars($displayTitle, ENT_QUOTES, 'UTF-8'); ?></<?php echo $headerTag; ?>>
         <hr class="clubleadership-title-accent" />
         <?php if (!$showContact): ?>
         <p class="clubleadership-login-notice">
