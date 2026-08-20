@@ -39,7 +39,15 @@ $circularAvatars = (int) $paramsData->get('circular_avatars', 1);
 $photoSize       = (int) $paramsData->get('photo_size', 120);
 if ($photoSize < 40) { $photoSize = 40; }
 if ($photoSize > 320) { $photoSize = 320; }
+$maxItems        = (int) $paramsData->get('max_items', 0);
 
 $rawData = ModClubleaddirHelper::getLeadership();
+if ($maxItems > 0) {
+    foreach (array('officers', 'directors', 'staff', 'league') as $grp) {
+        if (!empty($rawData[$grp]) && is_array($rawData[$grp])) {
+            $rawData[$grp] = array_slice($rawData[$grp], 0, $maxItems);
+        }
+    }
+}
 
 require ModuleHelper::getLayoutPath('mod_clubleaddir', $paramsData->get('layout', 'default'));
