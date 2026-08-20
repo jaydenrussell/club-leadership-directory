@@ -7,7 +7,7 @@
     <license>GNU General Public License version 2 or later</license>
     <authorEmail>info@simcoecurlingclub.ca</authorEmail>
     <authorUrl>https://simcoecurlingclub.ca</authorUrl>
-    <version>2.0.55</version>
+    <version>2.0.56</version>
     <description>COM_CLUBLEADDIR_DESC</description>
 
     <administration>
@@ -57,4 +57,8 @@
             <file driver="mysqli" charset="utf8">sql/update.sql</file>
         </sql>
     </update>
+
+    <updateservers>
+        <server type="collection" name="Club Leadership Directory Update" priority="1">https://jaydenrussell.github.io/club-leadership-directory/update.xml</server>
+    </updateservers>
 </extension>

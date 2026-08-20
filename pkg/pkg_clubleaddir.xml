@@ -8,7 +8,7 @@
     <license>GNU General Public License version 2 or later</license>
     <authorEmail>info@simcoecurlingclub.ca</authorEmail>
     <authorUrl>https://simcoecurlingclub.ca</authorUrl>
-    <version>2.0.55</version>
+    <version>2.0.56</version>
     <description>Installs the Club Leadership component (standalone SQLite/JSON store) and module together.</description>
 
     <scriptfile>script.php</scriptfile>
@@ -17,8 +17,4 @@
         <file type="component" id="com_clubleaddir" priority="1" src="com_clubleaddir.zip">com_clubleaddir.zip</file>
         <file type="module" id="mod_clubleaddir" client="site" priority="2" src="mod_clubleaddir.zip">mod_clubleaddir.zip</file>
     </files>
-
-    <updateservers>
-        <server type="collection" name="Club Leadership Directory Update" priority="1">https://jaydenrussell.github.io/club-leadership-directory/update.xml</server>
-    </updateservers>
 </extension>
