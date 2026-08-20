@@ -44,6 +44,7 @@ $headerTag       = preg_replace('/[^a-z0-9]/i', '', $paramsData->get('header_tag
 if (!in_array($headerTag, array('h1','h2','h3','h4','p','div'), true)) {
     $headerTag = 'h3';
 }
+$introText      = trim($paramsData->get('intro_text', ''));
 
 $rawData = ModClubleaddirHelper::getLeadership();
 if ($maxItems > 0) {

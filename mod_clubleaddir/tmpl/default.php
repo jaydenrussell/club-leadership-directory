@@ -300,6 +300,9 @@ function clubleaddirRenderContactHtml($person, $showContact, $contactHiddenText)
     <header class="clubleadership-header">
         <<?php echo $headerTag; ?> class="clubleadership-title"><?php echo htmlspecialchars($displayTitle, ENT_QUOTES, 'UTF-8'); ?></<?php echo $headerTag; ?>>
         <hr class="clubleadership-title-accent" />
+        <?php if ($introText !== ''): ?>
+        <p class="clubleadership-intro"><?php echo $introText; ?></p>
+        <?php endif; ?>
         <?php if (!$showContact): ?>
         <p class="clubleadership-login-notice">
             <span class="icon-lock" aria-hidden="true"></span>
