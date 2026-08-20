@@ -61,6 +61,9 @@ class ClubleaddirViewLeaderships extends HtmlView
         if ($canDo->get('core.edit.state')) {
             ToolbarHelper::publish('leadership.publish', 'JTOOLBAR_PUBLISH', true);
             ToolbarHelper::unpublish('leadership.publish', 'JTOOLBAR_UNPUBLISH', true);
+            // Recoverable delete: moves selected records to the Trash (published = -2)
+            // so they can be restored later. Permanent Delete remains available.
+            ToolbarHelper::trash('leadership.trash', 'JTOOLBAR_TRASH');
             // Joomla 3.10 has no ToolbarHelper::saveorder(); use a custom button
             // that submits the order[] inputs via the leadership.saveorder task.
             ToolbarHelper::custom('leadership.saveorder', 'icon-menu', '', 'COM_CLUBLEADDIR_TOOLBAR_SAVE_ORDER', false);

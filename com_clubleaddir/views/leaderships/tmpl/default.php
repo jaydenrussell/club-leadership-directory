@@ -91,15 +91,20 @@ $icon = array(
 .com-clubleaddir .clubleadership-card--director,
 .com-clubleaddir .clubleadership-card--staff { display: flex; flex-direction: column; min-height: 110px; }
 .com-clubleaddir .clubleadership-card--officer .clubleadership-card-photo {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    overflow: hidden;
     margin: 0.875rem auto 0;
-    background: #e8f0f8;
-    border: none;
 }
-.com-clubleaddir .clubleadership-card--officer .clubleadership-card-photo img { width: 100%; height: 100%; object-fit: cover; }
+.com-clubleaddir .clubleadership-card-photo {
+    position: relative;
+    overflow: hidden;
+    background: #f5f7fa;
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+.com-clubleaddir .clubleadership-card-photo.is-visible { display: flex; }
+.com-clubleaddir .clubleadership-card-photo.is-circular { border-radius: 50%; border: 3px solid #fff; box-shadow: 0 2px 8px rgba(21,50,74,0.12); }
+.com-clubleaddir .clubleadership-card-photo.is-rect { border-radius: 8px; border: 1px solid #d5dfe8; }
+.com-clubleaddir .clubleadership-card-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .com-clubleaddir .clubleadership-card-photo--initials {
     width: 100%;
     height: 100%;
@@ -111,16 +116,6 @@ $icon = array(
     font-size: 1.1rem;
     font-weight: 700;
 }
-.com-clubleaddir .clubleadership-card-photo {
-    position: relative;
-    width: 100%;
-    overflow: hidden;
-    background: #f5f7fa;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-.com-clubleaddir .clubleadership-card-photo img { width: 100%; height: 100%; object-fit: cover; }
 .com-clubleaddir .clubleadership-card-content {
     padding: 0.625rem 0.75rem 0.75rem;
     display: flex;
@@ -162,7 +157,7 @@ $icon = array(
                 <div class="clubleadership-grid grid-<?php echo $key === 'directors_league' ? 'directors' : ($key === 'officers' ? 'officers' : ($key === 'staff' ? 'staff' : 'directors')); ?>">
                     <?php foreach ($this->groups[$key] as $person): ?>
                         <article class="clubleadership-card clubleaddir-card--<?php echo $this->escape($person->type); ?>">
-                            <div class="clubleadership-card-photo">
+                            <div class="clubleadership-card-photo is-visible is-circular" style="width:120px;height:120px;">
                                 <?php if (!empty($person->photo)): ?>
                                     <img src="<?php echo $this->escape(clubleaddirSitePhoto($person->photo)); ?>" alt="" loading="lazy" width="120" height="120">
                                 <?php else: ?>

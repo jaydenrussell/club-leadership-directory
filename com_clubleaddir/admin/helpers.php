@@ -44,9 +44,10 @@ class ClubleaddirHelper
     public static function getPublishedOptions()
     {
         return array(
-            ''   => Text::_('COM_CLUBLEADDIR_FILTER_ALL_STATUS'),
-            '1'  => Text::_('JPUBLISHED'),
-            '0'  => Text::_('JUNPUBLISHED'),
+            ''    => Text::_('COM_CLUBLEADDIR_FILTER_ALL_STATUS'),
+            '1'   => Text::_('JPUBLISHED'),
+            '0'   => Text::_('JUNPUBLISHED'),
+            '-2'  => Text::_('JTRASHED'),
         );
     }
 

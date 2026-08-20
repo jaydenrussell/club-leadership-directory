@@ -131,6 +131,36 @@ class ClubleaddirControllerLeadership extends BaseController
         $this->setRedirect('index.php?option=com_clubleaddir&view=leaderships');
     }
 
+    /**
+     * Send selected records to the Trash (published = -2) so they can be recovered.
+     * Standard Joomla recoverable-delete pattern; the permanent Delete (above)
+     * remains available for emptying the trash.
+     */
+    public function trash()
+    {
+        if (!$this->guardState()) {
+            return false;
+        }
+
+        $model = $this->getModel('Leadership', 'ClubleaddirModel');
+        $ids   = array_map('intval', (array) $this->input->post->get('cid', array(), 'array'));
+        $ids   = array_filter($ids, function ($id) { return $id > 0; });
+
+        if (empty($ids)) {
+            Factory::getApplication()->enqueueMessage(Text::_('JERROR_NO_ITEMS_SELECTED'), 'error');
+            $this->setRedirect('index.php?option=com_clubleaddir&view=leaderships');
+            return false;
+        }
+
+        if ($model->trash($ids)) {
+            $this->setMessage(Text::_('COM_CLUBLEADDIR_ITEMS_TRASHED'));
+        } else {
+            $this->setMessage(Text::_('COM_CLUBLEADDIR_ERROR_TRASHING'), 'error');
+        }
+
+        $this->setRedirect('index.php?option=com_clubleaddir&view=leaderships');
+    }
+
     public function publish()
     {
         if (!$this->guardState()) {

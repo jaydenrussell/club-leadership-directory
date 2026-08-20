@@ -95,6 +95,7 @@ class ClubleaddirStoreSqlite extends ClubleaddirStoreBackend
             'end_year INTEGER NOT NULL DEFAULT 0, ' .
             'bio TEXT NOT NULL DEFAULT \'\', ' .
             'photo TEXT NOT NULL DEFAULT \'\', ' .
+            'photo_full TEXT NOT NULL DEFAULT \'\', ' .
             'email TEXT NOT NULL DEFAULT \'\', ' .
             'phone TEXT NOT NULL DEFAULT \'\', ' .
             'ordering INTEGER NOT NULL DEFAULT 0, ' .
@@ -132,6 +133,7 @@ class ClubleaddirStoreSqlite extends ClubleaddirStoreBackend
             'end_year'    => 'INTEGER NOT NULL DEFAULT 0',
             'bio'         => "TEXT NOT NULL DEFAULT ''",
             'photo'       => "TEXT NOT NULL DEFAULT ''",
+            'photo_full'  => "TEXT NOT NULL DEFAULT ''",
             'email'       => "TEXT NOT NULL DEFAULT ''",
             'phone'       => "TEXT NOT NULL DEFAULT ''",
             'ordering'    => 'INTEGER NOT NULL DEFAULT 0',
@@ -209,7 +211,7 @@ class ClubleaddirStoreSqlite extends ClubleaddirStoreBackend
 
     public function insert(array $data)
     {
-        $cols = array('name', 'type', 'role', 'league_name', 'term', 'start_year', 'end_year', 'bio', 'photo',
+        $cols = array('name', 'type', 'role', 'league_name', 'term', 'start_year', 'end_year', 'bio', 'photo', 'photo_full',
             'email', 'phone', 'ordering', 'published', 'status', 'created', 'modified', 'created_by', 'modified_by');
 
         $colList = array();
@@ -234,7 +236,7 @@ class ClubleaddirStoreSqlite extends ClubleaddirStoreBackend
 
     public function update($id, array $data)
     {
-        $editable = array('name', 'type', 'role', 'league_name', 'term', 'start_year', 'end_year', 'bio', 'photo',
+        $editable = array('name', 'type', 'role', 'league_name', 'term', 'start_year', 'end_year', 'bio', 'photo', 'photo_full',
             'email', 'phone', 'ordering', 'published', 'status', 'modified', 'modified_by');
 
         $sets = array();
@@ -409,6 +411,7 @@ class ClubleaddirStoreJson extends ClubleaddirStoreBackend
     private function withDefaults(array $r)
     {
         static $defaults = array(
+            'photo_full' => '',
             'start_year' => 0,
             'end_year'   => 0,
         );

@@ -29,16 +29,26 @@ function clubleaddirGetInitials($name)
     return strtoupper(mb_substr($parts[0], 0, 2));
 }
 
-function clubleaddirRenderCard($person, $showPhoto, $showContact, $contactHiddenText, $showTerm)
+function clubleaddirRenderCard($person, $showPhoto, $showContact, $contactHiddenText, $showTerm, $circular = 1, $photoSize = 120)
 {
     $initials  = clubleaddirGetInitials($person->name);
-    $photoHtml = '<div class="' . ($showPhoto ? 'clubleadership-card-photo is-visible' : 'clubleadership-card-photo') . '">';
-    if (!empty($person->photo)) {
-        $src = $person->photo;
+    $size      = (int) $photoSize;
+    if ($size < 40) { $size = 40; }
+    if ($size > 320) { $size = 320; }
+
+    // Circular avatar uses the square crop; non-circular shows the original upload.
+    $photoSrc = (!empty($person->photo) && $circular)
+        ? $person->photo
+        : (!empty($person->photo_full) ? $person->photo_full : $person->photo);
+
+    $shapeClass = $circular ? 'is-circular' : 'is-rect';
+    $photoHtml = '<div class="clubleadership-card-photo ' . ($showPhoto ? 'is-visible ' : '') . $shapeClass . '" style="width:' . $size . 'px;height:' . $size . 'px;">';
+    if (!empty($photoSrc)) {
+        $src = $photoSrc;
         if ($src !== '' && $src[0] !== '/' && !preg_match('#^[a-z]+://#i', $src) && strpos($src, '//') !== 0) {
             $src = '/' . ltrim($src, '/');
         }
-        $photoHtml .= '<img src="' . htmlspecialchars($src, ENT_QUOTES, 'UTF-8') . '" alt="" loading="lazy" width="120" height="120">';
+        $photoHtml .= '<img src="' . htmlspecialchars($src, ENT_QUOTES, 'UTF-8') . '" alt="" loading="lazy" width="' . $size . '" height="' . $size . '">';
     } else {
         $photoHtml .= '<div class="clubleadership-card-photo--initials">' . $initials . '</div>';
     }
@@ -210,16 +220,12 @@ function clubleaddirRenderContactHtml($person, $showContact, $contactHiddenText)
 .mod-clubleadership .clubleadership-card--staff { display: flex; flex-direction: column; min-height: 110px; }
 .mod-clubleadership .clubleadership-card--director.has-photo,
 .mod-clubleadership .clubleadership-card--staff.has-photo { height: 190px; }
-.mod-clubleadership .clubleadership-card--officer .clubleadership-card-photo {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    overflow: hidden;
-    margin: 0.875rem auto 0;
-    background: #e8f0f8;
-    border: none;
-}
-.mod-clubleadership .clubleadership-card--officer .clubleadership-card-photo img { width: 100%; height: 100%; object-fit: cover; }
+.mod-clubleadership .clubleadership-card-photo { position: relative; overflow: hidden; background: #f5f7fa; display: none; align-items: center; justify-content: center; }
+.mod-clubleadership .clubleadership-card-photo.is-visible { display: flex; }
+.mod-clubleadership .clubleadership-card-photo.is-circular { border-radius: 50%; border: 3px solid #fff; box-shadow: 0 2px 8px rgba(21,50,74,0.12); }
+.mod-clubleadership .clubleadership-card-photo.is-rect { border-radius: 8px; border: 1px solid #d5dfe8; }
+.mod-clubleadership .clubleadership-card-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.mod-clubleadership .clubleadership-card--officer .clubleadership-card-photo { margin: 0.875rem auto 0; }
 .mod-clubleadership .clubleadership-card-photo--initials {
     width: 100%;
     height: 100%;
@@ -231,17 +237,6 @@ function clubleaddirRenderContactHtml($person, $showContact, $contactHiddenText)
     font-size: 1.1rem;
     font-weight: 700;
 }
-.mod-clubleadership .clubleadership-card-photo {
-    position: relative;
-    width: 100%;
-    overflow: hidden;
-    background: #f5f7fa;
-    display: none;
-    align-items: center;
-    justify-content: center;
-}
-.mod-clubleadership .clubleadership-card-photo.is-visible { display: flex; height: 80px; }
-.mod-clubleadership .clubleadership-card-photo img { width: 100%; height: 100%; object-fit: cover; }
 .mod-clubleadership .clubleadership-card-content {
     padding: 0.625rem 0.75rem 0.75rem;
     display: flex;
@@ -322,7 +317,7 @@ function clubleaddirRenderContactHtml($person, $showContact, $contactHiddenText)
         </h3>
         <div class="clubleadership-grid grid-officers">
             <?php foreach ($officers as $person): ?>
-                <?php echo clubleaddirRenderCard($person, $showPhotosOfficers, $showContact, $contactHiddenText, $showTerm); ?>
+                <?php echo clubleaddirRenderCard($person, $showPhotosOfficers, $showContact, $contactHiddenText, $showTerm, $circularAvatars, $photoSize); ?>
             <?php endforeach; ?>
         </div>
     </section>
@@ -337,7 +332,7 @@ function clubleaddirRenderContactHtml($person, $showContact, $contactHiddenText)
         <?php if (!empty($directors)): ?>
         <div class="clubleadership-grid grid-directors">
             <?php foreach ($directors as $person): ?>
-                <?php echo clubleaddirRenderCard($person, $showPhotosDirectors, $showContact, $contactHiddenText, $showTerm); ?>
+                <?php echo clubleaddirRenderCard($person, $showPhotosDirectors, $showContact, $contactHiddenText, $showTerm, $circularAvatars, $photoSize); ?>
             <?php endforeach; ?>
         </div>
         <?php endif; ?>
@@ -362,7 +357,7 @@ function clubleaddirRenderContactHtml($person, $showContact, $contactHiddenText)
         </h3>
         <div class="clubleadership-grid grid-staff">
             <?php foreach ($staff as $person): ?>
-                <?php echo clubleaddirRenderCard($person, $showPhotosStaff, $showContact, $contactHiddenText, $showTerm); ?>
+                <?php echo clubleaddirRenderCard($person, $showPhotosStaff, $showContact, $contactHiddenText, $showTerm, $circularAvatars, $photoSize); ?>
             <?php endforeach; ?>
         </div>
     </section>

@@ -102,11 +102,13 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
         $app   = Factory::getApplication();
         $files = $app->input->files->get('jform', array(), 'array');
         if (!empty($files['photo']['name']) && $files['photo']['error'] === UPLOAD_ERR_OK) {
-            $photoPath = $this->handlePhotoUpload($files['photo']);
-            if ($photoPath === false) {
+            $photoPaths = $this->handlePhotoUpload($files['photo']);
+            if ($photoPaths === false) {
                 return false;
             }
-            $record['photo'] = $photoPath;
+            // $photoPaths = [original, squareAvatar]
+            $record['photo_full'] = $photoPaths[0];
+            $record['photo']      = $photoPaths[1];
         }
 
         $record['modified']    = $date;
@@ -158,6 +160,12 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
         return $data;
     }
 
+    /**
+     * Handle an uploaded photo: validate, move the ORIGINAL into place, and also
+     * generate a square "avatar" crop (faces framed, centre-weighted toward the
+     * top where headshots sit) used for the circular display. Returns
+     * array($originalRel, $squareRel) on success, or false on failure.
+     */
     protected function handlePhotoUpload($fileInfo)
     {
         $allowedMimes = array('image/jpeg', 'image/png', 'image/gif', 'image/webp');
@@ -188,16 +196,90 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
             @mkdir($destDir, 0755, true);
         }
 
-        $filename = 'photo_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
-        $destPath = $destDir . '/' . $filename;
+        $base   = 'photo_' . time() . '_' . bin2hex(random_bytes(4));
+        $orig   = $base . '.' . $ext;
+        $square = $base . '_sq.' . $ext;
+        $origPath   = $destDir . '/' . $orig;
+        $squarePath = $destDir . '/' . $square;
 
-        if (!move_uploaded_file($fileInfo['tmp_name'], $destPath)) {
+        if (!move_uploaded_file($fileInfo['tmp_name'], $origPath)) {
             $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_PHOTO_UPLOAD_FAILED'));
             return false;
         }
 
-        return '/images/clubleaddir/photos/' . $filename;
+        // Square avatar crop (best-effort; original is returned regardless).
+        $this->makeSquareCrop($origPath, $squarePath, 400);
+
+        return array(
+            '/images/clubleaddir/photos/' . $orig,
+            '/images/clubleaddir/photos/' . $square,
+        );
     }
+
+    /**
+     * Create a 1:1 crop of $src into $dest ($size x $size). The crop is centred
+     * horizontally and biased upward (faces usually sit in the upper portion of a
+     * headshot) so the resulting circle frames the face. Falls back silently to
+     * leaving only the original if GD image functions are unavailable.
+     *
+     * @return bool true if a crop was written
+     */
+    protected function makeSquareCrop($src, $dest, $size = 400)
+    {
+        if (!function_exists('imagecreatefromstring')) {
+            return false;
+        }
+
+        $img = @imagecreatefromstring(file_get_contents($src));
+        if ($img === false) {
+            return false;
+        }
+
+        $sw = imagesx($img);
+        $sh = imagesy($img);
+        if (!$sw || !$sh) {
+            imagedestroy($img);
+            return false;
+        }
+
+        // Largest square that fits, biased toward the top (face region).
+        $side = min($sw, $sh);
+        $srcX = (int) (($sw - $side) / 2);
+        $srcY = (int) (($sh - $side) * 0.38); // ~38% from top: headshot framing
+        if ($srcY < 0) {
+            $srcY = 0;
+        }
+
+        $out = imagecreatetruecolor($size, $size);
+        if (!$out) {
+            imagedestroy($img);
+            return false;
+        }
+        // Preserve transparency for PNG/GIF.
+        imagefill($out, 0, 0, imagecolorallocate($out, 255, 255, 255));
+        imagesavealpha($out, true);
+        imagealphablending($out, false);
+
+        imagecopyresampled($out, $img, 0, 0, $srcX, $srcY, $size, $size, $side, $side);
+
+        $ok = false;
+        $lower = strtolower($dest);
+        if (substr($lower, -4) === '.png') {
+            $ok = imagepng($out, $dest, 8);
+        } elseif (substr($lower, -4) === '.gif') {
+            $ok = imagegif($out, $dest);
+        } elseif (substr($lower, -5) === '.webp' && function_exists('imagewebp')) {
+            $ok = imagewebp($out, $dest, 90);
+        } else {
+            $ok = imagejpeg($out, $dest, 90);
+        }
+
+        imagedestroy($img);
+        imagedestroy($out);
+
+        return (bool) $ok;
+    }
+
 
     public function delete(array $pks)
     {
@@ -219,6 +301,15 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
             }
         }
         return $ok;
+    }
+
+    /**
+     * Send records to the Trash (Joomla standard published = -2) so they remain
+     * in the store and can be recovered later via Publish.
+     */
+    public function trash(array $pks)
+    {
+        return $this->publish($pks, -2);
     }
 
     public function reorderSingle($id, $direction = 1)
