@@ -164,6 +164,8 @@ class ClubleaddirHelper
                 $ra = $staffRank[$roleA] ?? 50;
                 $rb = $staffRank[$roleB] ?? 50;
             } else {
+                // Directors / league directors: no fixed rank — fall back to
+                // role (alphabetical) so equal-ordering rows sort predictably.
                 $ra = 0;
                 $rb = 0;
             }
@@ -176,6 +178,12 @@ class ClubleaddirHelper
             $ordB = (int) ($b->ordering ?? 0);
             if ($ordA !== $ordB) {
                 return $ordA <=> $ordB;
+            }
+
+            // Equal ordering (directors/league): sort by role then name.
+            $roleCmp = strcmp($roleA, $roleB);
+            if ($roleCmp !== 0) {
+                return $roleCmp;
             }
 
             return strcmp(strtolower($a->name ?? ''), strtolower($b->name ?? ''));
