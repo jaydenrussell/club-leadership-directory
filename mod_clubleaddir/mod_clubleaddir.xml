@@ -7,7 +7,7 @@
     <license>GNU General Public License version 2 or later</license>
     <authorEmail>info@simcoecurlingclub.ca</authorEmail>
     <authorUrl>https://simcoecurlingclub.ca</authorUrl>
-    <version>2.0.46</version>
+    <version>2.0.47</version>
     <description>MOD_CLUBLEADDIRECTION_DESC</description>
 
     <files>
@@ -72,6 +72,10 @@
                     <option value="div">DIV</option>
                 </field>
                 <field name="intro_text" type="textarea" label="MOD_CLUBLEADDIRECTION_FIELD_INTRO_LABEL" description="MOD_CLUBLEADDIRECTION_FIELD_INTRO_DESC" default="" filter="raw" />
+                <field name="show_section_titles" type="radio" label="MOD_CLUBLEADDIRECTION_FIELD_SHOW_SECTION_TITLES_LABEL" default="1" class="btn-group btn-group-yesno">
+                    <option value="1">JYES</option>
+                    <option value="0">JNO</option>
+                </field>
                 <field name="module_class_sfx" type="text" label="COM_MODULES_FIELD_MODULECLASS_SFX_LABEL" />
             </fieldset>
 

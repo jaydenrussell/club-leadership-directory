@@ -45,6 +45,7 @@ if (!in_array($headerTag, array('h1','h2','h3','h4','p','div'), true)) {
     $headerTag = 'h3';
 }
 $introText      = trim($paramsData->get('intro_text', ''));
+$showSectionTitles = (int) $paramsData->get('show_section_titles', 1);
 
 $rawData = ModClubleaddirHelper::getLeadership();
 if ($maxItems > 0) {

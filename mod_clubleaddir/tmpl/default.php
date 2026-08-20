@@ -314,10 +314,10 @@ function clubleaddirRenderContactHtml($person, $showContact, $contactHiddenText)
 
     <?php if ($showOfficers && !empty($officers)): ?>
     <section class="clubleadership-section">
-        <h3 class="clubleadership-section-title">
+        <?php if ($showSectionTitles): ?><h3 class="clubleadership-section-title">
             <span class="section-icon" aria-hidden="true">&#9733;</span>
             <?php echo Text::_('MOD_CLUBLEADDIRECTION_OFFICERS'); ?>
-        </h3>
+        </h3><?php endif; ?>
         <div class="clubleadership-grid grid-officers">
             <?php foreach ($officers as $person): ?>
                 <?php echo clubleaddirRenderCard($person, $showPhotosOfficers, $showContact, $contactHiddenText, $showTerm, $circularAvatars, $photoSize); ?>
@@ -328,10 +328,10 @@ function clubleaddirRenderContactHtml($person, $showContact, $contactHiddenText)
 
     <?php if ($showDirectors && (!empty($directors) || !empty($directorsLeague))): ?>
     <section class="clubleadership-section">
-        <h3 class="clubleadership-section-title">
+        <?php if ($showSectionTitles): ?><h3 class="clubleadership-section-title">
             <span class="section-icon" aria-hidden="true">&#128101;</span>
             <?php echo Text::_('MOD_CLUBLEADDIRECTION_DIRECTORS'); ?>
-        </h3>
+        </h3><?php endif; ?>
         <?php if (!empty($directors)): ?>
         <div class="clubleadership-grid grid-directors">
             <?php foreach ($directors as $person): ?>
@@ -354,10 +354,10 @@ function clubleaddirRenderContactHtml($person, $showContact, $contactHiddenText)
 
     <?php if ($showStaff && !empty($staff)): ?>
     <section class="clubleadership-section">
-        <h3 class="clubleadership-section-title">
+        <?php if ($showSectionTitles): ?><h3 class="clubleadership-section-title">
             <span class="section-icon" aria-hidden="true">&#9881;</span>
             <?php echo Text::_('MOD_CLUBLEADDIRECTION_STAFF'); ?>
-        </h3>
+        </h3><?php endif; ?>
         <div class="clubleadership-grid grid-staff">
             <?php foreach ($staff as $person): ?>
                 <?php echo clubleaddirRenderCard($person, $showPhotosStaff, $showContact, $contactHiddenText, $showTerm, $circularAvatars, $photoSize); ?>
