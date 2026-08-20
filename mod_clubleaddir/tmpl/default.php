@@ -217,7 +217,7 @@ function clubleaddirRenderContactHtml($person, $showContact, $contactHiddenText)
 }
 .mod-clubleadership .clubleadership-card--officer { text-align: center; }
 .mod-clubleadership .clubleadership-card--director,
-.mod-clubleadership .clubleadership-card--staff { display: flex; flex-direction: column; min-height: 110px; }
+.mod-clubleadership .clubleadership-card--staff { display: flex; flex-direction: column; min-height: 110px; align-items: center; text-align: center; }
 .mod-clubleadership .clubleadership-card--director.has-photo,
 .mod-clubleadership .clubleadership-card--staff.has-photo { height: 190px; }
 .mod-clubleadership .clubleadership-card-photo { position: relative; overflow: hidden; background: #f5f7fa; display: none; align-items: center; justify-content: center; }

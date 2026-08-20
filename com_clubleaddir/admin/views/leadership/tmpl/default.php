@@ -29,7 +29,7 @@ $item   = $this->item;
 // defaults so every property access below is defined (PHP 8.0 warns on reads
 // of undefined stdClass properties).
 $itemDefaults = array(
-    'id' => 0, 'name' => '', 'type' => 'director', 'role' => '', 'league_name' => '',
+    'id' => 0, 'name' => '', 'type' => '', 'role' => '', 'league_name' => '',
     'term' => '', 'bio' => '', 'photo' => '', 'email' => '', 'phone' => '',
     'contact_id' => 0, 'ordering' => 0, 'published' => 1, 'status' => 'active',
     'created' => '', 'modified' => '',
@@ -108,6 +108,42 @@ function toggleTypeFields(type) {
     }
 }
 function toggleLeagueFields(type) { toggleTypeFields(type); }
+
+// Live preview of the chosen photo so the upload can be confirmed immediately
+// (before saving). Falls back gracefully if FileReader is unavailable.
+function clblePreviewPhoto(input) {
+    var box = document.getElementById('photo_preview');
+    if (!box) { return; }
+    if (!input.files || !input.files[0]) {
+        return;
+    }
+    var file = input.files[0];
+    var name = document.createElement('p');
+    name.className = 'help-block';
+    name.style.cssText = 'word-break:break-all;font-size:11px;margin-top:4px;';
+    name.textContent = file.name + ' (' + (file.size ? Math.round(file.size / 1024) + ' KB' : '') + ')';
+
+    if (box.querySelector('img')) { box.querySelector('img').remove(); }
+    if (box.querySelector('.clble-photo-placeholder')) { box.querySelector('.clble-photo-placeholder').remove(); }
+    var old = box.querySelector('p.help-block');
+    if (old) { old.remove(); }
+
+    if (window.FileReader && file.type.indexOf('image/') === 0) {
+        var reader = new FileReader();
+        reader.onload = function (e) {
+            var img = document.createElement('img');
+            img.src = e.target.result;
+            img.alt = '';
+            img.className = 'thumbnail';
+            img.style.cssText = 'max-width:140px;max-height:140px;display:inline-block;vertical-align:middle;';
+            box.appendChild(img);
+            box.appendChild(name);
+        };
+        reader.readAsDataURL(file);
+    } else {
+        box.appendChild(name);
+    }
+}
 
 // Joomla 3.10 submit shim (replaces behavior.formvalidator).
 if (typeof Joomla === 'undefined') { var Joomla = {}; }
@@ -233,15 +269,17 @@ function jClubleaddirSelectContact(id, name) {
                     <div class="span3 clble-photo-col">
                         <div class="control-group">
                             <div class="controls">
-                                <?php if ($item->photo): ?>
-                                    <img src="<?php echo $this->escape(ClubleaddirHelper::photoUrl($item->photo)); ?>" alt="<?php echo $this->escape($item->name); ?>"
-                                         class="thumbnail" style="max-width:140px;max-height:140px;display:inline-block;margin-bottom:8px;">
-                                    <p class="help-block" style="word-break:break-all;font-size:11px;"><?php echo $this->escape($item->photo); ?></p>
-                                <?php else: ?>
-                                    <div class="clble-photo-placeholder"><span class="icon-user" style="font-size:46px;"></span></div>
-                                <?php endif; ?>
-                                <input type="file" name="jform[photo]" id="photo" class="inputbox" accept="image/*">
-                                <p class="help-block"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_PHOTO_HELP'); ?></p>
+                                <div id="photo_preview" style="margin-bottom:8px;">
+                                    <?php if ($item->photo): ?>
+                                        <img src="<?php echo $this->escape(ClubleaddirHelper::photoUrl($item->photo)); ?>" alt="<?php echo $this->escape($item->name); ?>"
+                                             class="thumbnail" style="max-width:140px;max-height:140px;display:inline-block;vertical-align:middle;">
+                                        <p class="help-block" style="word-break:break-all;font-size:11px;margin-top:4px;"><?php echo $this->escape(basename($item->photo)); ?></p>
+                                    <?php else: ?>
+                                        <div class="clble-photo-placeholder"><span class="icon-user" style="font-size:46px;"></span></div>
+                                    <?php endif; ?>
+                                </div>
+                                <input type="file" name="jform[photo]" id="photo" class="inputbox" accept="image/*" onchange="clblePreviewPhoto(this)">
+                                <p class="help-block"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_PHOTO_HELP'); ?><?php if ($item->photo): ?> <span class="muted">(<?php echo Text::_('COM_CLUBLEADDIR_FIELD_PHOTO_REPLACE'); ?>)</span><?php endif; ?></p>
                             </div>
                         </div>
                     </div>
@@ -261,6 +299,7 @@ function jClubleaddirSelectContact(id, name) {
                             </div>
                             <div class="controls">
                                 <select name="jform[type]" id="type" class="inputbox clble-w-main" required onchange="toggleTypeFields(this.value)">
+                                    <option value="" <?php echo $item->type === '' ? 'selected' : ''; ?>><?php echo Text::_('COM_CLUBLEADDIR_SELECT_TYPE'); ?></option>
                                     <option value="officer" <?php echo $item->type === 'officer' ? 'selected' : ''; ?>><?php echo Text::_('COM_CLUBLEADDIR_TYPE_OFFICER'); ?></option>
                                     <option value="director" <?php echo $item->type === 'director' ? 'selected' : ''; ?>><?php echo Text::_('COM_CLUBLEADDIR_TYPE_DIRECTOR'); ?></option>
                                     <option value="director_league" <?php echo $item->type === 'director_league' ? 'selected' : ''; ?>><?php echo Text::_('COM_CLUBLEADDIR_TYPE_DIRECTOR_LEAGUE'); ?></option>

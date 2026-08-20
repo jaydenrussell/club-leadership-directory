@@ -110,6 +110,80 @@ class ClubleaddirHelper
         return '/' . ltrim($path, '/');
     }
 
+    /**
+     * Predefined display order for front-end grouping.
+     *
+     *  - Officers: President/Chair -> Vice President -> Secretary -> Treasurer,
+     *    then by manual ordering, then name.
+     *  - Staff:    Head Ice Technician -> Assistant Ice Technician -> others,
+     *    then by manual ordering, then name.
+     *  - Directors / League Directors: manual ordering only, then name.
+     *
+     * The admin "Ordering" field remains editable and acts as the tie-breaker
+     * after the predefined role rank, so the predefined sequence can still be
+     * fine-tuned per group.
+     *
+     * @param array $items
+     *
+     * @return array
+     */
+    public static function sortForDisplay(array $items)
+    {
+        $officerRank = array(
+            'president'         => 10,
+            'chair'             => 10,
+            'chairperson'       => 10,
+            'vice president'    => 20,
+            'vice-president'    => 20,
+            'vp'                => 20,
+            'secretary'         => 30,
+            'treasurer'         => 40,
+        );
+        $staffRank = array(
+            'head ice technician'     => 10,
+            'head icetechnician'      => 10,
+            'assistant ice technician' => 20,
+            'assistant icetechnician'  => 20,
+        );
+
+        usort($items, function ($a, $b) use ($officerRank, $staffRank) {
+            $typeA = $a->type ?? '';
+            $typeB = $b->type ?? '';
+            if ($typeA !== $typeB) {
+                // Keep the existing grouping order (officers, directors, staff).
+                return strcmp($typeA, $typeB);
+            }
+
+            $roleA = strtolower(trim($a->role ?? ''));
+            $roleB = strtolower(trim($b->role ?? ''));
+
+            if ($typeA === 'officer') {
+                $ra = $officerRank[$roleA] ?? 90;
+                $rb = $officerRank[$roleB] ?? 90;
+            } elseif ($typeA === 'staff') {
+                $ra = $staffRank[$roleA] ?? 50;
+                $rb = $staffRank[$roleB] ?? 50;
+            } else {
+                $ra = 0;
+                $rb = 0;
+            }
+
+            if ($ra !== $rb) {
+                return $ra <=> $rb;
+            }
+
+            $ordA = (int) ($a->ordering ?? 0);
+            $ordB = (int) ($b->ordering ?? 0);
+            if ($ordA !== $ordB) {
+                return $ordA <=> $ordB;
+            }
+
+            return strcmp(strtolower($a->name ?? ''), strtolower($b->name ?? ''));
+        });
+
+        return $items;
+    }
+
     public static function getActions()
     {
         $user  = Factory::getUser();

@@ -89,7 +89,7 @@ $icon = array(
 }
 .com-clubleaddir .clubleadership-card--officer { text-align: center; }
 .com-clubleaddir .clubleadership-card--director,
-.com-clubleaddir .clubleadership-card--staff { display: flex; flex-direction: column; min-height: 110px; }
+.com-clubleaddir .clubleadership-card--staff { display: flex; flex-direction: column; min-height: 110px; align-items: center; text-align: center; }
 .com-clubleaddir .clubleadership-card--officer .clubleadership-card-photo {
     margin: 0.875rem auto 0;
 }

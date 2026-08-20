@@ -37,6 +37,13 @@ class ClubleaddirViewLeaderships extends HtmlView
             }
         }
 
+        // Predefined display order within each group (officers/staff by role rank,
+        // directors by manual ordering).
+        require_once JPATH_ADMINISTRATOR . '/components/com_clubleaddir/helpers.php';
+        foreach ($groups as $type => $items) {
+            $groups[$type] = ClubleaddirHelper::sortForDisplay($items);
+        }
+
         $this->groups = $groups;
 
         parent::display($tpl);

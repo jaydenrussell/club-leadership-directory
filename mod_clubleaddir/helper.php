@@ -49,6 +49,13 @@ class ModClubleaddirHelper
             }
         }
 
+        // Apply the predefined display order (officers by role rank, staff by
+        // role rank, directors by manual ordering) within each group.
+        require_once JPATH_ADMINISTRATOR . '/components/com_clubleaddir/helpers.php';
+        foreach ($result as $type => $items) {
+            $result[$type] = ClubleaddirHelper::sortForDisplay($items);
+        }
+
         return $result;
     }
 }
