@@ -7,7 +7,7 @@
     <license>GNU General Public License version 2 or later</license>
     <authorEmail>info@simcoecurlingclub.ca</authorEmail>
     <authorUrl>https://simcoecurlingclub.ca</authorUrl>
-    <version>2.0.77</version>
+    <version>2.0.78</version>
     <description>MOD_CLUBLEADDIRECTION_DESC</description>
 
     <files>
@@ -88,6 +88,7 @@
                        multiple="false">
                     <option value="0">COM_CLUBLEADDIR_FIELD_VACANT_CONTACT_NONE</option>
                 </field>
+                <field name="vacancy_default_email" type="text" label="COM_CLUBLEADDIR_FIELD_VACANCY_EMAIL" description="COM_CLUBLEADDIR_FIELD_VACANCY_EMAIL_HELP" default="info@simcoecurlingclub.ca" filter="string" />
                 <field name="require_login_for_contact" type="radio" label="MOD_CLUBLEADDIRECTION_FIELD_REQUIRE_LOGIN_LABEL" default="1" class="btn-group btn-group-yesno">
                     <option value="1">JYES</option>
                     <option value="0">JNO</option>

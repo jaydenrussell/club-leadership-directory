@@ -320,6 +320,62 @@ function clubleaddirRenderContactHtml($person, $showContact, $contactHiddenText,
     .mod-clubleadership .grid-officers,
     .mod-clubleadership .grid-directors { grid-template-columns: 1fr; }
 }
+/* Vacancy recruitment banner */
+.mod-clubleadership .clubleaddir-vacancy-banner {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    max-width: 1100px;
+    margin: 0 auto 1.5rem;
+    padding: 1rem 1.25rem;
+    background: linear-gradient(135deg, #e3ebf5 0%, #f4f8fc 100%);
+    border: 1px solid #c5d8ee;
+    border-left: 5px solid #1890d7;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(24, 144, 215, 0.12);
+}
+.mod-clubleadership .clubleaddir-vacancy-banner-icon {
+    flex: 0 0 auto;
+    width: 46px; height: 46px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.6rem;
+    background: #1890d7;
+    color: #fff;
+    border-radius: 50%;
+}
+.mod-clubleadership .clubleaddir-vacancy-banner-body { flex: 1 1 auto; }
+.mod-clubleadership .clubleaddir-vacancy-banner-title {
+    margin: 0 0 0.25rem;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #0f5b8a;
+}
+.mod-clubleadership .clubleaddir-vacancy-banner-text {
+    margin: 0;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    color: #305789;
+}
+.mod-clubleadership .clubleaddir-vacancy-banner-cta {
+    flex: 0 0 auto;
+    display: inline-block;
+    padding: 0.6rem 1.25rem;
+    background: #1890d7;
+    color: #fff !important;
+    font-weight: 600;
+    text-decoration: none;
+    border-radius: 999px;
+    white-space: nowrap;
+    transition: background 0.2s, transform 0.2s;
+}
+.mod-clubleadership .clubleaddir-vacancy-banner-cta:hover {
+    background: #0f5b8a;
+    transform: translateY(-1px);
+}
+@media (max-width: 560px) {
+    .mod-clubleadership .clubleaddir-vacancy-banner { flex-wrap: wrap; }
+    .mod-clubleadership .clubleaddir-vacancy-banner-cta { flex: 1 1 100%; text-align: center; }
+}
 </style>
 
 <div class="mod-clubleadership<?php echo $moduleClassSfx ? ' ' . $moduleClassSfx : ''; ?>">
@@ -338,6 +394,27 @@ function clubleaddirRenderContactHtml($person, $showContact, $contactHiddenText,
         <?php endif; ?>
     </header>
     <?php endif; ?>
+
+    <?php
+    // Recruitment banner when at least one published position is vacant.
+    $anyVacant = false;
+    foreach (array($officers, $directors, $directorsLeague, $staff) as $grp) {
+        if (!empty($grp)) {
+            foreach ($grp as $gp) {
+                if (!empty($gp->vacant) && (!isset($gp->published) || (int) $gp->published === 1)) {
+                    $anyVacant = true;
+                    break 2;
+                }
+            }
+        }
+    }
+    if ($anyVacant):
+        echo ClubleaddirHelper::vacancyBannerHtml(
+            $vacantContactId,
+            (string) ($paramsData->get('vacancy_default_email', 'info@simcoecurlingclub.ca'))
+        );
+    endif;
+    ?>
 
     <?php if ($showOfficers && !empty($officers)): ?>
     <section class="clubleadership-section">

@@ -339,4 +339,34 @@ class ClubleaddirHelper
         }
         return trim($email);
     }
+    /**
+     * Render an engaging "we have vacancies — step up!" recruitment banner.
+     * Shown at the top of the directory when at least one position is vacant.
+     * The CTA opens the Joomla Contact's EMAIL FORM directly (layout=edit),
+     * not the contact's profile page; falls back to a mailto: when no
+     * contact is configured.
+     *
+     * @param int    $contactId     Resolved Joomla Contact id for vacant enquiries
+     * @param string $defaultEmail  Fallback email when no contact id is set
+     * @return string
+     */
+    public static function vacancyBannerHtml($contactId, $defaultEmail = 'info@simcoecurlingclub.ca')
+    {
+        $contactId = (int) $contactId;
+        if ($contactId > 0) {
+            $url = Route::_('index.php?option=com_contact&view=contact&id=' . $contactId . '&layout=edit');
+            $url = htmlspecialchars($url, ENT_QUOTES, 'UTF-8');
+        } else {
+            $url = 'mailto:' . htmlspecialchars($defaultEmail, ENT_QUOTES, 'UTF-8');
+        }
+
+        return '<div class="clubleaddir-vacancy-banner" role="status">'
+            . '<div class="clubleaddir-vacancy-banner-icon" aria-hidden="true">&#128101;</div>'
+            . '<div class="clubleaddir-vacancy-banner-body">'
+                . '<h3 class="clubleaddir-vacancy-banner-title">' . htmlspecialchars(Text::_('COM_CLUBLEADDIR_VACANCIES_TITLE'), ENT_QUOTES, 'UTF-8') . '</h3>'
+                . '<p class="clubleaddir-vacancy-banner-text">' . htmlspecialchars(Text::_('COM_CLUBLEADDIR_VACANCIES_BODY'), ENT_QUOTES, 'UTF-8') . '</p>'
+            . '</div>'
+            . '<a class="clubleaddir-vacancy-banner-cta" href="' . $url . '">' . htmlspecialchars(Text::_('COM_CLUBLEADDIR_VACANCIES_CTA'), ENT_QUOTES, 'UTF-8') . '</a>'
+            . '</div>';
+    }
 }
