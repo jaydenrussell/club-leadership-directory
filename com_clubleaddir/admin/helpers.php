@@ -288,18 +288,19 @@ class ClubleaddirHelper
             $vacancyEmail = trim($vacancyDefaultEmail);
         }
 
-        // 1. Vacant position — open the linked Joomla Contact's email
-        //    directly (mailto:, no contact page, no prefilled subject).
-        //    Falls back to a plain vacancy email when no contact is set.
+        // 1. Vacant position — uses ONLY the global Vacant Enquiry Contact
+        //    (module/menu param), failing that the global Vacancy Default Email.
+        //    A vacant position never falls back to a record-level contact_id.
         if ($vacant === 1) {
-            $vacantContact = ($contactId > 0) ? $contactId : (int) $vacantContactId;
-            if ($vacantContact > 0) {
+            $vacantContactId = (int) $vacantContactId;
+            if ($vacantContactId > 0) {
                 // Blend into the Joomla Contact component: open the email form directly.
-                $url   = Route::_('index.php?option=com_contact&view=contact&id=' . $vacantContact . '#display-form');
+                $url   = Route::_('index.php?option=com_contact&view=contact&id=' . $vacantContactId . '#display-form');
                 $label = Text::_('COM_CLUBLEADDIR_VACANCY_INQUIRE');
             } else {
+                $vacancyEmail = trim($vacancyDefaultEmail);
                 if ($vacancyEmail === '') {
-                    return ''; // No Joomla Contact and no Vacancy Default Email configured.
+                    return ''; // No Vacant Enquiry Contact and no Vacancy Default Email configured.
                 }
                 $url   = 'mailto:' . $vacancyEmail;
                 $label = Text::_('COM_CLUBLEADDIR_VACANCY_INQUIRE');
