@@ -251,9 +251,9 @@ class ClubleaddirHelper
         //    Falls back to a plain vacancy email when no contact is set.
         if ($vacant === 1) {
             $vacantContact = ($contactId > 0) ? $contactId : (int) $vacantContactId;
-            $contactEmail  = self::contactEmail($vacantContact);
-            if ($contactEmail !== '') {
-                $url   = 'mailto:' . $contactEmail;
+            if ($vacantContact > 0) {
+                // Blend into the Joomla Contact component: open the email form directly.
+                $url   = Route::_('index.php?option=com_contact&view=contact&id=' . $vacantContact . '#display-form');
                 $label = Text::_('COM_CLUBLEADDIR_VACANCY_INQUIRE');
             } else {
                 $url   = 'mailto:' . $vacancyEmail;
@@ -354,7 +354,9 @@ class ClubleaddirHelper
     {
         $contactId = (int) $contactId;
         if ($contactId > 0) {
-            $url = Route::_('index.php?option=com_contact&view=contact&id=' . $contactId . '&layout=edit');
+            // Blend into the Joomla Contact component: open the email form directly
+            // (contact profile above + form anchored via #display-form) - nicer than mailto.
+            $url = Route::_('index.php?option=com_contact&view=contact&id=' . $contactId . '#display-form');
             $url = htmlspecialchars($url, ENT_QUOTES, 'UTF-8');
         } else {
             $url = 'mailto:' . htmlspecialchars($defaultEmail, ENT_QUOTES, 'UTF-8');
