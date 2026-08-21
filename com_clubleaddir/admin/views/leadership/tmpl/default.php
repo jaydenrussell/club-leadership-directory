@@ -160,9 +160,8 @@ function setRoleRequired()
 // email handles it), so grey those fields out; the role/title stays required;
 // and the photo becomes the club logo (no personal upload needed).
 function toggleVacantFields(isVacant) {
-    // Vacancy enquiry email stays active — it IS what gets used.
-    var ve = document.getElementById('vacancy-email-group');
-    if (ve) { ve.style.display = isVacant ? 'block' : 'none'; }
+    // The vacancy enquiry target is shown as a read-only label next to the
+    // Vacant checkbox (it follows the global settings) — nothing to toggle here.
 
     // Grey + disable the personal contact fields (email / phone / Joomla contact).
     var fieldset = document.getElementById('contact-info-fieldset');
@@ -374,6 +373,22 @@ function jClubleaddirSelectContact(id, name) {
     .input-append { display: flex; flex-wrap: wrap; }
     .input-append .btn { margin-top: 6px; }
 }
+.clble-vacancy-target {
+    margin: 6px 0 0 0;
+    padding: 6px 8px;
+    background: #f5f7fa;
+    border: 1px solid #e3ebf5;
+    border-radius: 4px;
+    font-size: 12px;
+    color: #6b7785;
+    font-style: italic;
+}
+.clble-vacancy-target-label {
+    font-weight: 600;
+    font-style: normal;
+    color: #465c71;
+    margin-right: 4px;
+}
 </style>
 
 <form action="<?php echo Route::_('index.php?option=com_clubleaddir&task=leadership.save'); ?>"
@@ -436,6 +451,10 @@ function jClubleaddirSelectContact(id, name) {
                                     <?php echo Text::_('COM_CLUBLEADDIR_FIELD_VACANT'); ?>
                                 </label>
                                 <span class="clble-help-note"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_VACANT_HELP'); ?></span>
+                                <p class="clble-vacancy-target" id="vacancy-target">
+                                    <span class="clble-vacancy-target-label"><?php echo Text::_('COM_CLUBLEADDIR_VACANCY_TARGET_LABEL'); ?></span>
+                                    <?php echo $this->escape(ClubleaddirHelper::vacancyEnquiryDisplay()); ?>
+                                </p>
                             </div>
                         </div>
 
@@ -565,18 +584,6 @@ function jClubleaddirSelectContact(id, name) {
                                 <?php echo Text::_('COM_CLUBLEADDIR_CONTACT_COMPONENT_MISSING'); ?>
                             <?php endif; ?>
                         </div>
-                    </div>
-                </div>
-
-                <div class="control-group" id="vacancy-email-group">
-                    <div class="control-label">
-                        <label for="vacancy_email"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_VACANCY_EMAIL'); ?></label>
-                    </div>
-                    <div class="controls">
-                        <input type="email" name="jform[vacancy_email]" id="vacancy_email" class="inputbox clble-w-main"
-                               value="<?php echo $this->escape($item->vacancy_email ?? ''); ?>"
-                               placeholder="<?php echo $this->escape(ClubleaddirHelper::vacancyEmail()); ?>">
-                        <p class="help-block muted" style="font-size:11px;"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_VACANCY_EMAIL_HELP'); ?></p>
                     </div>
                 </div>
 
