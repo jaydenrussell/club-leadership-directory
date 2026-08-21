@@ -46,6 +46,12 @@ class ClubleaddirViewLeaderships extends HtmlView
 
         $this->groups = $groups;
 
+        // Load the active menu item's params so the layout can read options
+        // such as vacant_contact_id (without this, $this->params is null).
+        $app  = \Joomla\CMS\Factory::getApplication();
+        $menu = $app->getMenu()->getActive();
+        $this->params = $menu ? $menu->getParams() : new \Joomla\CMS\Registry\Registry();
+
         parent::display($tpl);
     }
 }
