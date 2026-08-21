@@ -119,6 +119,8 @@ function toggleTypeFields(type) {
     if (staffWrap) {
         staffWrap.style.display = (type === 'staff') ? 'block' : 'none';
     }
+    // Re-evaluate which role input is required (visible one only) after a type change.
+    setRoleRequired();
 }
 
 // Grey out + disable the Role/Title control group (used for league directors).
@@ -131,6 +133,26 @@ function setRoleDisabled(disabled) {
     inputs.forEach(function (id) {
         var el = document.getElementById(id);
         if (el) { el.disabled = disabled; }
+    });
+}
+
+// Mark Role/Title as required ONLY on the visible role input. Joomla's
+// form-validate still validates hidden (display:none) required fields, so we
+// must never leave the hidden role input carrying a required attribute.
+function setRoleRequired()
+{
+    var isVacant = document.getElementById('vacant')
+        ? document.getElementById('vacant').checked
+        : false;
+    ['role_text', 'role_select'].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (!el) { return; }
+        var visible = (el.style.display !== 'none') && (getComputedStyle(el).display !== 'none');
+        if (isVacant && visible) {
+            el.setAttribute('required', 'required');
+        } else {
+            el.removeAttribute('required');
+        }
     });
 }
 
@@ -157,15 +179,10 @@ function toggleVacantFields(isVacant) {
     if (photo) { photo.disabled = isVacant; }
 
     // Role/Title is required for a vacancy (it is the role being advertised).
-    // Joomla's form-validate reads the REQUIRED ATTRIBUTE (not the property), so
-    // we toggle the attribute explicitly rather than el.required.
-    ['role_text', 'role_select'].forEach(function (id) {
-        var el = document.getElementById(id);
-        if (el) {
-            if (isVacant) { el.setAttribute('required', 'required'); }
-            else { el.removeAttribute('required'); }
-        }
-    });
+    // Only the VISIBLE role input may carry the required attribute — Joomla's
+    // form-validate also validates hidden (display:none) required fields, so the
+    // hidden role input must never be marked required.
+    setRoleRequired();
     // A vacant post has no named person yet, so the name is optional.
     var nameEl = document.getElementById('name');
     if (nameEl) {
