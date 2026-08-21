@@ -212,17 +212,17 @@ function clubleaddirRenderContactHtml($person, $showContact, $contactHiddenText)
     box-shadow: 0 6px 24px rgba(21, 50, 74, 0.14);
     transform: translateY(-2px);
 }
-.mod-clubleadership .clubleadership-card--officer { text-align: center; }
-.mod-clubleadership .clubleadership-card--director,
-.mod-clubleadership .clubleadership-card--staff { display: flex; flex-direction: column; min-height: 110px; align-items: center; text-align: center; }
-.mod-clubleadership .clubleadership-card--director.has-photo,
-.mod-clubleadership .clubleadership-card--staff.has-photo { height: 190px; }
+.mod-clubleadership .clubleaddir-card--officer { text-align: center; }
+.mod-clubleadership .clubleaddir-card--director,
+.mod-clubleadership .clubleaddir-card--staff { display: flex; flex-direction: column; min-height: 110px; align-items: center; text-align: center; }
+.mod-clubleadership .clubleaddir-card--director.has-photo,
+.mod-clubleadership .clubleaddir-card--staff.has-photo { height: 190px; }
 .mod-clubleadership .clubleadership-card-photo { position: relative; overflow: hidden; background: #f5f7fa; display: none; align-items: center; justify-content: center; }
 .mod-clubleadership .clubleadership-card-photo.is-visible { display: flex; }
 .mod-clubleadership .clubleadership-card-photo.is-circular { border-radius: 50%; border: 3px solid #fff; box-shadow: 0 2px 8px rgba(21,50,74,0.12); }
 .mod-clubleadership .clubleadership-card-photo.is-rect { border-radius: 8px; border: 1px solid #d5dfe8; }
 .mod-clubleadership .clubleadership-card-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.mod-clubleadership .clubleadership-card--officer .clubleadership-card-photo { margin: 0.875rem auto 0; }
+.mod-clubleadership .clubleaddir-card--officer .clubleadership-card-photo { margin: 0.875rem auto 0; }
 .mod-clubleadership .clubleadership-card-photo--initials {
     width: 100%;
     height: 100%;
@@ -254,11 +254,11 @@ function clubleaddirRenderContactHtml($person, $showContact, $contactHiddenText)
     background: #b8963e;
     color: #fff;
 }
-.mod-clubleadership .clubleadership-card--officer .clubleadership-card-content { padding: 0.5rem 0.75rem 0.875rem; justify-content: flex-start; }
+.mod-clubleadership .clubleaddir-card--officer .clubleadership-card-content { padding: 0.5rem 0.75rem 0.875rem; justify-content: flex-start; }
 .mod-clubleadership .clubleadership-card-name { font-size: 0.8rem; font-weight: 600; color: #1a2a3a; margin: 0 0 0.1rem; line-height: 1.3; }
-.mod-clubleadership .clubleadership-card--officer .clubleadership-card-name { font-size: 1rem; margin-top: 0.35rem; }
+.mod-clubleadership .clubleaddir-card--officer .clubleadership-card-name { font-size: 1rem; margin-top: 0.35rem; }
 .mod-clubleadership .clubleadership-card-role { font-size: 0.7rem; font-weight: 600; color: #305789; }
-.mod-clubleadership .clubleadership-card--officer .clubleadership-card-role { color: #b8963e; font-size: 0.8rem; }
+.mod-clubleadership .clubleaddir-card--officer .clubleadership-card-role { color: #b8963e; font-size: 0.8rem; }
 .mod-clubleadership .clubleadership-card-department { font-size: 0.68rem; color: #555; }
 .mod-clubleadership .clubleadership-card-term { font-size: 0.65rem; color: #999; }
 .mod-clubleadership .clubleadership-card-league { font-size: 0.68rem; color: #555; font-style: italic; margin-top: 0.1rem; }
@@ -270,7 +270,7 @@ function clubleaddirRenderContactHtml($person, $showContact, $contactHiddenText)
     padding-top: 0.4rem;
     border-top: 1px solid #d5dfe8;
 }
-.mod-clubleadership .clubleadership-card--officer .clubleadership-card-contact { justify-content: center; }
+.mod-clubleadership .clubleaddir-card--officer .clubleadership-card-contact { justify-content: center; }
 .mod-clubleadership .clubleadership-contact-link {
     display: inline-flex;
     align-items: center;

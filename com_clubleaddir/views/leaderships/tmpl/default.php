@@ -89,9 +89,9 @@ $icon = array(
     box-shadow: 0 6px 24px rgba(21, 50, 74, 0.14);
     transform: translateY(-2px);
 }
-.com-clubleaddir .clubleadership-card--officer { }
-.com-clubleaddir .clubleadership-card--director,
-.com-clubleaddir .clubleadership-card--staff {
+.com-clubleaddir .clubleaddir-card--officer { }
+.com-clubleaddir .clubleaddir-card--director,
+.com-clubleaddir .clubleaddir-card--staff {
     display: flex;
     flex-direction: column;
     min-height: 110px;
@@ -109,7 +109,7 @@ $icon = array(
 .com-clubleaddir .clubleadership-card-photo.is-circular { border-radius: 50%; border: 3px solid #fff; box-shadow: 0 2px 8px rgba(21,50,74,0.12); }
 .com-clubleaddir .clubleadership-card-photo.is-rect { border-radius: 8px; border: 1px solid #d5dfe8; }
 .com-clubleaddir .clubleadership-card-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.com-clubleaddir .clubleadership-card--officer .clubleadership-card-photo {
+.com-clubleaddir .clubleaddir-card--officer .clubleadership-card-photo {
     width: 120px; height: 120px;
     margin: 0.875rem auto 0;
 }
@@ -133,9 +133,9 @@ $icon = array(
     flex: 1;
 }
 .com-clubleaddir .clubleadership-card-name { font-size: 0.8rem; font-weight: 600; color: #1a2a3a; margin: 0 0 0.1rem; line-height: 1.3; }
-.com-clubleaddir .clubleadership-card--officer .clubleadership-card-name { font-size: 1rem; margin-top: 0.35rem; }
+.com-clubleaddir .clubleaddir-card--officer .clubleadership-card-name { font-size: 1rem; margin-top: 0.35rem; }
 .com-clubleaddir .clubleadership-card-role { font-size: 0.7rem; font-weight: 600; color: #305789; }
-.com-clubleaddir .clubleadership-card--officer .clubleadership-card-role { color: #b8963e; font-size: 0.8rem; }
+.com-clubleaddir .clubleaddir-card--officer .clubleadership-card-role { color: #b8963e; font-size: 0.8rem; }
 .com-clubleaddir .clubleadership-card-term { font-size: 0.65rem; color: #999; }
 .com-clubleaddir .clubleadership-card-league { font-size: 0.68rem; color: #555; font-style: italic; margin-top: 0.1rem; }
 .com-clubleaddir .clubleadership-card-vacant {
