@@ -204,17 +204,20 @@ $icon = array(
                         // a vacant post shows the club logo; directors/staff only
                         // show a box when they actually have a real photo.
                         $showPhotoBox = $hasPhoto || $isOfficer || $isVacant;
-                        $displayName = $isVacant && empty(trim($person->name ?? ''))
-                            ? Text::_('COM_CLUBLEADDIR_VACANT')
-                            : $person->name;
+                        // When a vacant post has no named person, the role IS the
+                        // title (so we don't print "Vacant" twice — the pill does that).
+                        $nameEmpty = $isVacant && empty(trim($person->name ?? ''));
+                        $displayName = $nameEmpty ? ($person->role ?? '') : $person->name;
+                        // Vacant photo (club logo) is shown at 75% of the normal size.
+                        $boxSize = $isVacant ? (int) round(120 * 0.75) : 120;
                     ?>
                         <article class="clubleadership-card clubleaddir-card--<?php echo $this->escape($person->type); ?><?php echo $isVacant ? ' clubleaddir-card--vacant' : ''; ?>">
                             <?php if ($showPhotoBox): ?>
-                            <div class="clubleadership-card-photo is-visible is-circular" style="width:120px;height:120px;">
+                            <div class="clubleadership-card-photo is-visible is-circular" style="width:<?php echo $boxSize; ?>px;height:<?php echo $boxSize; ?>px;">
                                 <?php if ($hasPhoto): ?>
-                                    <img src="<?php echo $this->escape(clubleaddirSitePhoto($person->photo)); ?>" alt="" loading="lazy" width="120" height="120">
+                                    <img src="<?php echo $this->escape(clubleaddirSitePhoto($person->photo)); ?>" alt="" loading="lazy" width="<?php echo $boxSize; ?>" height="<?php echo $boxSize; ?>">
                                 <?php elseif ($isVacant): ?>
-                                    <img src="<?php echo $this->escape(ClubleaddirHelper::vacantLogo()); ?>" alt="" loading="lazy" width="120" height="120" style="object-fit:contain;background:#fff;">
+                                    <img src="<?php echo $this->escape(ClubleaddirHelper::vacantLogo()); ?>" alt="" loading="lazy" width="<?php echo $boxSize; ?>" height="<?php echo $boxSize; ?>" style="object-fit:contain;background:#fff;">
                                 <?php else: ?>
                                     <div class="clubleadership-card-photo--initials"><?php echo $this->escape(substr($displayName, 0, 2)); ?></div>
                                 <?php endif; ?>
@@ -222,7 +225,7 @@ $icon = array(
                             <?php endif; ?>
                             <div class="clubleadership-card-content">
                                 <h3 class="clubleadership-card-name"><?php echo $this->escape($displayName); ?></h3>
-                                <?php if (!empty($person->role)): ?>
+                                <?php if (!empty($person->role) && !$nameEmpty): ?>
                                     <div class="clubleadership-card-role"><?php echo $this->escape($person->role); ?></div>
                                 <?php endif; ?>
                                 <?php if ($isVacant): ?>

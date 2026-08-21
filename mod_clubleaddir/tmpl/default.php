@@ -39,10 +39,17 @@ function clubleaddirRenderCard($person, $showPhoto, $showContact, $contactHidden
     $hasPhoto  = !empty($person->photo);
     $isOfficer = ($person->type === 'officer');
     $isVacant  = !empty($person->vacant);
-    // Officers always get a photo slot (real photo, or initials fallback).
-    // A vacant post shows the club logo. Directors/staff only show a box when
-    // they actually have a photo — otherwise it is removed from the card entirely.
-    $showPhotoBox = $hasPhoto || $isOfficer || $isVacant;
+    // Photo box only appears when this section's photo toggle is ON. Officers
+    // always get a photo slot (real photo or initials); a vacant post shows the
+    // club logo; directors/staff only show a box when they actually have a photo.
+    $showPhotoBox = $showPhoto && ($hasPhoto || $isOfficer || $isVacant);
+
+    // When a vacant post has no named person, the role IS the title (so we don't
+    // print "Vacant" twice — the pill handles that).
+    $nameEmpty = $isVacant && empty(trim($person->name ?? ''));
+    $displayName = $nameEmpty ? ($person->role ?? '') : $person->name;
+    // Vacant photo (club logo) is shown at 75% of the normal photo size.
+    $logoSize = (int) round($size * 0.75);
 
     // Circular avatar uses the square crop; non-circular shows the original upload.
     $photoSrc = (!empty($person->photo) && $circular)
@@ -52,18 +59,19 @@ function clubleaddirRenderCard($person, $showPhoto, $showContact, $contactHidden
     $shapeClass = $circular ? 'is-circular' : 'is-rect';
     $photoHtml = '';
     if ($showPhotoBox) {
-        $photoHtml = '<div class="clubleadership-card-photo ' . ($showPhotoBox ? 'is-visible ' : '') . $shapeClass . '" style="width:' . $size . 'px;height:' . $size . 'px;">';
+        $boxSize = $isVacant ? $logoSize : $size;
+        $photoHtml = '<div class="clubleadership-card-photo ' . $shapeClass . ' is-visible" style="width:' . $boxSize . 'px;height:' . $boxSize . 'px;">';
         if (!empty($photoSrc)) {
             $src = $photoSrc;
             if ($src !== '' && $src[0] !== '/' && !preg_match('#^[a-z]+://#i', $src) && strpos($src, '//') !== 0) {
                 $src = '/' . ltrim($src, '/');
             }
-            $photoHtml .= '<img src="' . htmlspecialchars($src, ENT_QUOTES, 'UTF-8') . '" alt="" loading="lazy" width="' . $size . '" height="' . $size . '">';
+            $photoHtml .= '<img src="' . htmlspecialchars($src, ENT_QUOTES, 'UTF-8') . '" alt="" loading="lazy" width="' . $boxSize . '" height="' . $boxSize . '">';
         } elseif ($isVacant) {
             $logo = method_exists('ClubleaddirHelper', 'vacantLogo')
                 ? ClubleaddirHelper::vacantLogo()
                 : 'https://simcoecurlingclub.ca/images/Logo/simcoe_curling_club_logo.svg';
-            $photoHtml .= '<img src="' . htmlspecialchars($logo, ENT_QUOTES, 'UTF-8') . '" alt="" loading="lazy" width="' . $size . '" height="' . $size . '" style="object-fit:contain;background:#fff;">';
+            $photoHtml .= '<img src="' . htmlspecialchars($logo, ENT_QUOTES, 'UTF-8') . '" alt="" loading="lazy" width="' . $logoSize . '" height="' . $logoSize . '" style="object-fit:contain;background:#fff;">';
         } elseif ($isOfficer) {
             $photoHtml .= '<div class="clubleadership-card-photo--initials">' . $initials . '</div>';
         }
@@ -71,7 +79,7 @@ function clubleaddirRenderCard($person, $showPhoto, $showContact, $contactHidden
     }
 
     $metaHtml = '';
-    if (!empty($person->role)) {
+    if (!empty($person->role) && !$nameEmpty) {
         $metaHtml .= '<div class="clubleadership-card-role">' . htmlspecialchars($person->role, ENT_QUOTES, 'UTF-8') . '</div>';
     }
     if ($showTerm) {
@@ -86,13 +94,16 @@ function clubleaddirRenderCard($person, $showPhoto, $showContact, $contactHidden
             $metaHtml .= '<div class="clubleadership-card-term">' . htmlspecialchars($person->term, ENT_QUOTES, 'UTF-8') . '</div>';
         }
     }
+    if ($isVacant) {
+        $metaHtml .= '<span class="clubleadership-card-vacant">' . htmlspecialchars(Text::_('COM_CLUBLEADDIR_VACANT'), ENT_QUOTES, 'UTF-8') . '</span>';
+    }
 
     $contactHtml = clubleaddirRenderContactHtml($person, $showContact, $contactHiddenText);
 
-    return '<article class="clubleadership-card clubleaddir-card--' . htmlspecialchars($person->type, ENT_QUOTES, 'UTF-8') . '">'
+    return '<article class="clubleadership-card clubleaddir-card--' . htmlspecialchars($person->type, ENT_QUOTES, 'UTF-8') . ($isVacant ? ' clubleaddir-card--vacant' : '') . '">'
         . $photoHtml
         . '<div class="clubleadership-card-content">'
-        . '<h4 class="clubleadership-card-name">' . htmlspecialchars($person->name, ENT_QUOTES, 'UTF-8') . '</h4>'
+        . '<h4 class="clubleadership-card-name">' . htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8') . '</h4>'
         . $metaHtml
         . $contactHtml
         . '</div>'

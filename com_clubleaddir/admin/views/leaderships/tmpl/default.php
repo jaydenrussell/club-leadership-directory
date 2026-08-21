@@ -101,8 +101,11 @@ $search            = $this->filters['search'];
                     </td>
                     <td class="clble-col-name">
                         <a href="<?php echo Route::_('index.php?option=com_clubleaddir&view=leadership&id=' . $item->id); ?>">
-                            <?php echo $this->escape($item->name); ?>
+                            <?php echo $this->escape($item->name ?: ($item->role ?: Text::_('COM_CLUBLEADDIR_VACANT'))); ?>
                         </a>
+                        <?php if (!empty($item->vacant)): ?>
+                            <span class="badge" style="margin-left:6px;background:#b8963e;color:#fff;"><?php echo Text::_('COM_CLUBLEADDIR_VACANT'); ?></span>
+                        <?php endif; ?>
                         <?php if (($item->status ?? 'active') === 'archived'): ?>
                             <span class="badge badge-inverse" style="margin-left:6px;"><?php echo Text::_('COM_CLUBLEADDIR_STATUS_ARCHIVED'); ?></span>
                         <?php endif; ?>
