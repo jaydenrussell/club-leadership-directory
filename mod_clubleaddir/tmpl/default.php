@@ -29,7 +29,7 @@ function clubleaddirGetInitials($name)
     return strtoupper(mb_substr($parts[0], 0, 2));
 }
 
-function clubleaddirRenderCard($person, $showPhoto, $showContact, $contactHiddenText, $showTerm, $circular = 1, $photoSize = 120, $vacantContactId = 0)
+function clubleaddirRenderCard($person, $showPhoto, $showContact, $contactHiddenText, $showTerm, $circular = 1, $photoSize = 120, $vacantContactId = 0, $vacancyDefaultEmail = 'info@simcoecurlingclub.ca')
 {
     $initials  = clubleaddirGetInitials($person->name);
     $size      = (int) $photoSize;
@@ -98,7 +98,7 @@ function clubleaddirRenderCard($person, $showPhoto, $showContact, $contactHidden
         $metaHtml .= '<span class="clubleadership-card-vacant">' . htmlspecialchars(Text::_('COM_CLUBLEADDIR_VACANT'), ENT_QUOTES, 'UTF-8') . '</span>';
     }
 
-    $contactHtml = clubleaddirRenderContactHtml($person, $showContact, $contactHiddenText, $vacantContactId);
+    $contactHtml = clubleaddirRenderContactHtml($person, $showContact, $contactHiddenText, $vacantContactId, $vacancyDefaultEmail);
 
     return '<article class="clubleadership-card clubleaddir-card--' . htmlspecialchars($person->type, ENT_QUOTES, 'UTF-8') . ($isVacant ? ' clubleaddir-card--vacant' : '') . '">'
         . $photoHtml
@@ -110,7 +110,7 @@ function clubleaddirRenderCard($person, $showPhoto, $showContact, $contactHidden
         . '</article>';
 }
 
-function clubleaddirRenderLeagueCard($person, $showContact, $contactHiddenText, $vacantContactId = 0)
+function clubleaddirRenderLeagueCard($person, $showContact, $contactHiddenText, $vacantContactId = 0, $vacancyDefaultEmail = 'info@simcoecurlingclub.ca')
 {
     $isVacant  = !empty($person->vacant);
     $nameEmpty = $isVacant && empty(trim($person->name ?? ''));
@@ -124,7 +124,7 @@ function clubleaddirRenderLeagueCard($person, $showContact, $contactHiddenText, 
     if ($isVacant) {
         $metaHtml .= '<span class="clubleadership-card-vacant">' . htmlspecialchars(Text::_('COM_CLUBLEADDIR_VACANT'), ENT_QUOTES, 'UTF-8') . '</span>';
     }
-    $contactHtml = clubleaddirRenderContactHtml($person, $showContact, $contactHiddenText, $vacantContactId);
+    $contactHtml = clubleaddirRenderContactHtml($person, $showContact, $contactHiddenText, $vacantContactId, $vacancyDefaultEmail);
 
     return '<article class="clubleadership-card clubleaddir-card--director' . ($isVacant ? ' clubleaddir-card--vacant' : '') . '">'
         . '<div class="clubleadership-card-photo"></div>'
@@ -136,14 +136,14 @@ function clubleaddirRenderLeagueCard($person, $showContact, $contactHiddenText, 
         . '</article>';
 }
 
-function clubleaddirRenderContactHtml($person, $showContact, $contactHiddenText, $vacantContactId = 0)
+function clubleaddirRenderContactHtml($person, $showContact, $contactHiddenText, $vacantContactId = 0, $vacancyDefaultEmail = 'info@simcoecurlingclub.ca')
 {
     // Delegate to the shared helper so the module and the component view render
     // contact (Joomla Contact link, vacancy Apply/Inquire, or email/phone) identically.
     if (!class_exists('ClubleaddirHelper', false)) {
         require_once JPATH_ADMINISTRATOR . '/components/com_clubleaddir/helpers.php';
     }
-    return ClubleaddirHelper::contactHtml($person, $showContact, $contactHiddenText, $vacantContactId);
+    return ClubleaddirHelper::contactHtml($person, $showContact, $contactHiddenText, $vacantContactId, $vacancyDefaultEmail);
 }
 ?>
 <style>
@@ -424,7 +424,7 @@ function clubleaddirRenderContactHtml($person, $showContact, $contactHiddenText,
         </h3><?php endif; ?>
         <div class="clubleadership-grid grid-officers">
             <?php foreach ($officers as $person): ?>
-                <?php echo clubleaddirRenderCard($person, $showPhotosOfficers, $showContact, $contactHiddenText, $showTerm, $circularAvatars, $photoSize, $vacantContactId); ?>
+                <?php echo clubleaddirRenderCard($person, $showPhotosOfficers, $showContact, $contactHiddenText, $showTerm, $circularAvatars, $photoSize, $vacantContactId, $vacancyDefaultEmail); ?>
             <?php endforeach; ?>
         </div>
     </section>
@@ -439,7 +439,7 @@ function clubleaddirRenderContactHtml($person, $showContact, $contactHiddenText,
         <?php if (!empty($directors)): ?>
         <div class="clubleadership-grid grid-directors">
             <?php foreach ($directors as $person): ?>
-                <?php echo clubleaddirRenderCard($person, $showPhotosDirectors, $showContact, $contactHiddenText, $showTerm, $circularAvatars, $photoSize, $vacantContactId); ?>
+                <?php echo clubleaddirRenderCard($person, $showPhotosDirectors, $showContact, $contactHiddenText, $showTerm, $circularAvatars, $photoSize, $vacantContactId, $vacancyDefaultEmail); ?>
             <?php endforeach; ?>
         </div>
         <?php endif; ?>
@@ -448,7 +448,7 @@ function clubleaddirRenderContactHtml($person, $showContact, $contactHiddenText,
             <h4 class="clubleadership-subsection-title"><?php echo Text::_('MOD_CLUBLEADDIRECTION_LEAGUE_APPOINTED_DIRECTORS'); ?></h4>
             <div class="clubleadership-grid grid-directors">
                 <?php foreach ($directorsLeague as $person): ?>
-                    <?php echo clubleaddirRenderLeagueCard($person, $showContact, $contactHiddenText, $vacantContactId); ?>
+                    <?php echo clubleaddirRenderLeagueCard($person, $showContact, $contactHiddenText, $vacantContactId, $vacancyDefaultEmail); ?>
                 <?php endforeach; ?>
             </div>
         </div>
@@ -464,7 +464,7 @@ function clubleaddirRenderContactHtml($person, $showContact, $contactHiddenText,
         </h3><?php endif; ?>
         <div class="clubleadership-grid grid-staff">
             <?php foreach ($staff as $person): ?>
-                <?php echo clubleaddirRenderCard($person, $showPhotosStaff, $showContact, $contactHiddenText, $showTerm, $circularAvatars, $photoSize, $vacantContactId); ?>
+                <?php echo clubleaddirRenderCard($person, $showPhotosStaff, $showContact, $contactHiddenText, $showTerm, $circularAvatars, $photoSize, $vacantContactId, $vacancyDefaultEmail); ?>
             <?php endforeach; ?>
         </div>
     </section>

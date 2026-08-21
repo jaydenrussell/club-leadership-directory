@@ -235,7 +235,7 @@ class ClubleaddirHelper
      *
      * @return  string
      */
-    public static function contactHtml($person, $showContact, $contactHiddenText, $vacantContactId = 0)
+    public static function contactHtml($person, $showContact, $contactHiddenText, $vacantContactId = 0, $vacancyDefaultEmail = 'info@simcoecurlingclub.ca')
     {
         $email         = $person->email ?? '';
         $phone         = $person->phone ?? '';
@@ -243,7 +243,7 @@ class ClubleaddirHelper
         $vacant        = (int) ($person->vacant ?? 0);
         $vacancyEmail  = trim($person->vacancy_email ?? '');
         if ($vacancyEmail === '') {
-            $vacancyEmail = self::vacancyEmail();
+            $vacancyEmail = trim($vacancyDefaultEmail);
         }
 
         // 1. Vacant position — open the linked Joomla Contact's email
