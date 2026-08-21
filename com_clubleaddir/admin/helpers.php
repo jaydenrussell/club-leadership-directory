@@ -274,10 +274,10 @@ class ClubleaddirHelper
             return Text::sprintf('COM_CLUBLEADDIR_VACANCY_USES_EMAIL', $defaultEm);
         }
 
-        return Text::sprintf('COM_CLUBLEADDIR_VACANCY_USES_DEFAULT', self::vacancyEmail());
+        return Text::_('COM_CLUBLEADDIR_VACANCY_USES_NONE');
     }
 
-    public static function contactHtml($person, $showContact, $contactHiddenText, $vacantContactId = 0, $vacancyDefaultEmail = 'info@simcoecurlingclub.ca')
+    public static function contactHtml($person, $showContact, $contactHiddenText, $vacantContactId = 0, $vacancyDefaultEmail = '')
     {
         $email         = $person->email ?? '';
         $phone         = $person->phone ?? '';
@@ -298,6 +298,9 @@ class ClubleaddirHelper
                 $url   = Route::_('index.php?option=com_contact&view=contact&id=' . $vacantContact . '#display-form');
                 $label = Text::_('COM_CLUBLEADDIR_VACANCY_INQUIRE');
             } else {
+                if ($vacancyEmail === '') {
+                    return ''; // No Joomla Contact and no Vacancy Default Email configured.
+                }
                 $url   = 'mailto:' . $vacancyEmail;
                 $label = Text::_('COM_CLUBLEADDIR_VACANCY_INQUIRE');
             }
@@ -392,7 +395,7 @@ class ClubleaddirHelper
      * @param string $defaultEmail  Fallback email when no contact id is set
      * @return string
      */
-    public static function vacancyBannerHtml($contactId, $defaultEmail = 'info@simcoecurlingclub.ca')
+    public static function vacancyBannerHtml($contactId, $defaultEmail = '')
     {
         $contactId = (int) $contactId;
         if ($contactId > 0) {
@@ -401,7 +404,17 @@ class ClubleaddirHelper
             $url = Route::_('index.php?option=com_contact&view=contact&id=' . $contactId . '#display-form');
             $url = htmlspecialchars($url, ENT_QUOTES, 'UTF-8');
         } else {
-            $url = 'mailto:' . htmlspecialchars($defaultEmail, ENT_QUOTES, 'UTF-8');
+            if ($defaultEmail === '') {
+                // No Joomla Contact and no Vacancy Default Email configured -> no CTA link.
+                $url = '';
+            } else {
+                $url = 'mailto:' . htmlspecialchars($defaultEmail, ENT_QUOTES, 'UTF-8');
+            }
+        }
+
+        $cta = '';
+        if ($url !== '') {
+            $cta = '<a class="clubleaddir-vacancy-banner-cta" href="' . $url . '">' . htmlspecialchars(Text::_('COM_CLUBLEADDIR_VACANCIES_CTA'), ENT_QUOTES, 'UTF-8') . '</a>';
         }
 
         return '<div class="clubleaddir-vacancy-banner" role="status">'
@@ -410,7 +423,7 @@ class ClubleaddirHelper
                 . '<h3 class="clubleaddir-vacancy-banner-title">' . htmlspecialchars(Text::_('COM_CLUBLEADDIR_VACANCIES_TITLE'), ENT_QUOTES, 'UTF-8') . '</h3>'
                 . '<p class="clubleaddir-vacancy-banner-text">' . htmlspecialchars(Text::_('COM_CLUBLEADDIR_VACANCIES_BODY'), ENT_QUOTES, 'UTF-8') . '</p>'
             . '</div>'
-            . '<a class="clubleaddir-vacancy-banner-cta" href="' . $url . '">' . htmlspecialchars(Text::_('COM_CLUBLEADDIR_VACANCIES_CTA'), ENT_QUOTES, 'UTF-8') . '</a>'
+            . $cta
             . '</div>';
     }
 }
