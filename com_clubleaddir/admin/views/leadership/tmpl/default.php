@@ -157,13 +157,21 @@ function toggleVacantFields(isVacant) {
     if (photo) { photo.disabled = isVacant; }
 
     // Role/Title is required for a vacancy (it is the role being advertised).
+    // Joomla's form-validate reads the REQUIRED ATTRIBUTE (not the property), so
+    // we toggle the attribute explicitly rather than el.required.
     ['role_text', 'role_select'].forEach(function (id) {
         var el = document.getElementById(id);
-        if (el) { el.required = isVacant; }
+        if (el) {
+            if (isVacant) { el.setAttribute('required', 'required'); }
+            else { el.removeAttribute('required'); }
+        }
     });
     // A vacant post has no named person yet, so the name is optional.
     var nameEl = document.getElementById('name');
-    if (nameEl) { nameEl.required = !isVacant; }
+    if (nameEl) {
+        if (isVacant) { nameEl.removeAttribute('required'); }
+        else { nameEl.setAttribute('required', 'required'); }
+    }
     var nameLabel = document.querySelector('label[for="name"]');
     if (nameLabel) {
         var star = nameLabel.querySelector('.star');
