@@ -14,7 +14,6 @@ use Joomla\CMS\Factory;
 use Joomla\CMS\HTML\HTMLHelper;
 use Joomla\CMS\Language\Text;
 use Joomla\CMS\Router\Route;
-use Joomla\CMS\Table\Table;
 
 // Intentionally NOT extending Joomla\CMS\Helper\ContentHelper: on PHP 8.0 its
 // getActions($component = '', $section = '', $id = 0) signature is enforced
@@ -328,17 +327,16 @@ class ClubleaddirHelper
             return '';
         }
         try {
-            $table = Table::getInstance('Contact', 'Joomla\\CMS\\Table\\');
+            $db    = Factory::getDbo();
+            $query = $db->getQuery(true)
+                ->select($db->quoteName('email_to'))
+                ->from($db->quoteName('#__contact_details'))
+                ->where($db->quoteName('id') . ' = ' . (int) $contactId);
+            $db->setQuery($query);
+            $email = (string) $db->loadResult();
         } catch (\Throwable $e) {
-            $table = null;
+            $email = '';
         }
-        if ($table === null) {
-            return '';
-        }
-        if (!$table->load($contactId)) {
-            return '';
-        }
-        $email = isset($table->email_to) ? $table->email_to : '';
-        return trim((string) $email);
+        return trim($email);
     }
 }
