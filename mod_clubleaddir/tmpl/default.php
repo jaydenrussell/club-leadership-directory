@@ -105,8 +105,22 @@ function clubleaddirRenderLeagueCard($person, $showContact, $contactHiddenText)
 
 function clubleaddirRenderContactHtml($person, $showContact, $contactHiddenText)
 {
-    $email = $person->email ?? '';
-    $phone = $person->phone ?? '';
+    $email     = $person->email ?? '';
+    $phone     = $person->phone ?? '';
+    $contactId = (int) ($person->contact_id ?? 0);
+
+    // When a person is linked to a Joomla Contact, that contact page/form is the
+    // single, focused way to reach them — email/phone become irrelevant (the
+    // contact form handles all of it). Render a "Contact" link and stop.
+    if ($contactId > 0) {
+        $url = Route::_('index.php?option=com_contact&view=contact&id=' . $contactId);
+        return '<div class="clubleadership-card-contact">'
+            . '<a href="' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . '" class="clubleadership-contact-link">'
+            . '<span class="icon-envelope" aria-hidden="true"></span>'
+            . '<span class="clubleadership-contact-text">' . Text::_('MOD_CLUBLEADDIRECTION_CONTACT_LINK') . '</span></a>'
+            . '</div>';
+    }
+
     if (empty($email) && empty($phone)) {
         return '';
     }
