@@ -24,10 +24,19 @@ function clubleaddirSitePhoto($path)
 }
 
 $sections = array(
-    'officers'         => Text::_('MOD_CLUBLEADDIR_OFFICERS'),
-    'directors'        => Text::_('MOD_CLUBLEADDIR_DIRECTORS'),
-    'directors_league' => Text::_('MOD_CLUBLEADDIR_LEAGUE_APPOINTED_DIRECTORS'),
-    'staff'            => Text::_('MOD_CLUBLEADDIR_STAFF'),
+    'officers'         => Text::_('MOD_CLUBLEADDIRECTION_OFFICERS'),
+    'directors'        => Text::_('MOD_CLUBLEADDIRECTION_DIRECTORS'),
+    'directors_league' => Text::_('MOD_CLUBLEADDIRECTION_LEAGUE_APPOINTED_DIRECTORS'),
+    'staff'            => Text::_('MOD_CLUBLEADDIRECTION_STAFF'),
+);
+
+// Per-section photo display (from menu params, defaulting to the same
+// convention the module uses: officers on, directors/staff off).
+$showPhotos = array(
+    'officers'         => (int) ($this->params->get('show_photos_officers', 1)),
+    'directors'        => (int) ($this->params->get('show_photos_directors', 0)),
+    'directors_league' => (int) ($this->params->get('show_photos_directors', 0)),
+    'staff'            => (int) ($this->params->get('show_photos_staff', 0)),
 );
 
 $icon = array(
@@ -200,10 +209,12 @@ $icon = array(
                         $isOfficer = ($person->type === 'officer');
                         $hasPhoto  = !empty($person->photo);
                         $isVacant  = !empty($person->vacant);
+                        $showPhoto = !empty($showPhotos[$key]);
+                        // Photo box only appears when this section's photos are on.
                         // Officers always show a photo slot (real photo or initials);
                         // a vacant post shows the club logo; directors/staff only
                         // show a box when they actually have a real photo.
-                        $showPhotoBox = $hasPhoto || $isOfficer || $isVacant;
+                        $showPhotoBox = $showPhoto && ($hasPhoto || $isOfficer || $isVacant);
                         // When a vacant post has no named person, the role IS the
                         // title (so we don't print "Vacant" twice — the pill does that).
                         $nameEmpty = $isVacant && empty(trim($person->name ?? ''));

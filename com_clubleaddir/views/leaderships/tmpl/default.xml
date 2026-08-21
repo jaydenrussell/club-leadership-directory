@@ -5,6 +5,18 @@
     </layout>
     <fields name="params">
         <fieldset name="basic">
+            <field name="show_photos_officers" type="radio" label="MOD_CLUBLEADDIRECTION_FIELD_SHOW_PHOTOS_OFFICERS_LABEL" default="1" class="btn-group btn-group-yesno">
+                <option value="1">JYES</option>
+                <option value="0">JNO</option>
+            </field>
+            <field name="show_photos_directors" type="radio" label="MOD_CLUBLEADDIRECTION_FIELD_SHOW_PHOTOS_DIRECTORS_LABEL" default="0" class="btn-group btn-group-yesno">
+                <option value="1">JYES</option>
+                <option value="0">JNO</option>
+            </field>
+            <field name="show_photos_staff" type="radio" label="MOD_CLUBLEADDIRECTION_FIELD_SHOW_PHOTOS_STAFF_LABEL" default="0" class="btn-group btn-group-yesno">
+                <option value="1">JYES</option>
+                <option value="0">JNO</option>
+            </field>
             <field name="vacant_contact_id" type="sql"
                    label="COM_CLUBLEADDIR_FIELD_VACANT_CONTACT_LABEL"
                    description="COM_CLUBLEADDIR_FIELD_VACANT_CONTACT_DESC"
