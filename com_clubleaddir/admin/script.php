@@ -179,11 +179,25 @@ class ComClubleaddirInstallerScript
                         $db->quoteName('last_check_timestamp'), $db->quoteName('extra_query'),
                     ))
                     ->values(
-                        $db->quote($name) . ', ' . $db->quote('extension') . ', ' .
+                        $db->quote($name) . ', ' . $db->quote('collection') . ', ' .
                         $db->quote($url) . ', 1, 0, ' . $db->quote('')
                     );
                 $db->setQuery($q)->execute();
                 $log[] = 'INSERTED';
+
+                // Packages are detected via the #__update_sites_extensions link,
+                // which a plain upgrade does NOT write (only a clean install does).
+                // Write the link here so "Check for Updates" actually finds this
+                // collection site for pkg_clubleaddir.
+                $newId = (int) $db->insertid();
+                if ($newId > 0) {
+                    $q2 = $db->getQuery(true)
+                        ->insert($db->quoteName('#__update_sites_extensions'))
+                        ->columns(array($db->quoteName('update_site_id'), $db->quoteName('extension_id')))
+                        ->values($newId . ', ' . '(SELECT extension_id FROM #__extensions WHERE element = ' . $db->quote('pkg_clubleaddir') . ' AND type = ' . $db->quote('package') . ')');
+                    $db->setQuery($q2)->execute();
+                    $log[] = 'LINKED_TO_PKG';
+                }
             }
         } catch (\Throwable $e) {
             $log[] = 'EXCEPTION: ' . $e->getMessage();
