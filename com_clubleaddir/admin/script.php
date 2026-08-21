@@ -158,45 +158,54 @@ class ComClubleaddirInstallerScript
             $q = $db->getQuery(true)
                 ->update($db->quoteName('#__update_sites'))
                 ->set($db->quoteName('location') . ' = ' . $db->quote($url))
+                ->set($db->quoteName('type') . ' = ' . $db->quote('collection'))
                 ->set($db->quoteName('enabled') . ' = 1')
                 ->where($db->quoteName('name') . ' = ' . $db->quote($name));
             $db->setQuery($q)->execute();
             $log[] = 'UPDATE_AFFECTED=' . $db->getAffectedRows();
 
             $q = $db->getQuery(true)
-                ->select('COUNT(*)')
+                ->select('id')
                 ->from($db->quoteName('#__update_sites'))
-                ->where($db->quoteName('name') . ' = ' . $db->quote($name));
+                ->where($db->quoteName('name') . ' = ' . $db->quote($name))
+                ->order($db->quoteName('id') . ' DESC');
             $db->setQuery($q);
-            $count = (int) $db->loadResult();
-            $log[] = 'EXISTING_COUNT=' . $count;
-            if ($count === 0) {
-                $q = $db->getQuery(true)
-                    ->insert($db->quoteName('#__update_sites'))
-                    ->columns(array(
-                        $db->quoteName('name'), $db->quoteName('type'),
-                        $db->quoteName('location'), $db->quoteName('enabled'),
-                        $db->quoteName('last_check_timestamp'), $db->quoteName('extra_query'),
-                    ))
-                    ->values(
-                        $db->quote($name) . ', ' . $db->quote('collection') . ', ' .
-                        $db->quote($url) . ', 1, 0, ' . $db->quote('')
-                    );
-                $db->setQuery($q)->execute();
-                $log[] = 'INSERTED';
+            $siteId = (int) $db->loadResult();
+            $log[] = 'SITE_ID=' . $siteId;
 
+            if ($siteId > 0) {
                 // Packages are detected via the #__update_sites_extensions link,
                 // which a plain upgrade does NOT write (only a clean install does).
-                // Write the link here so "Check for Updates" actually finds this
+                // Ensure the link exists so "Check for Updates" finds this
                 // collection site for pkg_clubleaddir.
-                $newId = (int) $db->insertid();
-                if ($newId > 0) {
-                    $q2 = $db->getQuery(true)
-                        ->insert($db->quoteName('#__update_sites_extensions'))
-                        ->columns(array($db->quoteName('update_site_id'), $db->quoteName('extension_id')))
-                        ->values($newId . ', ' . '(SELECT extension_id FROM #__extensions WHERE element = ' . $db->quote('pkg_clubleaddir') . ' AND type = ' . $db->quote('package') . ')');
-                    $db->setQuery($q2)->execute();
-                    $log[] = 'LINKED_TO_PKG';
+                $pkgId = (int) $db->setQuery(
+                    $db->getQuery(true)
+                        ->select('extension_id')
+                        ->from($db->quoteName('#__extensions'))
+                        ->where($db->quoteName('element') . ' = ' . $db->quote('pkg_clubleaddir'))
+                        ->where($db->quoteName('type') . ' = ' . $db->quote('package'))
+                )->loadResult();
+                $log[] = 'PKG_ID=' . $pkgId;
+
+                if ($pkgId > 0) {
+                    $exists = (int) $db->setQuery(
+                        $db->getQuery(true)
+                            ->select('COUNT(*)')
+                            ->from($db->quoteName('#__update_sites_extensions'))
+                            ->where($db->quoteName('update_site_id') . ' = ' . $siteId)
+                            ->where($db->quoteName('extension_id') . ' = ' . $pkgId)
+                    )->loadResult();
+                    if ($exists === 0) {
+                        $db->setQuery(
+                            $db->getQuery(true)
+                                ->insert($db->quoteName('#__update_sites_extensions'))
+                                ->columns(array($db->quoteName('update_site_id'), $db->quoteName('extension_id')))
+                                ->values($siteId . ', ' . $pkgId)
+                        )->execute();
+                        $log[] = 'LINKED_TO_PKG';
+                    } else {
+                        $log[] = 'ALREADY_LINKED';
+                    }
                 }
             }
         } catch (\Throwable $e) {
