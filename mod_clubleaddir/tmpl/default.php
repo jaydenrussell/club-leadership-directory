@@ -29,7 +29,7 @@ function clubleaddirGetInitials($name)
     return strtoupper(mb_substr($parts[0], 0, 2));
 }
 
-function clubleaddirRenderCard($person, $showPhoto, $showContact, $contactHiddenText, $showTerm, $circular = 1, $photoSize = 120)
+function clubleaddirRenderCard($person, $showPhoto, $showContact, $contactHiddenText, $showTerm, $circular = 1, $photoSize = 120, $vacantContactId = 0)
 {
     $initials  = clubleaddirGetInitials($person->name);
     $size      = (int) $photoSize;
@@ -98,7 +98,7 @@ function clubleaddirRenderCard($person, $showPhoto, $showContact, $contactHidden
         $metaHtml .= '<span class="clubleadership-card-vacant">' . htmlspecialchars(Text::_('COM_CLUBLEADDIR_VACANT'), ENT_QUOTES, 'UTF-8') . '</span>';
     }
 
-    $contactHtml = clubleaddirRenderContactHtml($person, $showContact, $contactHiddenText);
+    $contactHtml = clubleaddirRenderContactHtml($person, $showContact, $contactHiddenText, $vacantContactId);
 
     return '<article class="clubleadership-card clubleaddir-card--' . htmlspecialchars($person->type, ENT_QUOTES, 'UTF-8') . ($isVacant ? ' clubleaddir-card--vacant' : '') . '">'
         . $photoHtml
@@ -110,34 +110,40 @@ function clubleaddirRenderCard($person, $showPhoto, $showContact, $contactHidden
         . '</article>';
 }
 
-function clubleaddirRenderLeagueCard($person, $showContact, $contactHiddenText)
+function clubleaddirRenderLeagueCard($person, $showContact, $contactHiddenText, $vacantContactId = 0)
 {
+    $isVacant  = !empty($person->vacant);
+    $nameEmpty = $isVacant && empty(trim($person->name ?? ''));
+    $displayName = $nameEmpty ? ($person->role ?? Text::_('MOD_CLUBLEADDIRECTION_LEAGUE_REP_TITLE')) : $person->name;
     $roleHtml   = '<div class="clubleadership-card-role">' . Text::_('MOD_CLUBLEADDIRECTION_LEAGUE_REP_TITLE') . '</div>';
     $leagueHtml = '';
     if (!empty($person->league_name)) {
         $leagueHtml = '<div class="clubleadership-card-league">' . htmlspecialchars($person->league_name, ENT_QUOTES, 'UTF-8') . '</div>';
     }
-    $contactHtml = clubleaddirRenderContactHtml($person, $showContact, $contactHiddenText);
+    $metaHtml = $roleHtml . $leagueHtml;
+    if ($isVacant) {
+        $metaHtml .= '<span class="clubleadership-card-vacant">' . htmlspecialchars(Text::_('COM_CLUBLEADDIR_VACANT'), ENT_QUOTES, 'UTF-8') . '</span>';
+    }
+    $contactHtml = clubleaddirRenderContactHtml($person, $showContact, $contactHiddenText, $vacantContactId);
 
-    return '<article class="clubleadership-card clubleaddir-card--director">'
+    return '<article class="clubleadership-card clubleaddir-card--director' . ($isVacant ? ' clubleaddir-card--vacant' : '') . '">'
         . '<div class="clubleadership-card-photo"></div>'
         . '<div class="clubleadership-card-content">'
-        . '<h4 class="clubleadership-card-name">' . htmlspecialchars($person->name, ENT_QUOTES, 'UTF-8') . '</h4>'
-        . $roleHtml
-        . $leagueHtml
+        . '<h4 class="clubleadership-card-name">' . htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8') . '</h4>'
+        . $metaHtml
         . $contactHtml
         . '</div>'
         . '</article>';
 }
 
-function clubleaddirRenderContactHtml($person, $showContact, $contactHiddenText)
+function clubleaddirRenderContactHtml($person, $showContact, $contactHiddenText, $vacantContactId = 0)
 {
     // Delegate to the shared helper so the module and the component view render
     // contact (Joomla Contact link, vacancy Apply/Inquire, or email/phone) identically.
     if (!class_exists('ClubleaddirHelper', false)) {
         require_once JPATH_ADMINISTRATOR . '/components/com_clubleaddir/helpers.php';
     }
-    return ClubleaddirHelper::contactHtml($person, $showContact, $contactHiddenText);
+    return ClubleaddirHelper::contactHtml($person, $showContact, $contactHiddenText, $vacantContactId);
 }
 ?>
 <style>
@@ -341,7 +347,7 @@ function clubleaddirRenderContactHtml($person, $showContact, $contactHiddenText)
         </h3><?php endif; ?>
         <div class="clubleadership-grid grid-officers">
             <?php foreach ($officers as $person): ?>
-                <?php echo clubleaddirRenderCard($person, $showPhotosOfficers, $showContact, $contactHiddenText, $showTerm, $circularAvatars, $photoSize); ?>
+                <?php echo clubleaddirRenderCard($person, $showPhotosOfficers, $showContact, $contactHiddenText, $showTerm, $circularAvatars, $photoSize, $vacantContactId); ?>
             <?php endforeach; ?>
         </div>
     </section>
@@ -356,7 +362,7 @@ function clubleaddirRenderContactHtml($person, $showContact, $contactHiddenText)
         <?php if (!empty($directors)): ?>
         <div class="clubleadership-grid grid-directors">
             <?php foreach ($directors as $person): ?>
-                <?php echo clubleaddirRenderCard($person, $showPhotosDirectors, $showContact, $contactHiddenText, $showTerm, $circularAvatars, $photoSize); ?>
+                <?php echo clubleaddirRenderCard($person, $showPhotosDirectors, $showContact, $contactHiddenText, $showTerm, $circularAvatars, $photoSize, $vacantContactId); ?>
             <?php endforeach; ?>
         </div>
         <?php endif; ?>
@@ -365,7 +371,7 @@ function clubleaddirRenderContactHtml($person, $showContact, $contactHiddenText)
             <h4 class="clubleadership-subsection-title"><?php echo Text::_('MOD_CLUBLEADDIRECTION_LEAGUE_APPOINTED_DIRECTORS'); ?></h4>
             <div class="clubleadership-grid grid-directors">
                 <?php foreach ($directorsLeague as $person): ?>
-                    <?php echo clubleaddirRenderLeagueCard($person, $showContact, $contactHiddenText); ?>
+                    <?php echo clubleaddirRenderLeagueCard($person, $showContact, $contactHiddenText, $vacantContactId); ?>
                 <?php endforeach; ?>
             </div>
         </div>
@@ -381,7 +387,7 @@ function clubleaddirRenderContactHtml($person, $showContact, $contactHiddenText)
         </h3><?php endif; ?>
         <div class="clubleadership-grid grid-staff">
             <?php foreach ($staff as $person): ?>
-                <?php echo clubleaddirRenderCard($person, $showPhotosStaff, $showContact, $contactHiddenText, $showTerm, $circularAvatars, $photoSize); ?>
+                <?php echo clubleaddirRenderCard($person, $showPhotosStaff, $showContact, $contactHiddenText, $showTerm, $circularAvatars, $photoSize, $vacantContactId); ?>
             <?php endforeach; ?>
         </div>
     </section>

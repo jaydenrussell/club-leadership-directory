@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<metadata>
+    <layout title="COM_CLUBLEADDIR_VIEW_LEADERSHIPS_TITLE">
+        <message>COM_CLUBLEADDIR_VIEW_LEADERSHIPS_DESC</message>
+    </layout>
+    <fields name="params">
+        <fieldset name="basic">
+            <field name="vacant_contact_id" type="sql"
+                   label="COM_CLUBLEADDIR_FIELD_VACANT_CONTACT_LABEL"
+                   description="COM_CLUBLEADDIR_FIELD_VACANT_CONTACT_DESC"
+                   query="SELECT CONCAT(a.name, ' (', a.email_to, ')') AS text, a.id AS value FROM #__contact_details a ORDER BY a.name ASC"
+                   key_field="value" value_field="text"
+                   multiple="false">
+                <option value="0">COM_CLUBLEADDIR_FIELD_VACANT_CONTACT_NONE</option>
+            </field>
+        </fieldset>
+    </fields>
+</metadata>

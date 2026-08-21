@@ -35,6 +35,7 @@ $showPhotosDirectors = (int) $paramsData->get('show_photos_directors', 0);
 $showPhotosStaff     = (int) $paramsData->get('show_photos_staff', 0);
 $showContact     = !$paramsData->get('require_login_for_contact', 1) || !$user->guest;
 $contactHiddenText   = $paramsData->get('contact_hidden_text', Text::_('MOD_CLUBLEADDIRECTION_LOGIN_TO_VIEW'));
+$vacantContactId     = (int) $paramsData->get('vacant_contact_id', 0);
 $showTerm        = (int) $paramsData->get('show_term', 1);
 $circularAvatars = (int) $paramsData->get('circular_avatars', 1);
 $photoSize       = (int) $paramsData->get('photo_size', 120);

@@ -245,7 +245,7 @@ $icon = array(
                                 <?php if (!empty($person->league_name)): ?>
                                     <div class="clubleadership-card-league"><?php echo $this->escape($person->league_name); ?></div>
                                 <?php endif; ?>
-                                <?php echo ClubleaddirHelper::contactHtml($person, true, ''); ?>
+                                <?php echo ClubleaddirHelper::contactHtml($person, true, '', (int) ($this->params->get('vacant_contact_id', 0))); ?>
                             </div>
                         </article>
                     <?php endforeach; ?>

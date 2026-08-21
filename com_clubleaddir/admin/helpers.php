@@ -14,6 +14,7 @@ use Joomla\CMS\Factory;
 use Joomla\CMS\HTML\HTMLHelper;
 use Joomla\CMS\Language\Text;
 use Joomla\CMS\Router\Route;
+use Joomla\CMS\Table\Table;
 
 // Intentionally NOT extending Joomla\CMS\Helper\ContentHelper: on PHP 8.0 its
 // getActions($component = '', $section = '', $id = 0) signature is enforced
@@ -235,7 +236,7 @@ class ClubleaddirHelper
      *
      * @return  string
      */
-    public static function contactHtml($person, $showContact, $contactHiddenText)
+    public static function contactHtml($person, $showContact, $contactHiddenText, $vacantContactId = 0)
     {
         $email         = $person->email ?? '';
         $phone         = $person->phone ?? '';
@@ -246,16 +247,17 @@ class ClubleaddirHelper
             $vacancyEmail = self::vacancyEmail();
         }
 
-        // 1. Vacant position — invite volunteers to apply / enquire.
+        // 1. Vacant position — open the linked Joomla Contact's email
+        //    directly (mailto:, no contact page, no prefilled subject).
+        //    Falls back to a plain vacancy email when no contact is set.
         if ($vacant === 1) {
-            $role   = trim($person->role ?? '');
-            $subject = ($role !== '' ? $role . ' Vacancy' : 'Leadership Vacancy')
-                . ' — Simcoe Curling Club';
-            if ($contactId > 0) {
-                $url = Route::_('index.php?option=com_contact&view=contact&id=' . $contactId);
-                $label = Text::_('COM_CLUBLEADDIR_VACANCY_APPLY');
+            $vacantContact = ($contactId > 0) ? $contactId : (int) $vacantContactId;
+            $contactEmail  = self::contactEmail($vacantContact);
+            if ($contactEmail !== '') {
+                $url   = 'mailto:' . $contactEmail;
+                $label = Text::_('COM_CLUBLEADDIR_VACANCY_INQUIRE');
             } else {
-                $url = 'mailto:' . $vacancyEmail . '?subject=' . rawurlencode($subject);
+                $url   = 'mailto:' . $vacancyEmail;
                 $label = Text::_('COM_CLUBLEADDIR_VACANCY_INQUIRE');
             }
             return '<div class="clubleadership-card-contact">'
@@ -310,5 +312,33 @@ class ClubleaddirHelper
     public static function vacantLogo()
     {
         return 'https://simcoecurlingclub.ca/images/Logo/simcoe_curling_club_logo.svg';
+    }
+
+    /**
+     * Resolve a Joomla Contact's email address (email_to). Used so a vacant
+     * position's CTA opens mailto: directly instead of the contact page.
+     *
+     * @param int $contactId
+     * @return string  email address, or '' if not found
+     */
+    public static function contactEmail($contactId)
+    {
+        $contactId = (int) $contactId;
+        if ($contactId <= 0) {
+            return '';
+        }
+        try {
+            $table = Table::getInstance('Contact', 'Joomla\\CMS\\Table\\');
+        } catch (\Throwable $e) {
+            $table = null;
+        }
+        if ($table === null) {
+            return '';
+        }
+        if (!$table->load($contactId)) {
+            return '';
+        }
+        $email = isset($table->email_to) ? $table->email_to : '';
+        return trim((string) $email);
     }
 }
