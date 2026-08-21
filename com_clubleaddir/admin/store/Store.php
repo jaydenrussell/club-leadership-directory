@@ -98,6 +98,9 @@ class ClubleaddirStoreSqlite extends ClubleaddirStoreBackend
             'photo_full TEXT NOT NULL DEFAULT \'\', ' .
             'email TEXT NOT NULL DEFAULT \'\', ' .
             'phone TEXT NOT NULL DEFAULT \'\', ' .
+            'contact_id INTEGER NOT NULL DEFAULT 0, ' .
+            'vacant INTEGER NOT NULL DEFAULT 0, ' .
+            'vacancy_email TEXT NOT NULL DEFAULT \'\', ' .
             'ordering INTEGER NOT NULL DEFAULT 0, ' .
             'published INTEGER NOT NULL DEFAULT 1, ' .
             'status TEXT NOT NULL DEFAULT \'active\', ' .
@@ -136,6 +139,9 @@ class ClubleaddirStoreSqlite extends ClubleaddirStoreBackend
             'photo_full'  => "TEXT NOT NULL DEFAULT ''",
             'email'       => "TEXT NOT NULL DEFAULT ''",
             'phone'       => "TEXT NOT NULL DEFAULT ''",
+            'contact_id'  => 'INTEGER NOT NULL DEFAULT 0',
+            'vacant'      => 'INTEGER NOT NULL DEFAULT 0',
+            'vacancy_email' => "TEXT NOT NULL DEFAULT ''",
             'ordering'    => 'INTEGER NOT NULL DEFAULT 0',
             'published'   => 'INTEGER NOT NULL DEFAULT 1',
             'status'      => "TEXT NOT NULL DEFAULT 'active'",
@@ -212,7 +218,7 @@ class ClubleaddirStoreSqlite extends ClubleaddirStoreBackend
     public function insert(array $data)
     {
         $cols = array('name', 'type', 'role', 'league_name', 'term', 'start_year', 'end_year', 'bio', 'photo', 'photo_full',
-            'email', 'phone', 'ordering', 'published', 'status', 'created', 'modified', 'created_by', 'modified_by');
+            'email', 'phone', 'contact_id', 'vacant', 'vacancy_email', 'ordering', 'published', 'status', 'created', 'modified', 'created_by', 'modified_by');
 
         $colList = array();
         $placeholders = array();
@@ -237,7 +243,7 @@ class ClubleaddirStoreSqlite extends ClubleaddirStoreBackend
     public function update($id, array $data)
     {
         $editable = array('name', 'type', 'role', 'league_name', 'term', 'start_year', 'end_year', 'bio', 'photo', 'photo_full',
-            'email', 'phone', 'ordering', 'published', 'status', 'modified', 'modified_by');
+            'email', 'phone', 'contact_id', 'vacant', 'vacancy_email', 'ordering', 'published', 'status', 'modified', 'modified_by');
 
         $sets = array();
         $binds = array(':id' => (int) $id);

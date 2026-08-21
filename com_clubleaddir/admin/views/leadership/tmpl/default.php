@@ -31,7 +31,7 @@ $item   = $this->item;
 $itemDefaults = array(
     'id' => 0, 'name' => '', 'type' => '', 'role' => '', 'league_name' => '',
     'term' => '', 'bio' => '', 'photo' => '', 'email' => '', 'phone' => '',
-    'contact_id' => 0, 'ordering' => 0, 'published' => 1, 'status' => 'active',
+    'contact_id' => 0, 'vacant' => 0, 'vacancy_email' => '', 'ordering' => 0, 'published' => 1, 'status' => 'active',
     'created' => '', 'modified' => '',
 );
 if (is_object($item)) {
@@ -85,26 +85,60 @@ function toggleTypeFields(type) {
     }
     // Officer role is a restricted dropdown; other types use free text.
     var isOfficer = (type === 'officer');
+    var isLeague = (type === 'director_league');
     var roleSelect = document.getElementById('role_select');
     var roleText   = document.getElementById('role_text');
     var roleHidden = document.getElementById('role');
+    var roleGroup  = document.getElementById('role-control-group');
     if (isOfficer) {
         roleSelect.style.display = 'block';
         roleText.style.display = 'none';
         roleText.value = '';
         roleHidden.value = roleSelect.value;
-    } else {
+        setRoleDisabled(false);
+    } else if (isLeague) {
+        // League directors are identified by their league, not a job title.
+        // Grey out and disable the Role/Title field so it can't be set.
         roleSelect.style.display = 'none';
-        roleText.style.display = 'block';
-        // Leaving officer: clear any restricted role so it isn't inherited by another type.
+        roleText.style.display = 'none';
         roleHidden.value = '';
         roleText.value = '';
         roleSelect.value = '';
+        setRoleDisabled(true);
+    } else {
+        roleSelect.style.display = 'none';
+        roleText.style.display = 'block';
+        // Leaving officer/league: clear any restricted role so it isn't inherited.
+        roleHidden.value = '';
+        roleText.value = '';
+        roleSelect.value = '';
+        setRoleDisabled(false);
     }
     // Staff use employment years instead of a "term".
     var staffWrap = document.getElementById('staff-fields');
     if (staffWrap) {
         staffWrap.style.display = (type === 'staff') ? 'block' : 'none';
+    }
+}
+
+// Grey out + disable the Role/Title control group (used for league directors).
+function setRoleDisabled(disabled) {
+    var group = document.getElementById('role-control-group');
+    if (group) {
+        group.classList.toggle('clble-disabled', disabled);
+    }
+    var inputs = ['role_text', 'role_select'];
+    inputs.forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el) { el.disabled = disabled; }
+    });
+}
+
+// Show/hide the vacancy enquiry email field (only relevant when vacant).
+function toggleVacantFields(isVacant) {
+    var grp = document.getElementById('vacancy-email-group');
+    if (grp) {
+        grp.style.display = isVacant ? 'block' : 'none';
     }
 }
 function toggleLeagueFields(type) { toggleTypeFields(type); }
@@ -182,6 +216,18 @@ function jClubleaddirSelectContact(id, name) {
     else if (window.parent.jModalClose) { window.parent.jModalClose(); }
     return false;
 }
+
+// Initialise field visibility (league/role/staff toggles) on load.
+(function () {
+    var typeEl = document.getElementById('type');
+    if (typeEl) {
+        toggleTypeFields(typeEl.value);
+    }
+    var vacantEl = document.getElementById('vacant');
+    if (vacantEl) {
+        toggleVacantFields(vacantEl.checked);
+    }
+})();
 </script>
 
 <style>
@@ -212,6 +258,10 @@ function jClubleaddirSelectContact(id, name) {
 .clble-edit-grid .control-label { width: 160px; }
 .clble-edit-grid .controls { margin-left: 180px; }
 .clble-contact-picked { font-size: 12px; color: #555; margin-top: 4px; }
+.clble-help-note { font-size: 11px; color: #8a6d3b; margin-top: 4px; font-style: italic; }
+/* Greyed-out (disabled) control group, e.g. Role/Title for league directors. */
+.clble-disabled { opacity: 0.5; pointer-events: none; }
+.clble-disabled .control-label label { color: #999; }
 .clble-photo-col { text-align: center; }
 .clble-photo-col .thumbnail,
 .clble-photo-col .clble-photo-placeholder {
@@ -308,13 +358,14 @@ function jClubleaddirSelectContact(id, name) {
                             </div>
                         </div>
 
-                        <div class="control-group">
+                        <div class="control-group" id="role-control-group">
                             <div class="control-label">
                                 <label for="role"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_ROLE'); ?></label>
                             </div>
                             <div class="controls">
                                 <?php
                                 $isOfficer = ($item->type === 'officer');
+                                $isLeague  = ($item->type === 'director_league');
                                 $officerRoleVal = array_key_exists($item->role, $officerRoles) ? $item->role : '';
                                 ?>
                                 <!-- Hidden carries the actual submitted value. -->
@@ -328,9 +379,12 @@ function jClubleaddirSelectContact(id, name) {
                                     <?php endforeach; ?>
                                 </select>
                                 <!-- Other types: free text. -->
-                                <input type="text" id="role_text" class="inputbox clble-w-main" style="display:<?php echo !$isOfficer ? 'block' : 'none'; ?>;"
+                                <input type="text" id="role_text" class="inputbox clble-w-main" style="display:<?php echo (!$isOfficer && !$isLeague) ? 'block' : 'none'; ?>;"
                                        value="<?php echo $this->escape($item->role); ?>" placeholder="<?php echo Text::_('COM_CLUBLEADDIR_FIELD_ROLE_PLACEHOLDER'); ?>"
                                        oninput="document.getElementById('role').value = this.value;">
+                                <?php if ($isLeague): ?>
+                                    <p class="clble-help-note"><?php echo Text::_('COM_CLUBLEADDIR_ROLE_DISABLED_FOR_LEAGUE'); ?></p>
+                                <?php endif; ?>
                             </div>
                         </div>
                     </div>
@@ -430,6 +484,29 @@ function jClubleaddirSelectContact(id, name) {
                                 <?php echo Text::_('COM_CLUBLEADDIR_CONTACT_COMPONENT_MISSING'); ?>
                             <?php endif; ?>
                         </div>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <div class="control-label">
+                        <label for="vacant"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_VACANT'); ?></label>
+                    </div>
+                    <div class="controls">
+                        <input type="checkbox" name="jform[vacant]" id="vacant" value="1" <?php echo (!empty($item->vacant) ? 'checked' : ''); ?>
+                               onchange="toggleVacantFields(this.checked);">
+                        <span class="clble-help-note" style="margin:0 0 0 6px;"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_VACANT_HELP'); ?></span>
+                    </div>
+                </div>
+
+                <div class="control-group" id="vacancy-email-group">
+                    <div class="control-label">
+                        <label for="vacancy_email"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_VACANCY_EMAIL'); ?></label>
+                    </div>
+                    <div class="controls">
+                        <input type="email" name="jform[vacancy_email]" id="vacancy_email" class="inputbox clble-w-main"
+                               value="<?php echo $this->escape($item->vacancy_email ?? ''); ?>"
+                               placeholder="<?php echo $this->escape(ClubleaddirHelper::vacancyEmail()); ?>">
+                        <p class="help-block muted" style="font-size:11px;"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_VACANCY_EMAIL_HELP'); ?></p>
                     </div>
                 </div>
 

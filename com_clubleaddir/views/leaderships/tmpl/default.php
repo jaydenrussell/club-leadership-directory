@@ -10,6 +10,8 @@ defined('_JEXEC') or die;
 
 use Joomla\CMS\Language\Text;
 
+require_once JPATH_ADMINISTRATOR . '/components/com_clubleaddir/helpers.php';
+
 function clubleaddirSitePhoto($path)
 {
     if ($path === '' || $path === null) {
@@ -22,10 +24,10 @@ function clubleaddirSitePhoto($path)
 }
 
 $sections = array(
-    'officers'         => Text::_('MOD_CLUBLEADDIRECTION_OFFICERS'),
-    'directors'        => Text::_('MOD_CLUBLEADDIRECTION_DIRECTORS'),
-    'directors_league' => Text::_('MOD_CLUBLEADDIRECTION_LEAGUE_APPOINTED_DIRECTORS'),
-    'staff'            => Text::_('MOD_CLUBLEADDIRECTION_STAFF'),
+    'officers'         => Text::_('MOD_CLUBLEADDIR_OFFICERS'),
+    'directors'        => Text::_('MOD_CLUBLEADDIR_DIRECTORS'),
+    'directors_league' => Text::_('MOD_CLUBLEADDIR_LEAGUE_APPOINTED_DIRECTORS'),
+    'staff'            => Text::_('MOD_CLUBLEADDIR_STAFF'),
 );
 
 $icon = array(
@@ -34,8 +36,7 @@ $icon = array(
     'directors_league' => '&#128101;',
     'staff'            => '&#9881;',
 );
-?>
-<style>
+?><style>
 /* Club Leadership Directory — front-end styling (scoped to this view only). */
 .com-clubleaddir, .com-clubleaddir * { box-sizing: border-box; }
 .com-clubleaddir {
@@ -82,16 +83,19 @@ $icon = array(
     border: 1px solid #d5dfe8;
     overflow: hidden;
     transition: box-shadow 0.2s, transform 0.2s;
+    text-align: center;
 }
 .com-clubleaddir .clubleadership-card:hover {
     box-shadow: 0 6px 24px rgba(21, 50, 74, 0.14);
     transform: translateY(-2px);
 }
-.com-clubleaddir .clubleadership-card--officer { text-align: center; }
+.com-clubleaddir .clubleadership-card--officer { }
 .com-clubleaddir .clubleadership-card--director,
-.com-clubleaddir .clubleadership-card--staff { display: flex; flex-direction: column; min-height: 110px; align-items: center; text-align: center; }
-.com-clubleaddir .clubleadership-card--officer .clubleadership-card-photo {
-    margin: 0.875rem auto 0;
+.com-clubleaddir .clubleadership-card--staff {
+    display: flex;
+    flex-direction: column;
+    min-height: 110px;
+    align-items: center;
 }
 .com-clubleaddir .clubleadership-card-photo {
     position: relative;
@@ -105,6 +109,10 @@ $icon = array(
 .com-clubleaddir .clubleadership-card-photo.is-circular { border-radius: 50%; border: 3px solid #fff; box-shadow: 0 2px 8px rgba(21,50,74,0.12); }
 .com-clubleaddir .clubleadership-card-photo.is-rect { border-radius: 8px; border: 1px solid #d5dfe8; }
 .com-clubleaddir .clubleadership-card-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.com-clubleaddir .clubleadership-card--officer .clubleadership-card-photo {
+    width: 120px; height: 120px;
+    margin: 0.875rem auto 0;
+}
 .com-clubleaddir .clubleadership-card-photo--initials {
     width: 100%;
     height: 100%;
@@ -120,16 +128,49 @@ $icon = array(
     padding: 0.625rem 0.75rem 0.75rem;
     display: flex;
     flex-direction: column;
+    align-items: center;
     justify-content: center;
     flex: 1;
 }
-.com-clubleaddir .clubleadership-card--officer .clubleadership-card-content { padding: 0.5rem 0.75rem 0.875rem; justify-content: flex-start; }
 .com-clubleaddir .clubleadership-card-name { font-size: 0.8rem; font-weight: 600; color: #1a2a3a; margin: 0 0 0.1rem; line-height: 1.3; }
 .com-clubleaddir .clubleadership-card--officer .clubleadership-card-name { font-size: 1rem; margin-top: 0.35rem; }
 .com-clubleaddir .clubleadership-card-role { font-size: 0.7rem; font-weight: 600; color: #305789; }
 .com-clubleaddir .clubleadership-card--officer .clubleadership-card-role { color: #b8963e; font-size: 0.8rem; }
 .com-clubleaddir .clubleadership-card-term { font-size: 0.65rem; color: #999; }
 .com-clubleaddir .clubleadership-card-league { font-size: 0.68rem; color: #555; font-style: italic; margin-top: 0.1rem; }
+.com-clubleaddir .clubleadership-card-vacant {
+    display: inline-block;
+    margin-top: 0.25rem;
+    padding: 0.1rem 0.5rem;
+    border-radius: 50px;
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    background: #b8963e;
+    color: #fff;
+}
+.com-clubleaddir .clubleadership-card-contact {
+    display: flex; flex-wrap: wrap; gap: 0.3rem;
+    margin-top: 0.4rem; padding-top: 0.4rem;
+    border-top: 1px solid #d5dfe8;
+    justify-content: center;
+}
+.com-clubleaddir .clubleadership-contact-link {
+    display: inline-flex; align-items: center; gap: 0.2rem;
+    padding: 0.2rem 0.45rem; background: #e8f0f8;
+    color: #305789; border-radius: 6px;
+    font-size: 0.65rem; font-weight: 600; text-decoration: none;
+    transition: background 0.2s, color 0.2s;
+}
+.com-clubleaddir .clubleadership-contact-link:hover { background: #305789; color: #fff; }
+.com-clubleaddir .clubleadership-contact-text { display: none; }
+@media (min-width: 400px) { .com-clubleaddir .clubleadership-contact-text { display: inline; } }
+.com-clubleaddir .clubleadership-contact-hidden {
+    display: inline-flex; align-items: center; gap: 0.2rem;
+    font-size: 0.65rem; color: #bbb;
+}
+.com-clubleaddir .clubleadership-contact-hidden .icon-lock { color: #305789; }
 @media (max-width: 1100px) {
     .com-clubleaddir .grid-officers { grid-template-columns: repeat(2, 1fr); }
     .com-clubleaddir .grid-directors { grid-template-columns: repeat(3, 1fr); }
@@ -155,21 +196,35 @@ $icon = array(
                     <?php echo $title; ?>
                 </h2>
                 <div class="clubleadership-grid grid-<?php echo $key === 'directors_league' ? 'directors' : ($key === 'officers' ? 'officers' : ($key === 'staff' ? 'staff' : 'directors')); ?>">
-                    <?php foreach ($this->groups[$key] as $person): ?>
-                        <article class="clubleadership-card clubleaddir-card--<?php echo $this->escape($person->type); ?>">
-                            <div class="clubleadership-card-photo is-visible is-circular" style="width:120px;height:120px;">
-                                <?php if (!empty($person->photo)): ?>
+                    <?php foreach ($this->groups[$key] as $person):
+                        $isOfficer = ($person->type === 'officer');
+                        $hasPhoto  = !empty($person->photo);
+                        // Officers always show a photo slot (real photo or initials);
+                        // directors/staff only show a box when they actually have a photo.
+                        $showPhotoBox = $hasPhoto || $isOfficer;
+                        $isVacant  = !empty($person->vacant);
+                        $displayName = $isVacant && empty(trim($person->name ?? ''))
+                            ? Text::_('COM_CLUBLEADDIR_VACANT')
+                            : $person->name;
+                    ?>
+                        <article class="clubleadership-card clubleaddir-card--<?php echo $this->escape($person->type); ?><?php echo $isVacant ? ' clubleaddir-card--vacant' : ''; ?>">
+                            <?php if ($showPhotoBox): ?>
+                            <div class="clubleadership-card-photo is-visible is-circular" style="width:<?php echo $isOfficer ? 120 : 120; ?>px;height:120px;">
+                                <?php if ($hasPhoto): ?>
                                     <img src="<?php echo $this->escape(clubleaddirSitePhoto($person->photo)); ?>" alt="" loading="lazy" width="120" height="120">
                                 <?php else: ?>
-                                    <div class="clubleadership-card-photo--initials"><?php echo $this->escape(substr($person->name, 0, 2)); ?></div>
+                                    <div class="clubleadership-card-photo--initials"><?php echo $this->escape(substr($displayName, 0, 2)); ?></div>
                                 <?php endif; ?>
                             </div>
+                            <?php endif; ?>
                             <div class="clubleadership-card-content">
-                                <h3 class="clubleadership-card-name"><?php echo $this->escape($person->name); ?></h3>
+                                <h3 class="clubleadership-card-name"><?php echo $this->escape($displayName); ?></h3>
                                 <?php if (!empty($person->role)): ?>
                                     <div class="clubleadership-card-role"><?php echo $this->escape($person->role); ?></div>
                                 <?php endif; ?>
-                                <?php if ($person->type === 'staff'): ?>
+                                <?php if ($isVacant): ?>
+                                    <span class="clubleadership-card-vacant"><?php echo Text::_('COM_CLUBLEADDIR_VACANT'); ?></span>
+                                <?php elseif ($person->type === 'staff'): ?>
                                     <?php
                                     $sy = (int) ($person->start_year ?? 0);
                                     $ey = (int) ($person->end_year ?? 0);
@@ -184,6 +239,7 @@ $icon = array(
                                 <?php if (!empty($person->league_name)): ?>
                                     <div class="clubleadership-card-league"><?php echo $this->escape($person->league_name); ?></div>
                                 <?php endif; ?>
+                                <?php echo ClubleaddirHelper::contactHtml($person, true, ''); ?>
                             </div>
                         </article>
                     <?php endforeach; ?>

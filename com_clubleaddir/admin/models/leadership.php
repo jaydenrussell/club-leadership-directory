@@ -59,6 +59,8 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
             'email'       => '',
             'phone'       => '',
             'contact_id'  => 0,
+            'vacant'      => 0,
+            'vacancy_email' => '',
             'ordering'    => 0,
             'published'   => 1,
             'status'      => 'active',
@@ -93,6 +95,8 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
             'email'       => $data['email'] ?? '',
             'phone'       => $data['phone'] ?? '',
             'contact_id'  => (int) ($data['contact_id'] ?? 0),
+            'vacant'      => !empty($data['vacant']) ? 1 : 0,
+            'vacancy_email' => trim($data['vacancy_email'] ?? ''),
             'ordering'    => (int) ($data['ordering'] ?? 0),
             'published'   => isset($data['published']) ? (int) $data['published'] : 1,
             'status'      => $data['status'] ?? 'active',
@@ -138,7 +142,9 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
 
     private function validate(array $data)
     {
-        if (empty(trim($data['name'] ?? ''))) {
+        $vacant = !empty($data['vacant']);
+        // A vacant position does not require a person's name.
+        if (!$vacant && empty(trim($data['name'] ?? ''))) {
             $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_NAME_REQUIRED'));
             return false;
         }

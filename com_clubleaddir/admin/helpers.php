@@ -206,4 +206,99 @@ class ClubleaddirHelper
 
         return $canDo;
     }
+
+    /**
+     * Default inbox used for vacancy enquiries when no per-record override is set.
+     *
+     * @return string
+     */
+    public static function vacancyEmail()
+    {
+        return 'info@simcoecurlingclub.ca';
+    }
+
+    /**
+     * Render the contact block for a leadership card.
+     *
+     * Priority:
+     *   1. Vacant position  -> an "Apply / Inquire" link (Joomla contact if a
+     *      contact_id is set, otherwise a mailto to the vacancy inbox with the
+     *      role as the subject).
+     *   2. Linked Contact     -> a "Contact" link to the Joomla contact entry.
+     *   3. Email / Phone      -> the usual mailto/tel links (or a login lock).
+     *
+     * Used by both the component view and the module so behaviour stays identical.
+     *
+     * @param   object  $person             Leadership record (stdClass from store)
+     * @param   bool    $showContact        Whether contact details are revealed
+     * @param   string  $contactHiddenText   Text shown when contact is hidden
+     *
+     * @return  string
+     */
+    public static function contactHtml($person, $showContact, $contactHiddenText)
+    {
+        $email         = $person->email ?? '';
+        $phone         = $person->phone ?? '';
+        $contactId     = (int) ($person->contact_id ?? 0);
+        $vacant        = (int) ($person->vacant ?? 0);
+        $vacancyEmail  = trim($person->vacancy_email ?? '');
+        if ($vacancyEmail === '') {
+            $vacancyEmail = self::vacancyEmail();
+        }
+
+        // 1. Vacant position — invite volunteers to apply / enquire.
+        if ($vacant === 1) {
+            $role   = trim($person->role ?? '');
+            $subject = ($role !== '' ? $role . ' Vacancy' : 'Leadership Vacancy')
+                . ' — Simcoe Curling Club';
+            if ($contactId > 0) {
+                $url = Route::_('index.php?option=com_contact&view=contact&id=' . $contactId);
+                $label = Text::_('COM_CLUBLEADDIR_VACANCY_APPLY');
+            } else {
+                $url = 'mailto:' . $vacancyEmail . '?subject=' . rawurlencode($subject);
+                $label = Text::_('COM_CLUBLEADDIR_VACANCY_INQUIRE');
+            }
+            return '<div class="clubleadership-card-contact">'
+                . '<a href="' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . '" class="clubleadership-contact-link clubleaddir-vacancy-link">'
+                . '<span class="icon-mail" aria-hidden="true"></span>'
+                . '<span class="clubleadership-contact-text">' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</span></a>'
+                . '</div>';
+        }
+
+        // 2. Linked Joomla Contact — this is the single, focused way to reach the
+        //    person; email/phone become irrelevant (the contact form covers them).
+        if ($contactId > 0) {
+            $url = Route::_('index.php?option=com_contact&view=contact&id=' . $contactId);
+            return '<div class="clubleadership-card-contact">'
+                . '<a href="' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . '" class="clubleadership-contact-link">'
+                . '<span class="icon-envelope" aria-hidden="true"></span>'
+                . '<span class="clubleadership-contact-text">' . Text::_('MOD_CLUBLEADDIRECTION_CONTACT_LINK') . '</span></a>'
+                . '</div>';
+        }
+
+        // 3. Plain email / phone.
+        if (empty($email) && empty($phone)) {
+            return '';
+        }
+
+        $html = '<div class="clubleadership-card-contact">';
+        if ($showContact) {
+            if (!empty($email)) {
+                $html .= '<a href="mailto:' . htmlspecialchars($email, ENT_QUOTES, 'UTF-8') . '" class="clubleadership-contact-link">'
+                    . '<span class="icon-envelope" aria-hidden="true"></span>'
+                    . '<span class="clubleadership-contact-text">Email</span></a>';
+            }
+            if (!empty($phone)) {
+                $html .= '<a href="tel:' . htmlspecialchars(preg_replace('/[^0-9+]/', '', $phone), ENT_QUOTES, 'UTF-8') . '" class="clubleadership-contact-link">'
+                    . '<span class="icon-phone" aria-hidden="true"></span>'
+                    . '<span class="clubleadership-contact-text">' . htmlspecialchars($phone, ENT_QUOTES, 'UTF-8') . '</span></a>';
+            }
+        } else {
+            $html .= '<span class="clubleadership-contact-hidden">'
+                . '<span class="icon-lock" aria-hidden="true"></span> '
+                . htmlspecialchars($contactHiddenText, ENT_QUOTES, 'UTF-8') . '</span>';
+        }
+        $html .= '</div>';
+        return $html;
+    }
 }

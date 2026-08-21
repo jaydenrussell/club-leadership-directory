@@ -36,23 +36,33 @@ function clubleaddirRenderCard($person, $showPhoto, $showContact, $contactHidden
     if ($size < 40) { $size = 40; }
     if ($size > 320) { $size = 320; }
 
+    $hasPhoto  = !empty($person->photo);
+    $isOfficer = ($person->type === 'officer');
+    // Officers always get a photo slot (real photo, or initials fallback).
+    // Directors/staff only show a box when they actually have a photo — otherwise
+    // it is removed from the card entirely (no empty circle / initials).
+    $showPhotoBox = $hasPhoto || $isOfficer;
+
     // Circular avatar uses the square crop; non-circular shows the original upload.
     $photoSrc = (!empty($person->photo) && $circular)
         ? $person->photo
         : (!empty($person->photo_full) ? $person->photo_full : $person->photo);
 
     $shapeClass = $circular ? 'is-circular' : 'is-rect';
-    $photoHtml = '<div class="clubleadership-card-photo ' . ($showPhoto ? 'is-visible ' : '') . $shapeClass . '" style="width:' . $size . 'px;height:' . $size . 'px;">';
-    if (!empty($photoSrc)) {
-        $src = $photoSrc;
-        if ($src !== '' && $src[0] !== '/' && !preg_match('#^[a-z]+://#i', $src) && strpos($src, '//') !== 0) {
-            $src = '/' . ltrim($src, '/');
+    $photoHtml = '';
+    if ($showPhotoBox) {
+        $photoHtml = '<div class="clubleadership-card-photo ' . ($showPhotoBox ? 'is-visible ' : '') . $shapeClass . '" style="width:' . $size . 'px;height:' . $size . 'px;">';
+        if (!empty($photoSrc)) {
+            $src = $photoSrc;
+            if ($src !== '' && $src[0] !== '/' && !preg_match('#^[a-z]+://#i', $src) && strpos($src, '//') !== 0) {
+                $src = '/' . ltrim($src, '/');
+            }
+            $photoHtml .= '<img src="' . htmlspecialchars($src, ENT_QUOTES, 'UTF-8') . '" alt="" loading="lazy" width="' . $size . '" height="' . $size . '">';
+        } elseif ($isOfficer) {
+            $photoHtml .= '<div class="clubleadership-card-photo--initials">' . $initials . '</div>';
         }
-        $photoHtml .= '<img src="' . htmlspecialchars($src, ENT_QUOTES, 'UTF-8') . '" alt="" loading="lazy" width="' . $size . '" height="' . $size . '">';
-    } else {
-        $photoHtml .= '<div class="clubleadership-card-photo--initials">' . $initials . '</div>';
+        $photoHtml .= '</div>';
     }
-    $photoHtml .= '</div>';
 
     $metaHtml = '';
     if (!empty($person->role)) {
@@ -105,45 +115,12 @@ function clubleaddirRenderLeagueCard($person, $showContact, $contactHiddenText)
 
 function clubleaddirRenderContactHtml($person, $showContact, $contactHiddenText)
 {
-    $email     = $person->email ?? '';
-    $phone     = $person->phone ?? '';
-    $contactId = (int) ($person->contact_id ?? 0);
-
-    // When a person is linked to a Joomla Contact, that contact page/form is the
-    // single, focused way to reach them — email/phone become irrelevant (the
-    // contact form handles all of it). Render a "Contact" link and stop.
-    if ($contactId > 0) {
-        $url = Route::_('index.php?option=com_contact&view=contact&id=' . $contactId);
-        return '<div class="clubleadership-card-contact">'
-            . '<a href="' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . '" class="clubleadership-contact-link">'
-            . '<span class="icon-envelope" aria-hidden="true"></span>'
-            . '<span class="clubleadership-contact-text">' . Text::_('MOD_CLUBLEADDIRECTION_CONTACT_LINK') . '</span></a>'
-            . '</div>';
+    // Delegate to the shared helper so the module and the component view render
+    // contact (Joomla Contact link, vacancy Apply/Inquire, or email/phone) identically.
+    if (!class_exists('ClubleaddirHelper', false)) {
+        require_once JPATH_ADMINISTRATOR . '/components/com_clubleaddir/helpers.php';
     }
-
-    if (empty($email) && empty($phone)) {
-        return '';
-    }
-
-    $html = '<div class="clubleadership-card-contact">';
-    if ($showContact) {
-        if (!empty($email)) {
-            $html .= '<a href="mailto:' . htmlspecialchars($email, ENT_QUOTES, 'UTF-8') . '" class="clubleadership-contact-link">'
-                . '<span class="icon-envelope" aria-hidden="true"></span>'
-                . '<span class="clubleadership-contact-text">Email</span></a>';
-        }
-        if (!empty($phone)) {
-            $html .= '<a href="tel:' . htmlspecialchars(preg_replace('/[^0-9+]/', '', $phone), ENT_QUOTES, 'UTF-8') . '" class="clubleadership-contact-link">'
-                . '<span class="icon-phone" aria-hidden="true"></span>'
-                . '<span class="clubleadership-contact-text">' . htmlspecialchars($phone, ENT_QUOTES, 'UTF-8') . '</span></a>';
-        }
-    } else {
-        $html .= '<span class="clubleadership-contact-hidden">'
-            . '<span class="icon-lock" aria-hidden="true"></span> '
-            . htmlspecialchars($contactHiddenText, ENT_QUOTES, 'UTF-8') . '</span>';
-    }
-    $html .= '</div>';
-    return $html;
+    return ClubleaddirHelper::contactHtml($person, $showContact, $contactHiddenText);
 }
 ?>
 <style>
@@ -255,8 +232,21 @@ function clubleaddirRenderContactHtml($person, $showContact, $contactHiddenText)
     padding: 0.625rem 0.75rem 0.75rem;
     display: flex;
     flex-direction: column;
+    align-items: center;
     justify-content: center;
     flex: 1;
+}
+.mod-clubleadership .clubleadership-card-vacant {
+    display: inline-block;
+    margin-top: 0.25rem;
+    padding: 0.1rem 0.5rem;
+    border-radius: 50px;
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    background: #b8963e;
+    color: #fff;
 }
 .mod-clubleadership .clubleadership-card--officer .clubleadership-card-content { padding: 0.5rem 0.75rem 0.875rem; justify-content: flex-start; }
 .mod-clubleadership .clubleadership-card-name { font-size: 0.8rem; font-weight: 600; color: #1a2a3a; margin: 0 0 0.1rem; line-height: 1.3; }
