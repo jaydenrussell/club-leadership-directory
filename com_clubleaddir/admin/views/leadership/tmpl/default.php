@@ -134,11 +134,56 @@ function setRoleDisabled(disabled) {
     });
 }
 
-// Show/hide the vacancy enquiry email field (only relevant when vacant).
+// When a position is vacant: contact details are irrelevant (the vacancy enquiry
+// email handles it), so grey those fields out; the role/title stays required;
+// and the photo becomes the club logo (no personal upload needed).
 function toggleVacantFields(isVacant) {
-    var grp = document.getElementById('vacancy-email-group');
-    if (grp) {
-        grp.style.display = isVacant ? 'block' : 'none';
+    // Vacancy enquiry email stays active — it IS what gets used.
+    var ve = document.getElementById('vacancy-email-group');
+    if (ve) { ve.style.display = isVacant ? 'block' : 'none'; }
+
+    // Grey + disable the personal contact fields (email / phone / Joomla contact).
+    var fieldset = document.getElementById('contact-info-fieldset');
+    if (fieldset) {
+        fieldset.classList.toggle('clble-disabled', isVacant);
+        ['contact_id', 'email', 'phone'].forEach(function (id) {
+            var el = document.getElementById(id);
+            if (el) { el.disabled = isVacant; }
+        });
+    }
+
+    // Photo upload is unnecessary when vacant (club logo is shown instead).
+    var photo = document.getElementById('photo');
+    if (photo) { photo.disabled = isVacant; }
+
+    // Role/Title is required for a vacancy (it is the role being advertised).
+    ['role_text', 'role_select'].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el) { el.required = isVacant; }
+    });
+    // A vacant post has no named person yet, so the name is optional.
+    var nameEl = document.getElementById('name');
+    if (nameEl) { nameEl.required = !isVacant; }
+    var nameLabel = document.querySelector('label[for="name"]');
+    if (nameLabel) {
+        var star = nameLabel.querySelector('.star');
+        if (isVacant && star) { star.remove(); }
+        else if (!isVacant && !star) {
+            var s = document.createElement('span');
+            s.className = 'star'; s.textContent = '*';
+            nameLabel.appendChild(s);
+        }
+    }
+    var roleLabel = document.querySelector('#role-control-group .control-label label');
+    if (roleLabel) {
+        var star = roleLabel.querySelector('.star');
+        if (isVacant && !star) {
+            var s = document.createElement('span');
+            s.className = 'star'; s.textContent = '*';
+            roleLabel.appendChild(s);
+        } else if (!isVacant && star) {
+            star.remove();
+        }
     }
 }
 function toggleLeagueFields(type) { toggleTypeFields(type); }
@@ -358,6 +403,17 @@ function jClubleaddirSelectContact(id, name) {
                             </div>
                         </div>
 
+                        <div class="control-group">
+                            <div class="controls">
+                                <label class="checkbox">
+                                    <input type="checkbox" name="jform[vacant]" id="vacant" value="1" <?php echo (!empty($item->vacant) ? 'checked' : ''); ?>
+                                           onchange="toggleVacantFields(this.checked);">
+                                    <?php echo Text::_('COM_CLUBLEADDIR_FIELD_VACANT'); ?>
+                                </label>
+                                <span class="clble-help-note"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_VACANT_HELP'); ?></span>
+                            </div>
+                        </div>
+
                         <div class="control-group" id="role-control-group">
                             <div class="control-label">
                                 <label for="role"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_ROLE'); ?></label>
@@ -447,7 +503,7 @@ function jClubleaddirSelectContact(id, name) {
                 </div>
             </fieldset>
 
-            <fieldset class="adminform clble-card">
+            <fieldset class="adminform clble-card" id="contact-info-fieldset">
                 <legend class="clble-card-title"><?php echo Text::_('COM_CLUBLEADDIR_CONTACT_INFO'); ?></legend>
 
                 <div class="control-group">
@@ -484,17 +540,6 @@ function jClubleaddirSelectContact(id, name) {
                                 <?php echo Text::_('COM_CLUBLEADDIR_CONTACT_COMPONENT_MISSING'); ?>
                             <?php endif; ?>
                         </div>
-                    </div>
-                </div>
-
-                <div class="control-group">
-                    <div class="control-label">
-                        <label for="vacant"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_VACANT'); ?></label>
-                    </div>
-                    <div class="controls">
-                        <input type="checkbox" name="jform[vacant]" id="vacant" value="1" <?php echo (!empty($item->vacant) ? 'checked' : ''); ?>
-                               onchange="toggleVacantFields(this.checked);">
-                        <span class="clble-help-note" style="margin:0 0 0 6px;"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_VACANT_HELP'); ?></span>
                     </div>
                 </div>
 

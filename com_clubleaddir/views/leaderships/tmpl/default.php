@@ -199,19 +199,22 @@ $icon = array(
                     <?php foreach ($this->groups[$key] as $person):
                         $isOfficer = ($person->type === 'officer');
                         $hasPhoto  = !empty($person->photo);
-                        // Officers always show a photo slot (real photo or initials);
-                        // directors/staff only show a box when they actually have a photo.
-                        $showPhotoBox = $hasPhoto || $isOfficer;
                         $isVacant  = !empty($person->vacant);
+                        // Officers always show a photo slot (real photo or initials);
+                        // a vacant post shows the club logo; directors/staff only
+                        // show a box when they actually have a real photo.
+                        $showPhotoBox = $hasPhoto || $isOfficer || $isVacant;
                         $displayName = $isVacant && empty(trim($person->name ?? ''))
                             ? Text::_('COM_CLUBLEADDIR_VACANT')
                             : $person->name;
                     ?>
                         <article class="clubleadership-card clubleaddir-card--<?php echo $this->escape($person->type); ?><?php echo $isVacant ? ' clubleaddir-card--vacant' : ''; ?>">
                             <?php if ($showPhotoBox): ?>
-                            <div class="clubleadership-card-photo is-visible is-circular" style="width:<?php echo $isOfficer ? 120 : 120; ?>px;height:120px;">
+                            <div class="clubleadership-card-photo is-visible is-circular" style="width:120px;height:120px;">
                                 <?php if ($hasPhoto): ?>
                                     <img src="<?php echo $this->escape(clubleaddirSitePhoto($person->photo)); ?>" alt="" loading="lazy" width="120" height="120">
+                                <?php elseif ($isVacant): ?>
+                                    <img src="<?php echo $this->escape(ClubleaddirHelper::vacantLogo()); ?>" alt="" loading="lazy" width="120" height="120" style="object-fit:contain;background:#fff;">
                                 <?php else: ?>
                                     <div class="clubleadership-card-photo--initials"><?php echo $this->escape(substr($displayName, 0, 2)); ?></div>
                                 <?php endif; ?>

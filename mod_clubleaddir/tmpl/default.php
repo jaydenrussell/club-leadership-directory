@@ -38,10 +38,11 @@ function clubleaddirRenderCard($person, $showPhoto, $showContact, $contactHidden
 
     $hasPhoto  = !empty($person->photo);
     $isOfficer = ($person->type === 'officer');
+    $isVacant  = !empty($person->vacant);
     // Officers always get a photo slot (real photo, or initials fallback).
-    // Directors/staff only show a box when they actually have a photo — otherwise
-    // it is removed from the card entirely (no empty circle / initials).
-    $showPhotoBox = $hasPhoto || $isOfficer;
+    // A vacant post shows the club logo. Directors/staff only show a box when
+    // they actually have a photo — otherwise it is removed from the card entirely.
+    $showPhotoBox = $hasPhoto || $isOfficer || $isVacant;
 
     // Circular avatar uses the square crop; non-circular shows the original upload.
     $photoSrc = (!empty($person->photo) && $circular)
@@ -58,6 +59,11 @@ function clubleaddirRenderCard($person, $showPhoto, $showContact, $contactHidden
                 $src = '/' . ltrim($src, '/');
             }
             $photoHtml .= '<img src="' . htmlspecialchars($src, ENT_QUOTES, 'UTF-8') . '" alt="" loading="lazy" width="' . $size . '" height="' . $size . '">';
+        } elseif ($isVacant) {
+            $logo = method_exists('ClubleaddirHelper', 'vacantLogo')
+                ? ClubleaddirHelper::vacantLogo()
+                : 'https://simcoecurlingclub.ca/images/Logo/simcoe_curling_club_logo.svg';
+            $photoHtml .= '<img src="' . htmlspecialchars($logo, ENT_QUOTES, 'UTF-8') . '" alt="" loading="lazy" width="' . $size . '" height="' . $size . '" style="object-fit:contain;background:#fff;">';
         } elseif ($isOfficer) {
             $photoHtml .= '<div class="clubleadership-card-photo--initials">' . $initials . '</div>';
         }

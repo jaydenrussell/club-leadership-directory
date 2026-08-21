@@ -272,7 +272,7 @@ class ClubleaddirHelper
             return '<div class="clubleadership-card-contact">'
                 . '<a href="' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . '" class="clubleadership-contact-link">'
                 . '<span class="icon-envelope" aria-hidden="true"></span>'
-                . '<span class="clubleadership-contact-text">' . Text::_('MOD_CLUBLEADDIRECTION_CONTACT_LINK') . '</span></a>'
+                . '<span class="clubleadership-contact-text">' . Text::_('COM_CLUBLEADDIR_CONTACT_LINK') . '</span></a>'
                 . '</div>';
         }
 
@@ -300,5 +300,15 @@ class ClubleaddirHelper
         }
         $html .= '</div>';
         return $html;
+    }
+
+    /**
+     * Club logo shown on a card when the position is vacant (no personal photo).
+     *
+     * @return string
+     */
+    public static function vacantLogo()
+    {
+        return 'https://simcoecurlingclub.ca/images/Logo/simcoe_curling_club_logo.svg';
     }
 }
