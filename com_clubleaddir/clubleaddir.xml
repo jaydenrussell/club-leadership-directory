@@ -7,7 +7,7 @@
     <license>GNU General Public License version 2 or later</license>
     <authorEmail>info@simcoecurlingclub.ca</authorEmail>
     <authorUrl>https://simcoecurlingclub.ca</authorUrl>
-    <version>2.0.60</version>
+    <version>2.0.61</version>
     <description>COM_CLUBLEADDIR_DESC</description>
 
     <administration>
@@ -35,11 +35,12 @@
             <language tag="en-GB">en-GB/en-GB.com_clubleaddir.ini</language>
             <language tag="en-GB">en-GB/en-GB.com_clubleaddir.sys.ini</language>
         </languages>
-        <languages folder="language">
-            <language tag="en-GB">en-GB/en-GB.com_clubleaddir.ini</language>
-        </languages>
         <scriptfile>script.php</scriptfile>
     </administration>
+
+    <languages folder="language">
+        <language tag="en-GB">en-GB/en-GB.com_clubleaddir.ini</language>
+    </languages>
 
     <files folder="site">
         <filename>clubleaddir.php</filename>
