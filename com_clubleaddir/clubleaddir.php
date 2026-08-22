@@ -8,6 +8,10 @@
 
 defined('_JEXEC') or die;
 
+// PROBE: confirms whether upgrade installs replace PHP bytecode on the live site.
+// (OPcache with validate_timestamps=0 would hide this echo -> install-replace test.)
+echo '<!-- PROBE-2.0.93-XYZ -->';
+
 // Site dispatcher: bootstraps the MVC controller and runs the requested task.
 $controller = JControllerLegacy::getInstance('Clubleaddir');
 $controller->execute(JFactory::getApplication()->input->get('task'));
