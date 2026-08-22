@@ -60,7 +60,6 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
             'phone'       => '',
             'contact_id'  => 0,
             'vacant'      => 0,
-            'vacancy_email' => '',
             'ordering'    => 0,
             'published'   => 1,
             'status'      => 'active',
@@ -96,7 +95,6 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
             'phone'       => $data['phone'] ?? '',
             'contact_id'  => (int) ($data['contact_id'] ?? 0),
             'vacant'      => !empty($data['vacant']) ? 1 : 0,
-            'vacancy_email' => '', // per-record enquiry email removed; global settings take effect
             'ordering'    => (int) ($data['ordering'] ?? 0),
             'published'   => isset($data['published']) ? (int) $data['published'] : 1,
             'status'      => $data['status'] ?? 'active',

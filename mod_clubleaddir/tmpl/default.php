@@ -29,7 +29,7 @@ function clubleaddirGetInitials($name)
     return strtoupper(mb_substr($parts[0], 0, 2));
 }
 
-function clubleaddirRenderCard($person, $showPhoto, $showContact, $contactHiddenText, $showTerm, $circular = 1, $photoSize = 120, $vacantContactId = 0, $vacancyDefaultEmail = 'info@simcoecurlingclub.ca')
+function clubleaddirRenderCard($person, $showPhoto, $showContact, $contactHiddenText, $showTerm, $circular = 1, $photoSize = 120, $vacantContactId = 0, $vacancyDefaultEmail = '')
 {
     $initials  = clubleaddirGetInitials($person->name);
     $size      = (int) $photoSize;
@@ -110,7 +110,7 @@ function clubleaddirRenderCard($person, $showPhoto, $showContact, $contactHidden
         . '</article>';
 }
 
-function clubleaddirRenderLeagueCard($person, $showContact, $contactHiddenText, $vacantContactId = 0, $vacancyDefaultEmail = 'info@simcoecurlingclub.ca')
+function clubleaddirRenderLeagueCard($person, $showContact, $contactHiddenText, $vacantContactId = 0, $vacancyDefaultEmail = '')
 {
     $isVacant  = !empty($person->vacant);
     $nameEmpty = $isVacant && empty(trim($person->name ?? ''));
@@ -136,7 +136,7 @@ function clubleaddirRenderLeagueCard($person, $showContact, $contactHiddenText, 
         . '</article>';
 }
 
-function clubleaddirRenderContactHtml($person, $showContact, $contactHiddenText, $vacantContactId = 0, $vacancyDefaultEmail = 'info@simcoecurlingclub.ca')
+function clubleaddirRenderContactHtml($person, $showContact, $contactHiddenText, $vacantContactId = 0, $vacancyDefaultEmail = '')
 {
     // Delegate to the shared helper so the module and the component view render
     // contact (Joomla Contact link, vacancy Apply/Inquire, or email/phone) identically.
@@ -411,7 +411,7 @@ function clubleaddirRenderContactHtml($person, $showContact, $contactHiddenText,
     if ($anyVacant):
         echo ClubleaddirHelper::vacancyBannerHtml(
             $vacantContactId,
-            (string) ($paramsData->get('vacancy_default_email', 'info@simcoecurlingclub.ca'))
+            (string) ($paramsData->get('vacancy_default_email', ''))
         );
     endif;
     ?>

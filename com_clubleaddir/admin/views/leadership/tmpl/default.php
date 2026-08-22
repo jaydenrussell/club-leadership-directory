@@ -31,7 +31,7 @@ $item   = $this->item;
 $itemDefaults = array(
     'id' => 0, 'name' => '', 'type' => '', 'role' => '', 'league_name' => '',
     'term' => '', 'bio' => '', 'photo' => '', 'email' => '', 'phone' => '',
-    'contact_id' => 0, 'vacant' => 0, 'vacancy_email' => '', 'ordering' => 0, 'published' => 1, 'status' => 'active',
+    'contact_id' => 0, 'vacant' => 0, 'ordering' => 0, 'published' => 1, 'status' => 'active',
     'created' => '', 'modified' => '',
 );
 if (is_object($item)) {

@@ -208,16 +208,6 @@ class ClubleaddirHelper
     }
 
     /**
-     * Default inbox used for vacancy enquiries when no per-record override is set.
-     *
-     * @return string
-     */
-    public static function vacancyEmail()
-    {
-        return 'info@simcoecurlingclub.ca';
-    }
-
-    /**
      * Render the contact block for a leadership card.
      *
      * Priority:
@@ -283,14 +273,12 @@ class ClubleaddirHelper
         $phone         = $person->phone ?? '';
         $contactId     = (int) ($person->contact_id ?? 0);
         $vacant        = (int) ($person->vacant ?? 0);
-        $vacancyEmail  = trim($person->vacancy_email ?? '');
-        if ($vacancyEmail === '') {
-            $vacancyEmail = trim($vacancyDefaultEmail);
-        }
 
-        // 1. Vacant position — uses ONLY the global Vacant Enquiry Contact
-        //    (module/menu param), failing that the global Vacancy Default Email.
-        //    A vacant position never falls back to a record-level contact_id.
+        // 1. Vacant position — uses ONLY the Vacant Enquiry Contact (global
+        //    module/menu param). When that is 0 ("Vacancy Default Email"), the
+        //    global Vacancy Default Email is used. A vacant post never consults
+        //    a record-level contact_id. If neither is set, log a backend warning
+        //    and render no link.
         if ($vacant === 1) {
             $vacantContactId = (int) $vacantContactId;
             if ($vacantContactId > 0) {
@@ -300,7 +288,9 @@ class ClubleaddirHelper
             } else {
                 $vacancyEmail = trim($vacancyDefaultEmail);
                 if ($vacancyEmail === '') {
-                    return ''; // No Vacant Enquiry Contact and no Vacancy Default Email configured.
+                    // No Vacant Enquiry Contact and no Vacancy Default Email configured.
+                    self::logVacancyMisconfig();
+                    return '';
                 }
                 $url   = 'mailto:' . $vacancyEmail;
                 $label = Text::_('COM_CLUBLEADDIR_VACANCY_INQUIRE');
@@ -347,6 +337,20 @@ class ClubleaddirHelper
         }
         $html .= '</div>';
         return $html;
+    }
+
+    /**
+     * Log a single backend warning when a vacant position has no enquiry
+     * target configured (neither a Vacant Enquiry Contact nor a Vacancy
+     * Default Email). The front end shows no link in this case.
+     */
+    protected static function logVacancyMisconfig()
+    {
+        try {
+            Log::add('Club Leadership Directory: a vacant position is published but no Vacant Enquiry Contact or Vacancy Default Email is configured. Set one in the module/component Contact Settings.', Log::WARNING, 'com_clubleaddir');
+        } catch (\Throwable $e) {
+            // Logging is best-effort; never fatal.
+        }
     }
 
     /**
@@ -407,6 +411,7 @@ class ClubleaddirHelper
         } else {
             if ($defaultEmail === '') {
                 // No Joomla Contact and no Vacancy Default Email configured -> no CTA link.
+                self::logVacancyMisconfig();
                 $url = '';
             } else {
                 $url = 'mailto:' . htmlspecialchars($defaultEmail, ENT_QUOTES, 'UTF-8');

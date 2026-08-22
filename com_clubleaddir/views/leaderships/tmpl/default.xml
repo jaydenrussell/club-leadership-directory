@@ -25,7 +25,7 @@
                    multiple="false">
                 <option value="0">COM_CLUBLEADDIR_FIELD_VACANT_CONTACT_NONE</option>
             </field>
-            <field name="vacancy_default_email" type="text" label="COM_CLUBLEADDIR_FIELD_VACANCY_EMAIL" description="COM_CLUBLEADDIR_FIELD_VACANCY_EMAIL_HELP" filter="string" />
+            <field name="vacancy_default_email" type="text" label="COM_CLUBLEADDIR_FIELD_VACANCY_EMAIL" description="COM_CLUBLEADDIR_FIELD_VACANCY_EMAIL_HELP" filter="string" showon="vacant_contact_id:0" />
         </fieldset>
     </fields>
 </metadata>
