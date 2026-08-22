@@ -46,7 +46,48 @@ class ClubleaddirViewLeaderships extends HtmlView
         ClubleaddirHelper::addSubmenu('leaderships');
         $this->addToolbar();
 
+        // Surface a visible backend warning when vacant positions are published
+        // but no Vacant Enquiry Contact / Vacancy Default Email is configured,
+        // with a direct link to the module's Contact Settings to fix it.
+        $this->checkVacancyConfig();
+
         parent::display($tpl);
+    }
+
+    /**
+     * Warn in the admin UI when a published vacant position exists but the
+     * vacant-enquiry target (module/component Contact Settings) is empty.
+     */
+    protected function checkVacancyConfig()
+    {
+        try {
+            $store   = ClubleaddirStore::getInstance();
+            $rows    = $store->getAll(array('published' => 1));
+            $hasVacant = false;
+            foreach ($rows as $item) {
+                if (!empty($item->vacant)) {
+                    $hasVacant = true;
+                    break;
+                }
+            }
+            if (!$hasVacant) {
+                return;
+            }
+
+            $vacancy = ClubleaddirHelper::getModuleVacancySettings();
+            if ((int) $vacancy->contact_id > 0 || trim((string) $vacancy->email) !== '') {
+                return;
+            }
+
+            $msg = Text::_('COM_CLUBLEADDIR_VACANCY_CONFIG_WARNING');
+            $link = ClubleaddirHelper::moduleSettingsLink();
+            if ($link !== '') {
+                $msg .= ' <a href="' . $link . '">' . Text::_('COM_CLUBLEADDIR_VACANCY_CONFIG_LINK') . '</a>';
+            }
+            Factory::getApplication()->enqueueMessage($msg, 'warning');
+        } catch (\Throwable $e) {
+            // Never fatal: config warning is advisory only.
+        }
     }
 
     protected function addToolbar()

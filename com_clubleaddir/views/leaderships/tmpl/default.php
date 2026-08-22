@@ -332,6 +332,7 @@ $icon = array(
                                 <?php if (!empty($person->league_name)): ?>
                                     <div class="clubleadership-card-league"><?php echo $this->escape($person->league_name); ?></div>
                                 <?php endif; ?>
+                                <?php echo '<!-- DIAG vacantContactId=' . (int)$this->vacantContactId . ' email=' . htmlspecialchars($this->vacancyDefaultEmail) . ' personVacant=' . (int)($person->vacant ?? 0) . ' -->'; ?>
                                 <?php echo ClubleaddirHelper::contactHtml($person, true, '', $this->vacantContactId, $this->vacancyDefaultEmail); ?>
                             </div>
                         </article>

@@ -405,13 +405,18 @@ class ClubleaddirHelper
                 $label = $name !== '' ? $name : Text::_('COM_CLUBLEADDIR_VACANCY_INQUIRE');
             } else {
                 $vacancyEmail = trim($vacancyDefaultEmail);
-                if ($vacancyEmail === '') {
-                    // No Vacant Enquiry Contact and no Vacancy Default Email configured.
+                if ($vacancyEmail !== '') {
+                    $url   = 'mailto:' . $vacancyEmail;
+                    $label = Text::_('COM_CLUBLEADDIR_VACANCY_INQUIRE');
+                } else {
+                    // No Vacant Enquiry Contact and no Vacancy Default Email set.
+                    // Still render the button (never silently hide it); point it at
+                    // the site contact directory so it stays actionable. The backend
+                    // surfaces a configuration warning with a link to the module settings.
                     self::logVacancyMisconfig();
-                    return '';
+                    $url   = Route::_('index.php?option=com_contact&view=contacts');
+                    $label = Text::_('COM_CLUBLEADDIR_VACANCY_INQUIRE');
                 }
-                $url   = 'mailto:' . $vacancyEmail;
-                $label = Text::_('COM_CLUBLEADDIR_VACANCY_INQUIRE');
             }
             return '<div class="clubleadership-card-contact">'
                 . '<a href="' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . '" class="clubleadership-contact-link clubleaddir-vacancy-link">'
@@ -528,14 +533,13 @@ class ClubleaddirHelper
             // (contact profile above + form anchored via #display-form) - nicer than mailto.
             $url = Route::_('index.php?option=com_contact&view=contact&id=' . $contactId . '#display-form');
             $url = htmlspecialchars($url, ENT_QUOTES, 'UTF-8');
+        } elseif ($defaultEmail !== '') {
+            $url = 'mailto:' . htmlspecialchars($defaultEmail, ENT_QUOTES, 'UTF-8');
         } else {
-            if ($defaultEmail === '') {
-                // No Joomla Contact and no Vacancy Default Email configured -> no CTA link.
-                self::logVacancyMisconfig();
-                $url = '';
-            } else {
-                $url = 'mailto:' . htmlspecialchars($defaultEmail, ENT_QUOTES, 'UTF-8');
-            }
+            // Misconfigured: keep the banner + CTA visible (never hide it); point
+            // the CTA at the site contact directory. Backend warns with a fix link.
+            self::logVacancyMisconfig();
+            $url = htmlspecialchars(Route::_('index.php?option=com_contact&view=contacts'), ENT_QUOTES, 'UTF-8');
         }
 
         $cta = '';
