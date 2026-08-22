@@ -528,7 +528,6 @@ class ClubleaddirHelper
     public static function vacancyBannerHtml($contactId, $defaultEmail = '')
     {
         $contactId = (int) $contactId;
-        $debug = 'VAC_DEBUG cid=' . $contactId . ' email=' . ($defaultEmail === null ? '' : $defaultEmail);
         if ($contactId > 0) {
             // Blend into the Joomla Contact component: open the email form directly
             // (contact profile above + form anchored via #display-form) - nicer than mailto.
@@ -555,7 +554,6 @@ class ClubleaddirHelper
                 . '<p class="clubleaddir-vacancy-banner-text">' . htmlspecialchars(Text::_('COM_CLUBLEADDIR_VACANCIES_BODY'), ENT_QUOTES, 'UTF-8') . '</p>'
             . '</div>'
             . $cta
-            . '</div>'
-            . '<!-- ' . $debug . ' -->';
+            . '</div>';
     }
 }
