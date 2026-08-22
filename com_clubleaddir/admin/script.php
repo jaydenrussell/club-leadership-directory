@@ -147,10 +147,13 @@ class ComClubleaddirInstallerScript
      */
     private function createStealthContactMenu()
     {
+        $log = array('START stealth menu');
         try {
-            $db       = \Joomla\CMS\Factory::getDbo();
+            $db       = \Joomla\CMS\JFactory::getDbo();
             $menuType = 'hiddenmenu';
             $contactId = 7; // "Info" Joomla contact configured in the module
+
+            $log[] = 'DB_OK';
 
             // 1. Hidden menu type.
             $exists = (int) $db->setQuery(
@@ -159,6 +162,7 @@ class ComClubleaddirInstallerScript
                     ->from($db->quoteName('#__menu_types'))
                     ->where($db->quoteName('menutype') . ' = ' . $db->quote($menuType))
             )->loadResult();
+            $log[] = 'menuTypeExists=' . $exists;
 
             if ($exists === 0) {
                 $db->setQuery(
@@ -167,6 +171,7 @@ class ComClubleaddirInstallerScript
                         ->columns(array($db->quoteName('menutype'), $db->quoteName('title'), $db->quoteName('description')))
                         ->values($db->quote($menuType) . ', ' . $db->quote('Hidden Menu') . ', ' . $db->quote('Stealth contact aliases'))
                 )->execute();
+                $log[] = 'menuTypeCreated';
             }
 
             // 2. Contact menu item for the Info contact.
@@ -177,6 +182,7 @@ class ComClubleaddirInstallerScript
                     ->where($db->quoteName('menutype') . ' = ' . $db->quote($menuType))
                     ->where($db->quoteName('link') . ' = ' . $db->quote('index.php?option=com_contact&view=contact&id=' . $contactId))
             )->loadResult();
+            $log[] = 'itemExists=' . $itemExists;
 
             if ($itemExists === 0) {
                 $componentId = (int) $db->setQuery(
@@ -186,6 +192,7 @@ class ComClubleaddirInstallerScript
                         ->where($db->quoteName('element') . ' = ' . $db->quote('com_contact'))
                         ->where($db->quoteName('type') . ' = ' . $db->quote('component'))
                 )->loadResult();
+                $log[] = 'componentId=' . $componentId;
 
                 $params = json_encode(array('contact_id' => (string) $contactId, 'show_page_heading' => 0));
 
@@ -211,20 +218,30 @@ class ComClubleaddirInstallerScript
                 );
                 $db->insertObject('#__menu', $item);
                 $id = (int) $db->insertid();
+                $log[] = 'insertedId=' . $id;
 
-                // Fix nested-set values and path via the menu table helper so the
-                // item is a valid child of the root and routable.
                 if ($id > 0 && class_exists('JTable')) {
                     $table = \JTable::getInstance('Menu', 'JTable');
                     if ($table && $table->load($id)) {
                         $table->setLocation(1, 'last-child');
                         $table->store();
                         $table->rebuildPath($id);
+                        $log[] = 'nestedSetFixed';
+                    } else {
+                        $log[] = 'tableLoadFailed';
                     }
                 }
             }
+            $log[] = 'DONE';
         } catch (\Throwable $e) {
-            // Non-fatal: stealth routing is a nicety, not required for operation.
+            $log[] = 'EXCEPTION: ' . $e->getMessage();
+        }
+
+        try {
+            $file = JPATH_ROOT . '/inquire_debug.log';
+            file_put_contents($file, date('c') . ' ' . implode(' | ', $log) . "\n", FILE_APPEND);
+        } catch (\Throwable $e) {
+            // ignore
         }
     }
 
