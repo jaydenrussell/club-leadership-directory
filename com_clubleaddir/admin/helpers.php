@@ -48,7 +48,7 @@ class ClubleaddirHelper
         $email     = '';
 
         try {
-            $db    = \\Joomla\\CMS\\Factory::getDbo();
+            $db    = \Joomla\CMS\Factory::getDbo();
             $query = $db->getQuery(true)
                 ->select(array($db->qn('params')))
                 ->from($db->qn('#__modules'))
@@ -60,7 +60,7 @@ class ClubleaddirHelper
                 if (empty($paramsJson)) {
                     continue;
                 }
-                $p   = new \\Joomla\\CMS\\Registry\\Registry($paramsJson);
+                $p   = new \Joomla\CMS\Registry\Registry($paramsJson);
                 $cid = (int) $p->get('vacant_contact_id', 0);
                 $em  = trim((string) $p->get('vacancy_default_email', ''));
                 if ($cid > 0 || $em !== '') {
@@ -69,12 +69,12 @@ class ClubleaddirHelper
                     break;
                 }
             }
-        } catch (\\Throwable $e) {
+        } catch (\Throwable $e) {
             // Module params unavailable -> fall through to global config below.
         }
 
         if ($contactId === 0 && $email === '') {
-            $component = \\Joomla\\CMS\\Component\\ComponentHelper::getParams('com_clubleaddir');
+            $component = \Joomla\CMS\Component\ComponentHelper::getParams('com_clubleaddir');
             $contactId = (int) $component->get('vacant_contact_id', 0);
             $email     = trim((string) $component->get('vacancy_default_email', ''));
         }
@@ -319,6 +319,70 @@ class ClubleaddirHelper
         return Text::_('COM_CLUBLEADDIR_VACANCY_USES_NONE');
     }
 
+    /**
+     * Build a "stealth" route to a Joomla contact.
+     *
+     * If a published menu item already points at this exact contact, we route
+     * through its Itemid so the URL is a clean SEF alias (e.g. /inquire) instead
+     * of exposing index.php?option=com_contact&view=contact&id=N. Otherwise the
+     * standard component route is returned.
+     *
+     * @param   int  $contactId
+     * @return  string
+     */
+    public static function contactRoute($contactId)
+    {
+        $contactId = (int) $contactId;
+        if ($contactId <= 0) {
+            return '';
+        }
+
+        try {
+            $db     = \Joomla\CMS\Factory::getDbo();
+            $query  = $db->getQuery(true)
+                ->select($db->qn('id'))
+                ->from($db->qn('#__menu'))
+                ->where($db->qn('link') . ' = ' . $db->q('index.php?option=com_contact&view=contact&id=' . $contactId))
+                ->where($db->qn('type') . ' = ' . $db->q('component'))
+                ->where($db->qn('published') . ' = 1');
+            $db->setQuery($query);
+            $menuId = (int) $db->loadResult();
+            if ($menuId > 0) {
+                return Route::_('index.php?Itemid=' . $menuId) . '#display-form';
+            }
+        } catch (\Throwable $e) {
+            // Fall through to the raw component route below.
+        }
+
+        return Route::_('index.php?option=com_contact&view=contact&id=' . $contactId . '#display-form');
+    }
+
+    /**
+     * Fetch a Joomla contact's display name (used as the link text so the URL
+     * itself stays hidden while the visible label shows who you're reaching).
+     *
+     * @param   int  $contactId
+     * @return  string
+     */
+    public static function contactName($contactId)
+    {
+        $contactId = (int) $contactId;
+        if ($contactId <= 0) {
+            return '';
+        }
+        try {
+            $db    = \Joomla\CMS\Factory::getDbo();
+            $query = $db->getQuery(true)
+                ->select($db->qn('name'))
+                ->from($db->qn('#__contact_details'))
+                ->where($db->qn('id') . ' = ' . $contactId);
+            $db->setQuery($query);
+            return (string) $db->loadResult();
+        } catch (\Throwable $e) {
+            return '';
+        }
+    }
+
     public static function contactHtml($person, $showContact, $contactHiddenText, $vacantContactId = 0, $vacancyDefaultEmail = '')
     {
         $email         = $person->email ?? '';
@@ -334,9 +398,11 @@ class ClubleaddirHelper
         if ($vacant === 1) {
             $vacantContactId = (int) $vacantContactId;
             if ($vacantContactId > 0) {
-                // Blend into the Joomla Contact component: open the email form directly.
-                $url   = Route::_('index.php?option=com_contact&view=contact&id=' . $vacantContactId . '#display-form');
-                $label = Text::_('COM_CLUBLEADDIR_VACANCY_INQUIRE');
+                // Blend into the Joomla Contact component via a clean menu alias
+                // (stealth route) and label the link with the contact's name.
+                $url   = self::contactRoute($vacantContactId);
+                $name  = self::contactName($vacantContactId);
+                $label = $name !== '' ? $name : Text::_('COM_CLUBLEADDIR_VACANCY_INQUIRE');
             } else {
                 $vacancyEmail = trim($vacancyDefaultEmail);
                 if ($vacancyEmail === '') {
@@ -357,11 +423,13 @@ class ClubleaddirHelper
         // 2. Linked Joomla Contact — this is the single, focused way to reach the
         //    person; email/phone become irrelevant (the contact form covers them).
         if ($contactId > 0) {
-            $url = Route::_('index.php?option=com_contact&view=contact&id=' . $contactId);
+            $url   = self::contactRoute($contactId);
+            $name  = self::contactName($contactId);
+            $label = $name !== '' ? $name : Text::_('COM_CLUBLEADDIR_CONTACT_LINK');
             return '<div class="clubleadership-card-contact">'
                 . '<a href="' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . '" class="clubleadership-contact-link">'
                 . '<span class="icon-envelope" aria-hidden="true"></span>'
-                . '<span class="clubleadership-contact-text">' . Text::_('COM_CLUBLEADDIR_CONTACT_LINK') . '</span></a>'
+                . '<span class="clubleadership-contact-text">' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</span></a>'
                 . '</div>';
         }
 
