@@ -11,8 +11,6 @@
     <version>2.0.85</version>
     <description>Installs the Club Leadership component (standalone SQLite/JSON store) and module together.</description>
 
-    <scriptfile>script.php</scriptfile>
-
     <files>
         <file type="component" id="com_clubleaddir" priority="1" src="com_clubleaddir.zip">com_clubleaddir.zip</file>
         <file type="module" id="mod_clubleaddir" client="site" priority="2" src="mod_clubleaddir.zip">mod_clubleaddir.zip</file>
