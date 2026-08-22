@@ -268,8 +268,8 @@ $icon = array(
     }
     if ($anyVacant):
         echo ClubleaddirHelper::vacancyBannerHtml(
-            (int) ($this->params->get('vacant_contact_id', 0)),
-            (string) ($this->params->get('vacancy_default_email', ''))
+            $this->vacantContactId,
+            $this->vacancyDefaultEmail
         );
     endif;
     ?>
@@ -332,7 +332,7 @@ $icon = array(
                                 <?php if (!empty($person->league_name)): ?>
                                     <div class="clubleadership-card-league"><?php echo $this->escape($person->league_name); ?></div>
                                 <?php endif; ?>
-                                <?php echo ClubleaddirHelper::contactHtml($person, true, '', (int) ($this->params->get('vacant_contact_id', 0)), (string) ($this->params->get('vacancy_default_email', ''))); ?>
+                                <?php echo ClubleaddirHelper::contactHtml($person, true, '', $this->vacantContactId, $this->vacancyDefaultEmail); ?>
                             </div>
                         </article>
                     <?php endforeach; ?>

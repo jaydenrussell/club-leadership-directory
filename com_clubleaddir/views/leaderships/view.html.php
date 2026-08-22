@@ -46,8 +46,15 @@ class ClubleaddirViewLeaderships extends HtmlView
 
         $this->groups = $groups;
 
-        // Load the active menu item's params so the layout can read options
-        // such as vacant_contact_id (without this, $this->params is null).
+        // Resolve vacant-enquiry settings from the module (single source of truth),
+        // so the component page and the module render the same Joomla contact URL.
+        // Falls back to component global config when no module is published.
+        require_once JPATH_ADMINISTRATOR . '/components/com_clubleaddir/helpers.php';
+        $vacancy = ClubleaddirHelper::getModuleVacancySettings();
+        $this->vacantContactId     = (int) $vacancy->contact_id;
+        $this->vacancyDefaultEmail = (string) $vacancy->email;
+
+        // Maintain the active menu item's params for any other layout options.
         $app  = \Joomla\CMS\Factory::getApplication();
         $menu = $app->getMenu()->getActive();
         $this->params = $menu ? $menu->getParams() : new \Joomla\CMS\Registry\Registry();

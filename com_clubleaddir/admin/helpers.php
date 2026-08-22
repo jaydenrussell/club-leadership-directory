@@ -30,6 +30,58 @@ class ClubleaddirHelper
         );
     }
 
+    /**
+     * Resolve the vacant-enquiry settings for the front end.
+     *
+     * Single source of truth = the published mod_clubleaddir instance that holds
+     * the Vacant Enquiry Contact / Vacancy Default Email (module 106 on the live
+     * site). This ties the component page and the module together: both render the
+     * same Joomla contact component URL (or default email) instead of each keeping
+     * a separate copy of the setting. Falls back to the component's global config,
+     * then to (0, '') = no target.
+     *
+     * @return object{contact_id:int, email:string}
+     */
+    public static function getModuleVacancySettings()
+    {
+        $contactId = 0;
+        $email     = '';
+
+        try {
+            $db    = \\Joomla\\CMS\\Factory::getDbo();
+            $query = $db->getQuery(true)
+                ->select(array($db->qn('params')))
+                ->from($db->qn('#__modules'))
+                ->where($db->qn('module') . ' = ' . $db->q('mod_clubleaddir'))
+                ->where($db->qn('published') . ' = 1');
+            $db->setQuery($query);
+            $rows = $db->loadColumn();
+            foreach ($rows as $paramsJson) {
+                if (empty($paramsJson)) {
+                    continue;
+                }
+                $p   = new \\Joomla\\CMS\\Registry\\Registry($paramsJson);
+                $cid = (int) $p->get('vacant_contact_id', 0);
+                $em  = trim((string) $p->get('vacancy_default_email', ''));
+                if ($cid > 0 || $em !== '') {
+                    $contactId = $cid;
+                    $email     = $em;
+                    break;
+                }
+            }
+        } catch (\\Throwable $e) {
+            // Module params unavailable -> fall through to global config below.
+        }
+
+        if ($contactId === 0 && $email === '') {
+            $component = \\Joomla\\CMS\\Component\\ComponentHelper::getParams('com_clubleaddir');
+            $contactId = (int) $component->get('vacant_contact_id', 0);
+            $email     = trim((string) $component->get('vacancy_default_email', ''));
+        }
+
+        return (object) array('contact_id' => $contactId, 'email' => $email);
+    }
+
     public static function getTypeOptions()
     {
         return array(
