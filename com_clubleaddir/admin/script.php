@@ -128,8 +128,104 @@ class ComClubleaddirInstallerScript
         }
 
         $this->fixUpdateSite();
+        $this->createStealthContactMenu();
 
         return true;
+    }
+
+    /**
+     * Create a HIDDEN menu ("hiddenmenu") plus a single Contact menu item
+     * (alias "inquire") pointing at the Info Joomla contact (id 7).
+     *
+     * The leadership directory's vacant/contact links then resolve to a clean
+     * SEF alias (/inquire) instead of the raw component route
+     * (index.php?option=com_contact&view=contact&id=7...), so the underlying
+     * com_contact internals are not exposed in the URL.
+     *
+     * The menu is hidden (no module is ever created for it) so it never appears
+     * in site navigation, but it is still routable.
+     */
+    private function createStealthContactMenu()
+    {
+        try {
+            $db       = \Joomla\CMS\Factory::getDbo();
+            $menuType = 'hiddenmenu';
+            $contactId = 7; // "Info" Joomla contact configured in the module
+
+            // 1. Hidden menu type.
+            $exists = (int) $db->setQuery(
+                $db->getQuery(true)
+                    ->select('COUNT(*)')
+                    ->from($db->quoteName('#__menu_types'))
+                    ->where($db->quoteName('menutype') . ' = ' . $db->quote($menuType))
+            )->loadResult();
+
+            if ($exists === 0) {
+                $db->setQuery(
+                    $db->getQuery(true)
+                        ->insert($db->quoteName('#__menu_types'))
+                        ->columns(array($db->quoteName('menutype'), $db->quoteName('title'), $db->quoteName('description')))
+                        ->values($db->quote($menuType) . ', ' . $db->quote('Hidden Menu') . ', ' . $db->quote('Stealth contact aliases'))
+                )->execute();
+            }
+
+            // 2. Contact menu item for the Info contact.
+            $itemExists = (int) $db->setQuery(
+                $db->getQuery(true)
+                    ->select('COUNT(*)')
+                    ->from($db->quoteName('#__menu'))
+                    ->where($db->quoteName('menutype') . ' = ' . $db->quote($menuType))
+                    ->where($db->quoteName('link') . ' = ' . $db->quote('index.php?option=com_contact&view=contact&id=' . $contactId))
+            )->loadResult();
+
+            if ($itemExists === 0) {
+                $componentId = (int) $db->setQuery(
+                    $db->getQuery(true)
+                        ->select('extension_id')
+                        ->from($db->quoteName('#__extensions'))
+                        ->where($db->quoteName('element') . ' = ' . $db->quote('com_contact'))
+                        ->where($db->quoteName('type') . ' = ' . $db->quote('component'))
+                )->loadResult();
+
+                $params = json_encode(array('contact_id' => (string) $contactId, 'show_page_heading' => 0));
+
+                $item = (object) array(
+                    'menutype'     => $menuType,
+                    'title'        => 'Inquire',
+                    'alias'        => 'inquire',
+                    'link'         => 'index.php?option=com_contact&view=contact&id=' . $contactId,
+                    'type'         => 'component',
+                    'published'    => 1,
+                    'parent_id'    => 1,
+                    'level'        => 1,
+                    'component_id' => $componentId,
+                    'ordering'     => 0,
+                    'checked_out'  => 0,
+                    'browserNav'   => 0,
+                    'access'       => 1,
+                    'img'          => '',
+                    'client_id'    => 0,
+                    'home'         => 0,
+                    'params'       => $params,
+                    'language'     => '*',
+                );
+                $db->insertObject('#__menu', $item);
+                $id = (int) $db->insertid();
+
+                // Fix nested-set values and path via the menu table helper so the
+                // item is a valid child of the root and routable.
+                if ($id > 0 && class_exists('JTable')) {
+                    $table = \JTable::getInstance('Menu', 'JTable');
+                    if ($table && $table->load($id)) {
+                        $table->setLocation(1, 'last-child');
+                        $table->store();
+                        $table->rebuildPath($id);
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            // Non-fatal: stealth routing is a nicety, not required for operation.
+        }
     }
 
     /**
