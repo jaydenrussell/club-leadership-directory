@@ -6,7 +6,7 @@
     <authorEmail>noreply@simcoecurlingclub.ca</authorEmail>
     <copyright>Copyright (C) 2026 Jayden Russell</copyright>
     <license>GNU General Public License version 2 or later</license>
-    <version>2.0.120</version>
+    <version>2.0.121</version>
     <description>COM_CLUBLEADDIR_DESC</description>
 
     <administration>
@@ -43,7 +43,13 @@
                 <file driver="mysqli" charset="utf8">sql/update.sql</file>
             </sql>
         </update>
-    </administration>
+    <uninstall>
+    <sql>
+        <file driver="mysql" charset="utf8">sql/uninstall.sql</file>
+        <file driver="mysqli" charset="utf8">sql/uninstall.sql</file>
+    </sql>
+</uninstall>
+</administration>
 
     <config>
         <file>config.xml</file>
