@@ -1,8 +1,8 @@
 <?php
 /**
  * Package install/uninstall script for Club Leadership Directory.
- *
- * v2.0.138+ ensures clean installation with proper database registration.
+ * 
+ * v2.0.139+ ensures clean installation with proper database registration.
  */
 
 defined('_JEXEC') or die;
@@ -15,10 +15,7 @@ class pkg_clubleaddirInstallerScript
      */
     public function preflight($stage, $parent)
     {
-        // Remove ANY existing extension entries (even if corrupted)
-        $this->forceRemoveAllEntries();
-        
-        // Remove any orphaned files
+        // Remove orphaned files first
         $this->removeOrphanedFiles();
     }
 
@@ -28,62 +25,20 @@ class pkg_clubleaddirInstallerScript
      */
     public function postflight($stage, $parent)
     {
-        // If stage is 'install', force database sync
-        if ($stage === 'install') {
-            $this->forceRegisterExtensions();
-        }
-        
-        // Clean up any zombie entries
-        $this->removeZombieExtensions();
-        
         // Ensure manifest directories exist
         $this->ensureManifestDirectories();
         
         // Copy manifests to canonical locations
         $this->copyManifestsRobust();
+        
+        // Force register extensions if they don't exist
+        $this->forceRegisterExtensions();
     }
 
     public function uninstall($parent)
     {
         // Clean up files when uninstalled
         $this->removeOrphanedFiles();
-    }
-
-    /**
-     * Force removal of ALL extension entries related to this package.
-     */
-    private function forceRemoveAllEntries()
-    {
-        $db = \Joomla\CMS\Factory::getDbo();
-        $table = $db->quoteName('#__extensions');
-        
-        $elements = [
-            'pkg_clubleaddir',
-            'pkg_pkg_clubleaddir',
-            'com_clubleaddir',
-            'mod_clubleaddir',
-        ];
-        
-        foreach ($elements as $element) {
-            try {
-                $query = $db->getQuery(true)
-                    ->delete($table)
-                    ->where($db->quoteName('element') . ' = ' . $db->quote($element));
-                $db->setQuery($query);
-                $db->execute();
-            } catch (\Exception $e) {
-                // Continue even on error
-            }
-        }
-        
-        // Also remove by name pattern
-        try {
-            $query = $db->getQuery(true)
-                ->delete($table)
-                ->where('name LIKE ' . $db->quote('%Club Leadership%'));
-            $db->setQuery($query);
-            $db->execute();
-        } catch (\Exception $e) {}
     }
 
     /**
@@ -101,12 +56,27 @@ class pkg_clubleaddirInstallerScript
             JPATH_ADMINISTRATOR . '/modules/mod_clubleaddir',
             JPATH_ADMINISTRATOR . '/manifests/modules/mod_clubleaddir.xml',
             JPATH_ROOT . '/administrator/manifests/modules/mod_clubleaddir.xml',
+            JPATH_ADMINISTRATOR . '/manifests/packages/pkg_clubleaddir.xml',
+            JPATH_ROOT . '/administrator/manifests/packages/pkg_clubleaddir.xml',
         ];
+        
+        $db = \Joomla\CMS\Factory::getDbo();
+        $table = $db->quoteName('#__extensions');
+        
+        // Remove zombie extension entries
+        $elements = ['pkg_clubleaddir', 'pkg_pkg_clubleaddir', 'com_clubleaddir', 'mod_clubleaddir'];
+        foreach ($elements as $element) {
+            $query = $db->getQuery(true)
+                ->delete($table)
+                ->where($db->quoteName('element') . ' = ' . $db->quote($element));
+            $db->setQuery($query);
+            try { $db->execute(); } catch (\Exception $e) {}
+        }
         
         foreach ($paths as $path) {
             if (is_dir($path)) {
                 $this->deleteDir($path);
-            } elseif (is_file($path) && strpos($path, 'manifest') !== false) {
+            } elseif (is_file($path)) {
                 @unlink($path);
             }
         }
@@ -133,120 +103,6 @@ class pkg_clubleaddirInstallerScript
     }
 
     /**
-     * Force registration of extensions by re-scanning manifests.
-     */
-    private function forceRegisterExtensions()
-    {
-        $db = \Joomla\CMS\Factory::getDbo();
-        $table = $db->quoteName('#__extensions');
-        
-        // Check if component is registered, if not add it
-        $query = $db->getQuery(true)
-            ->select($db->quoteName('extension_id'))
-            ->from($table)
-            ->where($db->quoteName('element') . ' = ' . $db->quote('com_clubleaddir'));
-        $db->setQuery($query);
-        $id = $db->loadResult();
-        
-        if (!$id) {
-            // Insert component row
-            $manifestPath = JPATH_ADMINISTRATOR . '/manifests/components/com_clubleaddir.xml';
-            if (file_exists($manifestPath)) {
-                $this->insertExtensionRow($db, 'com_clubleaddir', 'component', $manifestPath);
-            }
-        }
-        
-        // Check if module is registered, if not add it
-        $query = $db->getQuery(true)
-            ->select($db->quoteName('extension_id'))
-            ->from($table)
-            ->where($db->quoteName('element') . ' = ' . $db->quote('mod_clubleaddir'));
-        $db->setQuery($query);
-        $id = $db->loadResult();
-        
-        if (!$id) {
-            // Insert module row
-            $manifestPath = JPATH_ADMINISTRATOR . '/manifests/modules/mod_clubleaddir.xml';
-            if (file_exists($manifestPath)) {
-                $this->insertExtensionRow($db, 'mod_clubleaddir', 'module', $manifestPath);
-            }
-        }
-        
-        // Add package row
-        $query = $db->getQuery(true)
-            ->select($db->quoteName('extension_id'))
-            ->from($table)
-            ->where($db->quoteName('element') . ' = ' . $db->quote('pkg_clubleaddir'));
-        $db->setQuery($query);
-        $id = $db->loadResult();
-        
-        if (!$id) {
-            $manifestPath = JPATH_ADMINISTRATOR . '/manifests/packages/pkg_clubleaddir.xml';
-            if (file_exists($manifestPath)) {
-                $this->insertExtensionRow($db, 'pkg_clubleaddir', 'package', $manifestPath);
-            }
-        }
-    }
-
-    /**
-     * Insert an extension row.
-     */
-    private function insertExtensionRow($db, $element, $type, $manifestPath)
-    {
-        $xml = simplexml_load_file($manifestPath);
-        
-        $columns = [
-            'name' => (string) $xml->name ?? $element,
-            'type' => $type,
-            'element' => $element,
-            'client_id' => ($type === 'component' || $type === 'package') ? 0 : 1,
-            'manifest_cache' => json_encode([
-                'name' => (string) $xml->name ?? $element,
-                'version' => (string) $xml->version ?? '1.0.0',
-                'author' => (string) $xml->author ?? '',
-            ]),
-            'enabled' => 1,
-            'protected' => 0,
-            'access' => 1,
-        ];
-        
-        // Add package-specific fields
-        if ($type === 'package') {
-            $columns['version'] = (string) $xml->version ?? '1.0.0';
-        }
-        
-        $query = $db->getQuery(true)->insert($table)->columns(array_keys($columns))->values(
-            '(' . implode(',', array_map([$db, 'quote'], array_values($columns))) . ')'
-        );
-        $db->setQuery($query);
-        $db->execute();
-    }
-
-    /**
-     * Remove zombie extension entries.
-     */
-    private function removeZombieExtensions()
-    {
-        $db = \Joomla\CMS\Factory::getDbo();
-        $table = $db->quoteName('#__extensions');
-        
-        $query = $db->getQuery(true)
-            ->select($db->quoteName('extension_id'))
-            ->from($table)
-            ->where($db->quoteName('element') . ' = ' . $db->quote('pkg_pkg_clubleaddir'));
-        $db->setQuery($query);
-        $id = $db->loadResult();
-        
-        if ($id) {
-            $del = $db->getQuery(true)
-                ->delete($table)
-                ->where($db->quoteName('extension_id') . ' = ' . (int) $id);
-            $db->setQuery($del);
-            $db->execute();
-        }
-    }
-
-    /**
      * Ensure manifest directories exist with proper permissions.
      */
     private function ensureManifestDirectories()
@@ -269,18 +125,126 @@ class pkg_clubleaddirInstallerScript
      */
     private function copyManifestsRobust()
     {
-        // Component
+        $db = \Joomla\CMS\Factory::getDbo();
+        $table = $db->quoteName('#__extensions');
+        
+        // Component manifest
         $src = JPATH_ADMINISTRATOR . '/components/com_clubleaddir/com_clubleaddir.xml';
         $dst = JPATH_ADMINISTRATOR . '/manifests/components/com_clubleaddir.xml';
         if (is_file($src) && !is_file($dst)) {
             copy($src, $dst);
+            $this->registerExtension($db, 'com_clubleaddir', 'component', $dst);
         }
         
-        // Module
+        // Module manifest
         $src = JPATH_SITE . '/modules/mod_clubleaddir/mod_clubleaddir.xml';
         $dst = JPATH_ADMINISTRATOR . '/manifests/modules/mod_clubleaddir.xml';
         if (is_file($src) && !is_file($dst)) {
             copy($src, $dst);
+            $this->registerExtension($db, 'mod_clubleaddir', 'module', $dst);
         }
+    }
+
+    /**
+     * Force registration of extensions by reading manifests.
+     */
+    private function forceRegisterExtensions()
+    {
+        $db = \Joomla\CMS\Factory::getDbo();
+        $table = $db->quoteName('#__extensions');
+        
+        // Check and register component
+        $query = $db->getQuery(true)
+            ->select($db->quoteName('extension_id'))
+            ->from($table)
+            ->where($db->quoteName('element') . ' = ' . $db->quote('com_clubleaddir'));
+        $db->setQuery($query);
+        
+        if (!$db->loadResult()) {
+            $manifest = JPATH_ADMINISTRATOR . '/manifests/components/com_clubleaddir.xml';
+            if (is_file($manifest)) {
+                $this->registerExtension($db, 'com_clubleaddir', 'component', $manifest);
+            }
+        }
+        
+        // Check and register module
+        $query = $db->getQuery(true)
+            ->select($db->quoteName('extension_id'))
+            ->from($table)
+            ->where($db->quoteName('element') . ' = ' . $db->quote('mod_clubleaddir'));
+        $db->setQuery($query);
+        
+        if (!$db->loadResult()) {
+            $manifest = JPATH_ADMINISTRATOR . '/manifests/modules/mod_clubleaddir.xml';
+            if (is_file($manifest)) {
+                $this->registerExtension($db, 'mod_clubleaddir', 'module', $manifest);
+            }
+        }
+        
+        // Check and register package
+        $query = $db->getQuery(true)
+            ->select($db->quoteName('extension_id'))
+            ->from($table)
+            ->where($db->quoteName('element') . ' = ' . $db->quote('pkg_clubleaddir'));
+        $db->setQuery($query);
+        
+        if (!$db->loadResult()) {
+            $manifest = JPATH_ADMINISTRATOR . '/manifests/packages/pkg_clubleaddir.xml';
+            if (is_file($manifest)) {
+                $this->registerExtension($db, 'pkg_clubleaddir', 'package', $manifest);
+            }
+        }
+    }
+
+    /**
+     * Register an extension from its manifest.
+     */
+    private function registerExtension($db, $element, $type, $manifestPath)
+    {
+        $xml = simplexml_load_file($manifestPath);
+        
+        $name = (string) ($xml->name ?? $element);
+        $version = (string) ($xml->version ?? '1.0.0');
+        $author = (string) ($xml->author ?? '');
+        
+        $columns = [
+            $db->quoteName('name') . ' = ' . $db->quote($name),
+            $db->quoteName('type') . ' = ' . $db->quote($type),
+            $db->quoteName('element') . ' = ' . $db->quote($element),
+            $db->quoteName('client_id') . ' = ' . (($type === 'component' || $type === 'package') ? '0' : '1'),
+            $db->quoteName('manifest_cache') . ' = ' . $db->quote(json_encode([
+                'name' => $name,
+                'version' => $version,
+                'author' => $author,
+            ])),
+            $db->quoteName('enabled') . ' = 1',
+            $db->quoteName('protected') . ' = 0',
+            $db->quoteName('access') . ' = 1',
+        ];
+        
+        if ($type === 'package') {
+            $columns[] = $db->quoteName('version') . ' = ' . $db->quote($version);
+        }
+        
+        $query = $db->getQuery(true)
+            ->insert($table)
+            ->columns(array_map(function($c) use ($db) { 
+                return preg_replace('/^' . $db->quoteName('') . '/(.*) =/', $db->quoteName('$1') . ' =', $c); 
+            }, $columns))
+            ->columns(['name', 'type', 'element', 'client_id', 'manifest_cache', 'enabled', 'protected', 'access'])
+            ->values('(' . implode(',', array_map(function($c) { return preg_replace('/^[^=]+ = /', '', $c); }, $columns)) . ')');
+        
+        // Simpler approach: build query properly
+        $query = "INSERT INTO #__extensions (name, type, element, client_id, manifest_cache, enabled, protected, access";
+        if ($type === 'package') $query .= ", version";
+        $query .= ") VALUES ("
+             . ", " . $db->quote($name) . ", " . $db->quote($type) . ", " . $db->quote($element) . ", "
+             . ($type === 'component' || $type === 'package' ? '0' : '1') . ", "
+             . $db->quote(json_encode(['name'=>$name,'version'=>$version,'author'=>$author])) . ", 1, 0, 1";
+        if ($type === 'package') $query .= ", " . $db->quote($version);
+        $query .= ")";
+        
+        $db->setQuery($query);
+        $db->execute();
     }
 }
