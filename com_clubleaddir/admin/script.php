@@ -115,7 +115,6 @@ class com_clubleaddirInstallerScript
      */
     public function postflight($type, $parent)
     {
-        @file_put_contents(JPATH_ADMINISTRATOR . '/cache/_clble_postflight_ran.txt', date('c') . ' type=' . $type . "\n", FILE_APPEND);
 
         try {
             $db = \Joomla\CMS\Factory::getDbo();
@@ -156,7 +155,7 @@ class com_clubleaddirInstallerScript
                 mkdir(dirname($dstComp), 0755, true);
             }
             if (!is_file($dstComp) || md5_file($srcComp) !== md5_file($dstComp)) {
-                copy($srcComp, $dstComp);
+                @copy($srcComp, $dstComp);
             }
         }
 
@@ -169,7 +168,7 @@ class com_clubleaddirInstallerScript
                 mkdir(dirname($dstMod), 0755, true);
             }
             if (!is_file($dstMod) || md5_file($srcMod) !== md5_file($dstMod)) {
-                copy($srcMod, $dstMod);
+                @copy($srcMod, $dstMod);
             }
         }
     }
