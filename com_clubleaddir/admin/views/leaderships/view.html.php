@@ -29,35 +29,37 @@ class ClubleaddirViewLeaderships extends HtmlView
     {
         $model = $this->getModel();
 
-        $this->items            = $model->getItems();
-        $this->typeOptions      = $model->getTypeOptions();
-        $this->publishedOptions = $model->getPublishedOptions();
-        $this->statusOptions    = $model->getStatusOptions();
-        $this->termOptions      = $model->getTermOptions();
-        $this->backendName      = $model->getBackendName();
+        if (!$model) {
+            $this->items            = array();
+            $this->typeOptions      = array();
+            $this->publishedOptions = array();
+            $this->statusOptions    = array();
+            $this->termOptions      = array();
+            $this->backendName      = '';
+        } else {
+            $this->items            = $model->getItems();
+            $this->typeOptions      = $model->getTypeOptions();
+            $this->publishedOptions = $model->getPublishedOptions();
+            $this->statusOptions    = $model->getStatusOptions();
+            $this->termOptions      = $model->getTermOptions();
+            $this->backendName      = $model->getBackendName();
+        }
+
         $this->filters = array(
-            'type'      => $model->getFilterValue('type'),
-            'published' => $model->getFilterValue('published'),
-            'status'    => $model->getFilterValue('status'),
-            'term'      => $model->getFilterValue('term'),
-            'search'    => $model->getFilterValue('search'),
+            'type'      => $model ? $model->getFilterValue('type') : '',
+            'published' => $model ? $model->getFilterValue('published') : '',
+            'status'    => $model ? $model->getFilterValue('status') : '',
+            'term'      => $model ? $model->getFilterValue('term') : '',
+            'search'    => $model ? $model->getFilterValue('search') : '',
         );
 
         ClubleaddirHelper::addSubmenu('leaderships');
         $this->addToolbar();
-
-        // Surface a visible backend warning when vacant positions are published
-        // but no Vacant Enquiry Contact / Vacancy Default Email is configured,
-        // with a direct link to the module's Contact Settings to fix it.
         $this->checkVacancyConfig();
 
         parent::display($tpl);
     }
 
-    /**
-     * Warn in the admin UI when a published vacant position exists but the
-     * vacant-enquiry target (module/component Contact Settings) is empty.
-     */
     protected function checkVacancyConfig()
     {
         try {
@@ -102,11 +104,7 @@ class ClubleaddirViewLeaderships extends HtmlView
         if ($canDo->get('core.edit.state')) {
             ToolbarHelper::publish('leadership.publish', 'JTOOLBAR_PUBLISH', true);
             ToolbarHelper::unpublish('leadership.publish', 'JTOOLBAR_UNPUBLISH', true);
-            // Recoverable delete: moves selected records to the Trash (published = -2)
-            // so they can be restored later. Permanent Delete remains available.
             ToolbarHelper::trash('leadership.trash', 'JTOOLBAR_TRASH');
-            // Joomla 3.10 has no ToolbarHelper::saveorder(); use a custom button
-            // that submits the order[] inputs via the leadership.saveorder task.
             ToolbarHelper::custom('leadership.saveorder', 'icon-menu', '', 'COM_CLUBLEADDIR_TOOLBAR_SAVE_ORDER', false);
         }
         if ($canDo->get('core.delete')) {
