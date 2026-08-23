@@ -412,7 +412,7 @@ class ClubleaddirHelper
                     // the site contact directory so it stays actionable. The backend
                     // surfaces a configuration warning with a link to the module settings.
                     self::logVacancyMisconfig();
-                    $url   = Route::_('index.php?option=com_contact&view=contacts');
+                    $url   = Route::_('index.php?option=com_contact&view=featured');
                     $label = Text::_('COM_CLUBLEADDIR_VACANCY_INQUIRE');
                 }
             }
@@ -559,7 +559,7 @@ class ClubleaddirHelper
             // Misconfigured: keep the banner + CTA visible (never hide it); point
             // the CTA at the site contact directory. Backend warns with a fix link.
             self::logVacancyMisconfig();
-            $url = htmlspecialchars(Route::_('index.php?option=com_contact&view=contacts'), ENT_QUOTES, 'UTF-8');
+            $url = htmlspecialchars(Route::_('index.php?option=com_contact&view=featured'), ENT_QUOTES, 'UTF-8');
         }
 
         $cta = '';
