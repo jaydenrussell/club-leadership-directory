@@ -248,6 +248,14 @@ $icon = array(
 
 <div class="com-clubleaddir">
     <?php
+    $pageHeading = trim((string) ($this->params->get('page_heading', '')));
+    if ($pageHeading === ''):
+        $pageHeading = trim((string) ClubleaddirHelper::getGlobalConfig()->get('display_title', ''));
+    endif;
+    if ($pageHeading !== ''): ?>
+    <h1 class="com-clubleaddir-page-heading"><?php echo $this->escape($pageHeading); ?></h1>
+    <?php endif; ?>
+    <?php
     // Show the recruitment banner only when at least one published position is vacant.
     $anyVacant = false;
     foreach (array('officers', 'directors', 'directors_league', 'staff') as $gk) {

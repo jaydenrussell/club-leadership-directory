@@ -467,7 +467,7 @@ function jClubleaddirSelectContact(id, name) {
                                     <span class="icon-warning-1" aria-hidden="true"></span>
                                     <strong><?php echo Text::_('COM_CLUBLEADDIR_VACANCY_MISCONFIG_TITLE'); ?></strong>
                                     <?php echo Text::_('COM_CLUBLEADDIR_VACANCY_MISCONFIG_BODY'); ?>
-                                    <a href="<?php echo (string) Route::_('index.php?option=com_modules&task=module.edit&id=106'); ?>" class="btn btn-mini btn-warning" style="margin-left:8px;">
+                                    <a href="<?php echo (string) Route::_('index.php?option=com_clubleaddir'); ?>" class="btn btn-mini btn-warning" style="margin-left:8px;">
                                         <?php echo Text::_('COM_CLUBLEADDIR_VACANCY_MISCONFIG_CONFIGURE'); ?>
                                     </a>
                                 </div>

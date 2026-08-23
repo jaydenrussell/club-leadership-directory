@@ -25,7 +25,7 @@ $paramsData = $module->params instanceof \Joomla\CMS\Registry\Registry
     : new \Joomla\CMS\Registry($module->params);
 
 $moduleClassSfx  = htmlspecialchars($paramsData->get('module_class_sfx', ''), ENT_QUOTES, 'UTF-8');
-$displayTitle    = $paramsData->get('display_title', 'Club Leadership');
+$displayTitle    = (string) $cfg->get('display_title', 'Club Leadership');
 
 // All display options come from the component global config (one source of truth).
 require_once JPATH_ADMINISTRATOR . '/components/com_clubleaddir/helpers.php';

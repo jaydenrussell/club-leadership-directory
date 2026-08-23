@@ -410,8 +410,8 @@ function clubleaddirRenderContactHtml($person, $showContact, $contactHiddenText,
     }
     if ($anyVacant):
         echo ClubleaddirHelper::vacancyBannerHtml(
-            $vacantContactId,
-            (string) ($paramsData->get('vacancy_default_email', ''))
+            (int) $vacantContactId,
+            (string) $vacancyDefaultEmail
         );
     endif;
     ?>
