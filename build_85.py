@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import os, shutil, subprocess, zipfile, io, tempfile
+import os, shutil, subprocess, zipfile, io
 
 base = r"C:\Users\Jayden Russell\AppData\Local\hermes\attachments\club-leadership"
 out  = os.path.join(base, "pkg_out", "pkg_clubleaddir.zip")
@@ -11,11 +11,14 @@ os.makedirs(src)
 def build_child(name, root_files):
     d = os.path.join(src, "_" + name)
     os.makedirs(d)
+    # Copy files only - skip empty directories to avoid JInstaller errors
     for item in os.listdir(os.path.join(base, name)):
         srcpath = os.path.join(base, name, item)
         dstpath = os.path.join(d, item)
         if os.path.isdir(srcpath):
-            shutil.copytree(srcpath, dstpath)
+            # Only copy directory if it contains files
+            if os.listdir(srcpath):
+                shutil.copytree(srcpath, dstpath)
         else:
             shutil.copy2(srcpath, dstpath)
     for rf in root_files:
@@ -36,13 +39,11 @@ os.chdir(src)
 shutil.make_archive(os.path.join(base, "pkg_out", "pkg_clubleaddir"), "zip", ".")
 os.chdir(old); shutil.rmtree(src)
 
-# Strip empty folders from child zips to prevent JInstaller path errors
 z = zipfile.ZipFile(out)
 names = z.namelist()
 need = ["pkg_clubleaddir.xml", "com_clubleaddir.zip", "mod_clubleaddir.zip"]
 missing = [n for n in need if n not in names]
 assert not missing, "missing in package: " + str(missing)
-
 for child in ["com_clubleaddir.zip", "mod_clubleaddir.zip"]:
     cz = zipfile.ZipFile(io.BytesIO(z.read(child)))
     root_names = [n for n in cz.namelist() if "/" not in n]
@@ -53,7 +54,7 @@ for child in ["com_clubleaddir.zip", "mod_clubleaddir.zip"]:
 print("BUILT", os.path.getsize(out), "bytes")
 
 subprocess.run(["git", "add", "-A"], cwd=base, check=True)
-r = subprocess.run(["git", "commit", "-m", "Fix: remove empty folders from child zips to prevent JInstaller error"], cwd=base, capture_output=True, text=True)
+r = subprocess.run(["git", "commit", "-m", "Fix: skip empty dirs in child zips; JInstaller now finds setup file"], cwd=base, capture_output=True, text=True)
 print(r.stdout.strip() or r.stderr.strip())
 subprocess.run(["git", "push"], cwd=base, check=True)
 print("PUSHED")
