@@ -127,10 +127,44 @@ class ComClubleaddirInstallerScript
             // Non-fatal: a clean install already enables the component.
         }
 
+        $this->syncManifests();
         $this->fixUpdateSite();
         $this->createStealthContactMenu();
 
         return true;
+    }
+
+    /**
+     * Guarantee the component AND module manifests exist at the canonical Joomla
+     * locations (administrator/manifests/components|modules/<element>.xml).
+     *
+     * Joomla's package uninstall reads these to remove each child; if they are
+     * missing (e.g. a prior broken install left a zombie row), child uninstall
+     * fails with "Missing manifest file" and the whole package uninstall aborts.
+     */
+    private function syncManifests()
+    {
+        // Component manifest: admin/components/com_clubleaddir/clubleaddir.xml
+        //   -> administrator/manifests/components/com_clubleaddir.xml
+        $srcComp = JPATH_ADMINISTRATOR . '/components/com_clubleaddir/clubleaddir.xml';
+        $dstComp = JPATH_ADMINISTRATOR . '/manifests/components/com_clubleaddir.xml';
+        if (is_file($srcComp)) {
+            if (!is_file($dstComp) || md5_file($srcComp) !== md5_file($dstComp)) {
+                try { \JFile::copy($srcComp, $dstComp); }
+                catch (\Throwable $e) { @copy($srcComp, $dstComp); }
+            }
+        }
+
+        // Module manifest: modules/mod_clubleaddir/mod_clubleaddir.xml
+        //   -> administrator/manifests/modules/mod_clubleaddir.xml
+        $srcMod = JPATH_ROOT . '/modules/mod_clubleaddir/mod_clubleaddir.xml';
+        $dstMod = JPATH_ADMINISTRATOR . '/manifests/modules/mod_clubleaddir.xml';
+        if (is_file($srcMod)) {
+            if (!is_file($dstMod) || md5_file($srcMod) !== md5_file($dstMod)) {
+                try { \JFile::copy($srcMod, $dstMod); }
+                catch (\Throwable $e) { @copy($srcMod, $dstMod); }
+            }
+        }
     }
 
     /**
