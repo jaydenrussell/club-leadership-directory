@@ -6,7 +6,7 @@
     <authorEmail>noreply@simcoecurlingclub.ca</authorEmail>
     <copyright>Copyright (C) 2026 Jayden Russell</copyright>
     <license>GNU General Public License version 2 or later</license>
-    <version>2.0.121</version>
+    <version>2.0.122</version>
     <description>COM_CLUBLEADDIR_DESC</description>
 
     <administration>
@@ -23,7 +23,6 @@
             <filename>config.xml</filename>
             <folder>views</folder>
             <folder>store</folder>
-            <folder>sql</folder>
             <folder>language</folder>
         </files>
         <languages folder="admin/language">
@@ -31,25 +30,7 @@
             <language tag="en-GB">en-GB/en-GB.com_clubleaddir.sys.ini</language>
         </languages>
         <scriptfile>script.php</scriptfile>
-        <install>
-            <sql>
-                <file driver="mysql" charset="utf8">sql/install.sql</file>
-                <file driver="mysqli" charset="utf8">sql/install.sql</file>
-            </sql>
-        </install>
-        <update>
-            <sql>
-                <file driver="mysql" charset="utf8">sql/update.sql</file>
-                <file driver="mysqli" charset="utf8">sql/update.sql</file>
-            </sql>
-        </update>
-    <uninstall>
-    <sql>
-        <file driver="mysql" charset="utf8">sql/uninstall.sql</file>
-        <file driver="mysqli" charset="utf8">sql/uninstall.sql</file>
-    </sql>
-</uninstall>
-</administration>
+    </administration>
 
     <config>
         <file>config.xml</file>
