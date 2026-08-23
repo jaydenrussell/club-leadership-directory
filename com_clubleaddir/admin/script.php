@@ -128,6 +128,7 @@ class ComClubleaddirInstallerScript
         }
 
         $this->syncManifests();
+        $this->cleanupLegacyPackage();
         $this->fixUpdateSite();
         $this->createStealthContactMenu();
 
@@ -144,14 +145,13 @@ class ComClubleaddirInstallerScript
      */
     private function syncManifests()
     {
-        // Component manifest: admin/components/com_clubleaddir/clubleaddir.xml
+        // Component manifest: admin/components/com_clubleaddir/com_clubleaddir.xml
         //   -> administrator/manifests/components/com_clubleaddir.xml
-        $srcComp = JPATH_ADMINISTRATOR . '/components/com_clubleaddir/clubleaddir.xml';
+        $srcComp = JPATH_ADMINISTRATOR . '/components/com_clubleaddir/com_clubleaddir.xml';
         $dstComp = JPATH_ADMINISTRATOR . '/manifests/components/com_clubleaddir.xml';
         if (is_file($srcComp)) {
             if (!is_file($dstComp) || md5_file($srcComp) !== md5_file($dstComp)) {
-                try { \JFile::copy($srcComp, $dstComp); }
-                catch (\Throwable $e) { @copy($srcComp, $dstComp); }
+                @copy($srcComp, $dstComp);
             }
         }
 
@@ -161,9 +161,31 @@ class ComClubleaddirInstallerScript
         $dstMod = JPATH_ADMINISTRATOR . '/manifests/modules/mod_clubleaddir.xml';
         if (is_file($srcMod)) {
             if (!is_file($dstMod) || md5_file($srcMod) !== md5_file($dstMod)) {
-                try { \JFile::copy($srcMod, $dstMod); }
-                catch (\Throwable $e) { @copy($srcMod, $dstMod); }
+                @copy($srcMod, $dstMod);
             }
+        }
+    }
+
+    /**
+     * Remove the legacy broken package row left by older releases.
+     *
+     * Older versions shipped <packagename>pkg_clubleaddir</packagename>, which
+     * Joomla turned into the element "pkg_pkg_clubleaddir". That element never
+     * matched the manifest filename (pkg_clubleaddir.xml), so the package could
+     * not be uninstalled ("Missing manifest file") and lingered as a zombie.
+     * This deletes that orphan row so the site is clean.
+     */
+    private function cleanupLegacyPackage()
+    {
+        try {
+            $db = \Joomla\CMS\Factory::getDbo();
+            $query = $db->getQuery(true)
+                ->delete($db->quoteName('#__extensions'))
+                ->where($db->quoteName('type') . ' = ' . $db->quote('package'))
+                ->where($db->quoteName('element') . ' = ' . $db->quote('pkg_pkg_clubleaddir'));
+            $db->setQuery($query)->execute();
+        } catch (\Throwable $e) {
+            // Non-fatal.
         }
     }
 

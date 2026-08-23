@@ -39,7 +39,7 @@ def build_child(name, root_files):
         zip_dir(d, zf)
     return archive
 
-build_child("com_clubleaddir", ["com_clubleaddir/clubleaddir.xml", "com_clubleaddir/config.xml"])
+build_child("com_clubleaddir", ["com_clubleaddir/com_clubleaddir.xml", "com_clubleaddir/config.xml"])
 build_child("mod_clubleaddir", ["mod_clubleaddir/mod_clubleaddir.xml"])
 
 shutil.copy2(os.path.join(base, "pkg", "pkg_clubleaddir.xml"), os.path.join(src, "pkg_clubleaddir.xml"))
@@ -59,7 +59,7 @@ for child in ["com_clubleaddir.zip", "mod_clubleaddir.zip"]:
     cz = zipfile.ZipFile(io.BytesIO(z.read(child)))
     root_names = [n for n in cz.namelist() if "/" not in n]
     print(child, "root files:", root_names)
-    manifest = "clubleaddir.xml" if "com" in child else "mod_clubleaddir.xml"
+    manifest = "com_clubleaddir.xml" if child.startswith("com") else "mod_clubleaddir.xml"
     assert manifest in root_names, child + " missing " + manifest + " at root"
 
 print("BUILT", os.path.getsize(out), "bytes")
