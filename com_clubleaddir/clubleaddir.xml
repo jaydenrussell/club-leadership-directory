@@ -6,14 +6,13 @@
     <authorEmail>noreply@simcoecurlingclub.ca</authorEmail>
     <copyright>Copyright (C) 2026 Jayden Russell</copyright>
     <license>GNU General Public License version 2 or later</license>
-    <version>2.0.111</version>
+    <version>2.0.112</version>
     <description>COM_CLUBLEADDIR_DESC</description>
 
     <administration>
         <menu img="class:icon-users">COM_CLUBLEADDIR</menu>
         <submenu>
             <menu link="option=com_clubleaddir">COM_CLUBLEADDIR_LEADERSHIPS</menu>
-            <menu link="option=com_clubleaddir&amp;view=config">COM_CLUBLEADDIR_CONFIG_COMPONENT_LABEL</menu>
         </submenu>
         <files folder="admin">
             <filename>clubleaddir.php</filename>
@@ -22,8 +21,6 @@
             <filename>script.php</filename>
             <filename>access.xml</filename>
             <filename>config.xml</filename>
-            <folder>controllers</folder>
-            <folder>models</folder>
             <folder>views</folder>
             <folder>store</folder>
             <folder>sql</folder>
