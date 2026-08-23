@@ -1,20 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <extension type="component" version="2.5" method="upgrade">
     <name>COM_CLUBLEADDIR</name>
+    <creationDate>2026-08-23</creationDate>
     <author>Jayden Russell</author>
-    <creationDate>August 2026</creationDate>
-    <copyright>Jayden Russell</copyright>
+    <authorEmail>noreply@simcoecurlingclub.ca</authorEmail>
+    <copyright>Copyright (C) 2026 Jayden Russell</copyright>
     <license>GNU General Public License version 2 or later</license>
-    <authorEmail>info@simcoecurlingclub.ca</authorEmail>
-    <authorUrl>https://simcoecurlingclub.ca</authorUrl>
-    <version>2.0.106</version>
+    <version>2.0.107</version>
     <description>COM_CLUBLEADDIR_DESC</description>
 
     <administration>
         <menu img="class:icon-users">COM_CLUBLEADDIR</menu>
         <submenu>
             <menu link="option=com_clubleaddir">COM_CLUBLEADDIR_LEADERSHIPS</menu>
-            <menu link="option=com_clubleaddir&amp;view=leaderships">COM_CLUBLEADDIR_LEADERSHIP</menu>
+            <menu link="option=com_clubleaddir&amp;view=config">COM_CLUBLEADDIR_CONFIG_COMPONENT_LABEL</menu>
         </submenu>
         <files folder="admin">
             <filename>clubleaddir.php</filename>
@@ -52,18 +51,20 @@
         </update>
     </administration>
 
-    <languages folder="language">
-        <language tag="en-GB">en-GB/en-GB.com_clubleaddir.ini</language>
-    </languages>
-
     <files>
         <filename>clubleaddir.php</filename>
-        <filename>controller.php</filename>
+        <folder>controllers</folder>
+        <folder>models</folder>
         <folder>views</folder>
         <folder>language</folder>
     </files>
 
-    <updateservers>
-        <server type="collection" name="Club Leadership Directory Update" priority="1">https://jaydenrussell.github.io/club-leadership-directory/update.xml</server>
-    </updateservers>
+    <languages folder="language">
+        <language tag="en-GB">en-GB/en-GB.com_clubleaddir.ini</language>
+    </languages>
+
+    <media folder="media">
+        <folder>css</folder>
+        <folder>js</folder>
+    </media>
 </extension>

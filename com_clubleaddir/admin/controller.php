@@ -10,15 +10,28 @@ defined('_JEXEC') or die;
 
 use Joomla\CMS\MVC\Controller\BaseController;
 
-/**
- * Club Leadership admin controller.
- *
- * Standard Joomla dispatcher: the list view ('leaderships') is the default and
- * the edit form ('leadership') is reached via the leadership.add / leadership.edit
- * tasks, which redirect here with view=leadership. No custom view forcing — the
- * framework resolves the view from the request (or default_view) as intended.
- */
 class ClubleaddirController extends BaseController
 {
 	protected $default_view = 'leaderships';
+
+	public function save($key = null, $urlVar = null)
+	{
+		$model = $this->getModel('config');
+		$form = $model->getForm();
+		$data = $this->input->post->get('jform', array(), 'array');
+
+		if (!$model->save($data))
+		{
+			$this->setError($model->getError());
+			$this->setMessage($this->getError(), 'error');
+
+			$view = $this->getView('config', 'html');
+			$view->setModel($model, true);
+			$view->display();
+			return false;
+		}
+
+		$this->setMessage(JText::_('COM_CLUBLEADDIR_CONFIG_SAVED'));
+		$this->setRedirect(JRoute::_('index.php?option=com_clubleaddir&view=config', false));
+	}
 }
