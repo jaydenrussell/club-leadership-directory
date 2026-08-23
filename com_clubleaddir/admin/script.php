@@ -15,7 +15,7 @@ defined('_JEXEC') or die;
 
 use Joomla\CMS\Log\Log;
 
-class ComClubleaddirInstallerScript
+class com_clubleaddirInstallerScript
 {
     private function initDataDir()
     {

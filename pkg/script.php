@@ -19,7 +19,7 @@
 
 defined('_JEXEC') or die;
 
-class Pkg_ClubleaddirInstallerScript
+class pkg_clubleaddirInstallerScript
 {
     /**
      * Ensure the component and module manifests exist at their canonical
