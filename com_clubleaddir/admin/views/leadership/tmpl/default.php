@@ -160,8 +160,13 @@ function setRoleRequired()
 // email handles it), so grey those fields out; the role/title stays required;
 // and the photo becomes the club logo (no personal upload needed).
 function toggleVacantFields(isVacant) {
-    // The vacancy enquiry target is shown as a read-only label next to the
-    // Vacant checkbox (it follows the global settings) — nothing to toggle here.
+    // The vacancy enquiry target / warning block (help note + enquiries box +
+    // backend warning) is only relevant when the position is vacant — hide it
+    // entirely otherwise so it doesn't clutter the form for filled roles.
+    var vacantSettings = document.getElementById('vacant-settings');
+    if (vacantSettings) {
+        vacantSettings.style.display = isVacant ? 'block' : 'none';
+    }
 
     // Grey + disable the personal contact fields (email / phone / Joomla contact).
     var fieldset = document.getElementById('contact-info-fieldset');
@@ -383,6 +388,7 @@ function jClubleaddirSelectContact(id, name) {
     color: #6b7785;
     font-style: italic;
 }
+#vacant-settings { display: none; }
 .clble-vacancy-target-label {
     font-weight: 600;
     font-style: normal;
@@ -451,6 +457,7 @@ function jClubleaddirSelectContact(id, name) {
                                     <?php echo Text::_('COM_CLUBLEADDIR_FIELD_VACANT'); ?>
                                 </label>
                                 <span class="clble-help-note"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_VACANT_HELP'); ?></span>
+                                <div id="vacant-settings" style="margin-top:6px;">
                                 <p class="clble-vacancy-target" id="vacancy-target">
                                     <span class="clble-vacancy-target-label"><?php echo Text::_('COM_CLUBLEADDIR_VACANCY_TARGET_LABEL'); ?></span>
                                     <?php echo $this->escape(ClubleaddirHelper::vacancyEnquiryDisplay()); ?>
@@ -465,6 +472,7 @@ function jClubleaddirSelectContact(id, name) {
                                     </a>
                                 </div>
                                 <?php endif; ?>
+                                </div>
                             </div>
                         </div>
 

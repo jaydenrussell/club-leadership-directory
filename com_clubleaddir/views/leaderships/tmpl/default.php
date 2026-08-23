@@ -330,7 +330,7 @@ $icon = array(
                                     <div class="clubleadership-card-term"><?php echo $this->escape($person->term); ?></div>
                                 <?php endif; ?>
                                 <?php if (!empty($person->league_name)): ?>
-                                    <div class="clubleadership-card-league"><?php echo $this->escape($person->league_name); ?></div>
+                                    <div class="clubleadership-card-league"><?php echo $this->escape(ClubleaddirHelper::leagueNameLabel($person->league_name)); ?></div>
                                 <?php endif; ?>
                                 <?php echo ClubleaddirHelper::contactHtml($person, true, '', $this->vacantContactId, $this->vacancyDefaultEmail); ?>
                             </div>

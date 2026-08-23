@@ -289,14 +289,12 @@ class ClubleaddirHelper
      */
     public static function vacancyEnquiryDisplay()
     {
-        try {
-            $params    = \Joomla\CMS\Component\ComponentHelper::getParams('com_clubleaddir');
-            $contactId = (int) $params->get('vacant_contact_id', 0);
-            $defaultEm = trim((string) $params->get('vacancy_default_email', ''));
-        } catch (\Throwable $e) {
-            $contactId = 0;
-            $defaultEm = '';
-        }
+        // Single source of truth: the published mod_clubleaddir instance (falls
+        // back to the component global config). Keeps the admin "Enquiries go to"
+        // readout and the backend warning inline with what the front end links to.
+        $v         = self::getModuleVacancySettings();
+        $contactId = (int) $v->contact_id;
+        $defaultEm = trim((string) $v->email);
 
         if ($contactId > 0) {
             $db    = \Joomla\CMS\Factory::getDbo();
@@ -486,6 +484,28 @@ class ClubleaddirHelper
     public static function vacantLogo()
     {
         return 'https://simcoecurlingclub.ca/images/Logo/simcoe_curling_club_logo.svg';
+    }
+
+    /**
+     * Resolve a stored league Name KEY (e.g. 'senior_men') to its translatable
+     * human label for display. The admin form + store keep the key (so the value
+     * stays stable and re-editable), but the front end must show the label.
+     *
+     * @param string $key
+     * @return string
+     */
+    public static function leagueNameLabel($key)
+    {
+        $map = array(
+            'day_ladies'     => Text::_('COM_CLUBLEADDIR_LEAGUE_DAY_LADIES'),
+            'evening_ladies' => Text::_('COM_CLUBLEADDIR_LEAGUE_EVENING_LADIES'),
+            'senior_men'     => Text::_('COM_CLUBLEADDIR_LEAGUE_SENIOR_MEN'),
+        );
+        $key = (string) $key;
+        if (isset($map[$key])) {
+            return $map[$key];
+        }
+        return $key;
     }
 
     /**
