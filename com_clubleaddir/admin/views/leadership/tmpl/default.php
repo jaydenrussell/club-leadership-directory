@@ -455,6 +455,16 @@ function jClubleaddirSelectContact(id, name) {
                                     <span class="clble-vacancy-target-label"><?php echo Text::_('COM_CLUBLEADDIR_VACANCY_TARGET_LABEL'); ?></span>
                                     <?php echo $this->escape(ClubleaddirHelper::vacancyEnquiryDisplay()); ?>
                                 </p>
+                                <?php if (ClubleaddirHelper::vacancyEnquiryDisplay() === Text::_('COM_CLUBLEADDIR_VACANCY_USES_NONE')): ?>
+                                <div class="alert alert-warning" id="vacancy-misconfig" style="margin:10px 0;">
+                                    <span class="icon-warning-1" aria-hidden="true"></span>
+                                    <strong><?php echo Text::_('COM_CLUBLEADDIR_VACANCY_MISCONFIG_TITLE'); ?></strong>
+                                    <?php echo Text::_('COM_CLUBLEADDIR_VACANCY_MISCONFIG_BODY'); ?>
+                                    <a href="<?php echo (string) Route::_('index.php?option=com_modules&task=module.edit&id=106'); ?>" class="btn btn-mini btn-warning" style="margin-left:8px;">
+                                        <?php echo Text::_('COM_CLUBLEADDIR_VACANCY_MISCONFIG_CONFIGURE'); ?>
+                                    </a>
+                                </div>
+                                <?php endif; ?>
                             </div>
                         </div>
 
