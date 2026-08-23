@@ -30,14 +30,9 @@ $sections = array(
     'staff'            => Text::_('MOD_CLUBLEADDIRECTION_STAFF'),
 );
 
-// Per-section photo display (from menu params, defaulting to the same
-// convention the module uses: officers on, directors/staff off).
-$showPhotos = array(
-    'officers'         => (int) ($this->params->get('show_photos_officers', 1)),
-    'directors'        => (int) ($this->params->get('show_photos_directors', 0)),
-    'directors_league' => (int) ($this->params->get('show_photos_directors', 0)),
-    'staff'            => (int) ($this->params->get('show_photos_staff', 0)),
-);
+// Per-section photo display — read once from the component global config
+// in the view, so this layout stays presentation-only.
+$showPhotos = $this->showPhotos;
 
 $icon = array(
     'officers'         => '&#9733;',

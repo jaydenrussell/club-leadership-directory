@@ -381,6 +381,19 @@ class ClubleaddirHelper
         }
     }
 
+    /**
+     * Return the component global config params (Component Options in the
+     * component admin). All display / vacancy settings live here, so the
+     * front-end view, the module, and the postflight script can all read
+     * from one place.
+     *
+     * @return  \Joomla\CMS\Registry\Registry
+     */
+    public static function getGlobalConfig()
+    {
+        return \Joomla\CMS\Component\ComponentHelper::getParams('com_clubleaddir');
+    }
+
     public static function contactHtml($person, $showContact, $contactHiddenText, $vacantContactId = 0, $vacancyDefaultEmail = '')
     {
         $email         = $person->email ?? '';

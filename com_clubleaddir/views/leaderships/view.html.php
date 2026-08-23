@@ -46,18 +46,21 @@ class ClubleaddirViewLeaderships extends HtmlView
 
         $this->groups = $groups;
 
-        // Resolve vacant-enquiry settings from the module (single source of truth),
-        // so the component page and the module render the same Joomla contact URL.
-        // Falls back to component global config when no module is published.
+        // Single source of truth for all display / vacancy settings = the
+        // component global config (Options button in the component admin).
         require_once JPATH_ADMINISTRATOR . '/components/com_clubleaddir/helpers.php';
-        $vacancy = ClubleaddirHelper::getModuleVacancySettings();
-        $this->vacantContactId     = (int) $vacancy->contact_id;
-        $this->vacancyDefaultEmail = (string) $vacancy->email;
+        $cfg = ClubleaddirHelper::getGlobalConfig();
+        $this->vacantContactId     = (int) $cfg->get('vacant_contact_id', 0);
+        $this->vacancyDefaultEmail = (string) $cfg->get('vacancy_default_email', '');
 
-        // Maintain the active menu item's params for any other layout options.
-        $app  = \Joomla\CMS\Factory::getApplication();
-        $menu = $app->getMenu()->getActive();
-        $this->params = $menu ? $menu->getParams() : new \Joomla\CMS\Registry\Registry();
+        // Per-section photo visibility — overrides coming from the component
+        // config; no separate module or menu-item params needed.
+        $this->showPhotos = array(
+            'officers'         => (int) $cfg->get('show_photos_officers', 1),
+            'directors'        => (int) $cfg->get('show_photos_directors', 0),
+            'directors_league' => (int) $cfg->get('show_photos_directors', 0),
+            'staff'            => (int) $cfg->get('show_photos_staff', 0),
+        );
 
         parent::display($tpl);
     }
