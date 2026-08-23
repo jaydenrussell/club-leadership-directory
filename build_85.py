@@ -8,25 +8,35 @@ if os.path.exists(out): os.remove(out)
 if os.path.exists(src): shutil.rmtree(src)
 os.makedirs(src)
 
+def zip_dir(path, zf, prefix=""):
+    """Add directory tree to zip, skipping empty dirs."""
+    for root, dirs, files in os.walk(path):
+        # Skip empty dirs
+        dirs[:] = [d for d in dirs if os.listdir(os.path.join(root, d))]
+        for f in files:
+            fp = os.path.join(root, f)
+            arc = os.path.relpath(fp, path)
+            zf.write(fp, arc)
+
 def build_child(name, root_files):
     d = os.path.join(src, "_" + name)
     os.makedirs(d)
-    # Copy files only - skip empty directories to avoid JInstaller errors
+    # Copy files/dirs from source
     for item in os.listdir(os.path.join(base, name)):
         srcpath = os.path.join(base, name, item)
         dstpath = os.path.join(d, item)
         if os.path.isdir(srcpath):
-            # Only copy directory if it contains files
             if os.listdir(srcpath):
                 shutil.copytree(srcpath, dstpath)
         else:
             shutil.copy2(srcpath, dstpath)
+    # Root-level files
     for rf in root_files:
         shutil.copy2(os.path.join(base, rf), os.path.join(d, os.path.basename(rf)))
+    # Build zip manually to skip empty dirs
     archive = os.path.join(src, name + ".zip")
-    old = os.getcwd(); os.chdir(d)
-    shutil.make_archive(os.path.join(src, name), "zip", ".")
-    os.chdir(old); shutil.rmtree(d)
+    with zipfile.ZipFile(archive, 'w', zipfile.ZIP_DEFLATED) as zf:
+        zip_dir(d, zf)
     return archive
 
 build_child("com_clubleaddir", ["com_clubleaddir/clubleaddir.xml", "com_clubleaddir/config.xml"])
@@ -54,7 +64,7 @@ for child in ["com_clubleaddir.zip", "mod_clubleaddir.zip"]:
 print("BUILT", os.path.getsize(out), "bytes")
 
 subprocess.run(["git", "add", "-A"], cwd=base, check=True)
-r = subprocess.run(["git", "commit", "-m", "Fix: skip empty dirs in child zips; JInstaller now finds setup file"], cwd=base, capture_output=True, text=True)
+r = subprocess.run(["git", "commit", "-m", "Fix: use zipfile directly to skip empty dirs in child zips"], cwd=base, capture_output=True, text=True)
 print(r.stdout.strip() or r.stderr.strip())
 subprocess.run(["git", "push"], cwd=base, check=True)
 print("PUSHED")
