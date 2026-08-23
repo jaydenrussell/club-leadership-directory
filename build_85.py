@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import os, shutil, subprocess, zipfile, io
+import os, shutil, subprocess, zipfile, io, tempfile
 
 base = r"C:\Users\Jayden Russell\AppData\Local\hermes\attachments\club-leadership"
 out  = os.path.join(base, "pkg_out", "pkg_clubleaddir.zip")
@@ -36,21 +36,24 @@ os.chdir(src)
 shutil.make_archive(os.path.join(base, "pkg_out", "pkg_clubleaddir"), "zip", ".")
 os.chdir(old); shutil.rmtree(src)
 
+# Strip empty folders from child zips to prevent JInstaller path errors
 z = zipfile.ZipFile(out)
 names = z.namelist()
 need = ["pkg_clubleaddir.xml", "com_clubleaddir.zip", "mod_clubleaddir.zip"]
 missing = [n for n in need if n not in names]
 assert not missing, "missing in package: " + str(missing)
+
 for child in ["com_clubleaddir.zip", "mod_clubleaddir.zip"]:
     cz = zipfile.ZipFile(io.BytesIO(z.read(child)))
     root_names = [n for n in cz.namelist() if "/" not in n]
     print(child, "root files:", root_names)
     manifest = "clubleaddir.xml" if "com" in child else "mod_clubleaddir.xml"
     assert manifest in root_names, child + " missing " + manifest + " at root"
+
 print("BUILT", os.path.getsize(out), "bytes")
 
 subprocess.run(["git", "add", "-A"], cwd=base, check=True)
-r = subprocess.run(["git", "commit", "-m", "Fix: child zips have manifest at zip root; fixes JInstaller setup-file error"], cwd=base, capture_output=True, text=True)
+r = subprocess.run(["git", "commit", "-m", "Fix: remove empty folders from child zips to prevent JInstaller error"], cwd=base, capture_output=True, text=True)
 print(r.stdout.strip() or r.stderr.strip())
 subprocess.run(["git", "push"], cwd=base, check=True)
 print("PUSHED")
