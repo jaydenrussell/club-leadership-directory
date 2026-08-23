@@ -1,0 +1,38 @@
+=== CLUB LEADERSHIP DIRECTORY - UNINSTALL FIX ===
+
+PROBLEM: All versions (2.0.121-2.0.133) cannot uninstall because:
+Joomla requires MANIFESTS at:
+  - /administrator/manifests/components/com_clubleaddir.xml
+  - /administrator/manifests/modules/mod_clubleaddir.xml
+
+These files are NEVER in those locations because the directory creation FAILED.
+
+FIX: Create these directories FIRST, then reinstall and uninstall.
+
+=== STEP BY STEP ===
+
+1. Log into your hosting file manager (cPanel File Manager, Plesk, etc.)
+
+2. Navigate to the root of your Joomla site
+   (Path: /administrator/ or similar, depending on your setup)
+
+3. CREATE these TWO directories (right-click → New Folder):
+   [ ] creates:  /administrator/manifests/components/
+   [ ] creates:  /administrator/manifests/modules/
+
+   IMPORTANT: Joomla must be able to WRITE files here (0755 permissions)
+
+4. Download v2.0.134 from:
+   https://github.com/jaydenrussell/club-leadership-directory/releases/download/v2.0.134/pkg_clubleaddir.zip
+
+5. Install v2.0.134 (Extensions → Manage → Install → Upload Package)
+
+6. Uninstall via Extensions → Manage → Select package → Uninstall
+
+=== IF YOU CANNOT CREATE DIRECTORIES ===
+
+Contact your hosting provider and ask them to:
+  mkdir -p /path/to/joomla/administrator/manifests/components/
+  mkdir -p /path/to/joomla/administrator/manifests/modules/
+  chmod 0755 /path/to/joomla/administrator/manifests/components/
+  chmod 0755 /path/to/joomla/administrator/manifests/modules/
