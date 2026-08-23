@@ -52,15 +52,9 @@ if (!in_array($headerTag, array('h1','h2','h3','h4','p','div'), true)) {
 $introText           = trim($cfg->get('intro_text', ''));
 $showSectionTitles   = (int) $cfg->get('show_section_titles', 1);
 
-// Vacancy settings: prefer component global config (single source of truth).
-// Legacy installs that previously stored these on the module still honour
-// them via the module's own params until the admin migrates them to Options.
-$vacantContactId     = (int) $paramsData->get('vacant_contact_id', 0);
-$vacancyDefaultEmail = (string) $paramsData->get('vacancy_default_email', '');
-if (!$vacantContactId && !$vacancyDefaultEmail) {
-    $vacantContactId     = (int) $cfg->get('vacant_contact_id', 0);
-    $vacancyDefaultEmail = (string) $cfg->get('vacancy_default_email', '');
-}
+// Vacancy settings from component global config (single source of truth).
+$vacantContactId     = (int) $cfg->get('vacant_contact_id', 0);
+$vacancyDefaultEmail = (string) $cfg->get('vacancy_default_email', '');
 
 $rawData = ModClubleaddirHelper::getLeadership();
 if ($maxItems > 0) {

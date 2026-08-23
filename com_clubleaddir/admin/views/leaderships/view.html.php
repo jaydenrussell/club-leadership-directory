@@ -27,6 +27,7 @@ class ClubleaddirViewLeaderships extends HtmlView
 
     public function display($tpl = null)
     {
+        $this->params = ClubleaddirHelper::getGlobalConfig();
         $model = $this->getModel();
 
         if (!$model) {
@@ -82,11 +83,7 @@ class ClubleaddirViewLeaderships extends HtmlView
             }
 
             $msg = Text::_('COM_CLUBLEADDIR_VACANCY_CONFIG_WARNING');
-            $link = ClubleaddirHelper::moduleSettingsLink();
-            if ($link !== '') {
-                $msg .= ' <a href="' . $link . '">' . Text::_('COM_CLUBLEADDIR_VACANCY_CONFIG_LINK') . '</a>';
-            }
-            Factory::getApplication()->enqueueMessage($msg, 'warning');
+            $msg .= ' ' . Text::_('COM_CLUBLEADDIR_VACANCY_CONFIG_LINK');
         } catch (\Throwable $e) {
             // Never fatal: config warning is advisory only.
         }
