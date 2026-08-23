@@ -150,6 +150,9 @@ class ComClubleaddirInstallerScript
         $srcComp = JPATH_ADMINISTRATOR . '/components/com_clubleaddir/com_clubleaddir.xml';
         $dstComp = JPATH_ADMINISTRATOR . '/manifests/components/com_clubleaddir.xml';
         if (is_file($srcComp)) {
+            if (!is_dir(dirname($dstComp))) {
+                @mkdir(dirname($dstComp), 0755, true);
+            }
             if (!is_file($dstComp) || md5_file($srcComp) !== md5_file($dstComp)) {
                 @copy($srcComp, $dstComp);
             }
@@ -160,6 +163,9 @@ class ComClubleaddirInstallerScript
         $srcMod = JPATH_ROOT . '/modules/mod_clubleaddir/mod_clubleaddir.xml';
         $dstMod = JPATH_ADMINISTRATOR . '/manifests/modules/mod_clubleaddir.xml';
         if (is_file($srcMod)) {
+            if (!is_dir(dirname($dstMod))) {
+                @mkdir(dirname($dstMod), 0755, true);
+            }
             if (!is_file($dstMod) || md5_file($srcMod) !== md5_file($dstMod)) {
                 @copy($srcMod, $dstMod);
             }
