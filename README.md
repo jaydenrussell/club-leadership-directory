@@ -63,7 +63,7 @@ updating core. Re-uploading `pkg_clubleaddir.zip` via **Install** also
 upgrades in place (the manifests use `method="upgrade"`).
 
 To cut a new release:
-- bump `<version>` in `pkg/pkg_clubleaddir.xml` (and the child manifests if you
+- bump `<version>` in `pkg/pkg_com_clubleaddir.xml` (and the child manifests if you
   changed them),
 - update `version` and the `downloadurl` in `update.xml`,
 - rebuild + tag + publish the new `pkg_clubleaddir.zip` to a matching
