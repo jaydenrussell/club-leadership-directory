@@ -7,14 +7,13 @@
     <license>GNU General Public License version 2 or later</license>
     <authorEmail>info@simcoecurlingclub.ca</authorEmail>
     <authorUrl>https://simcoecurlingclub.ca</authorUrl>
-    <version>2.0.104</version>
+    <version>2.0.105</version>
     <description>MOD_CLUBLEADDIRECTION_DESC</description>
 
     <files>
         <filename module="mod_clubleaddir">mod_clubleaddir.php</filename>
         <filename>helper.php</filename>
         <folder>tmpl</folder>
-        <folder>media</folder>
     </files>
 
     <languages folder="language">
