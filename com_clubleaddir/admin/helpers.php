@@ -549,9 +549,9 @@ class ClubleaddirHelper
     {
         $contactId = (int) $contactId;
         if ($contactId > 0) {
-            // Blend into the Joomla Contact component: open the email form directly
-            // (contact profile above + form anchored via #display-form) - nicer than mailto.
-            $url = Route::_('index.php?option=com_contact&view=contact&id=' . $contactId . '#display-form');
+            // Use the stealth route so the SEF alias (/inquire) is preferred over
+            // the raw component path; anchor to the contact's email form.
+            $url = self::contactRoute($contactId);
             $url = htmlspecialchars($url, ENT_QUOTES, 'UTF-8');
         } elseif ($defaultEmail !== '') {
             $url = 'mailto:' . htmlspecialchars($defaultEmail, ENT_QUOTES, 'UTF-8');
