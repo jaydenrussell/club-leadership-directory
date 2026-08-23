@@ -198,57 +198,56 @@ $icon = array(
 .com-clubleaddir .clubleaddir-vacancy-banner {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 1.25rem;
     max-width: 1100px;
     margin: 0 auto 1.75rem;
-    padding: 1rem 1.25rem;
-    background: linear-gradient(135deg, #e3ebf5 0%, #f4f8fc 100%);
-    border: 1px solid #c5d8ee;
-    border-left: 5px solid #1890d7;
-    border-radius: 12px;
-    box-shadow: 0 4px 16px rgba(24, 144, 215, 0.12);
+    padding: 1.1rem 1.5rem;
+    background: #0f5b8a;
+    border-left: 5px solid #b8963e;
+    border-radius: 10px;
+    box-shadow: 0 6px 24px rgba(15, 91, 138, 0.25);
 }
 .com-clubleaddir .clubleaddir-vacancy-banner-icon {
     flex: 0 0 auto;
-    width: 46px; height: 46px;
+    width: 48px; height: 48px;
     display: flex; align-items: center; justify-content: center;
-    font-size: 1.6rem;
-    background: #1890d7;
+    font-size: 1.5rem;
+    background: #b8963e;
     color: #fff;
     border-radius: 50%;
 }
 .com-clubleaddir .clubleaddir-vacancy-banner-body { flex: 1 1 auto; }
 .com-clubleaddir .clubleaddir-vacancy-banner-title {
-    margin: 0 0 0.25rem;
-    font-size: 1.1rem;
+    margin: 0 0 0.3rem;
+    font-size: 1.15rem;
     font-weight: 700;
-    color: #0f5b8a;
+    color: #fff;
 }
 .com-clubleaddir .clubleaddir-vacancy-banner-text {
     margin: 0;
-    font-size: 0.9rem;
-    line-height: 1.4;
-    color: #305789;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: rgba(255,255,255,0.92);
 }
 .com-clubleaddir .clubleaddir-vacancy-banner-cta {
-    flex: 0 0 auto;
     display: inline-block;
-    padding: 0.6rem 1.25rem;
-    background: #1890d7;
+    padding: 0.35rem 1rem;
+    background: #b8963e;
     color: #fff !important;
-    font-weight: 600;
+    font-weight: 700;
     text-decoration: none;
-    border-radius: 999px;
+    border-radius: 6px;
     white-space: nowrap;
     transition: background 0.2s, transform 0.2s;
+    margin-left: 0.5rem;
 }
 .com-clubleaddir .clubleaddir-vacancy-banner-cta:hover {
-    background: #0f5b8a;
+    background: #9a7f2e;
     transform: translateY(-1px);
 }
 @media (max-width: 560px) {
     .com-clubleaddir .clubleaddir-vacancy-banner { flex-wrap: wrap; }
-    .com-clubleaddir .clubleaddir-vacancy-banner-cta { flex: 1 1 100%; text-align: center; }
+    .com-clubleaddir .clubleaddir-vacancy-banner-cta { display: block; margin: 0.5rem 0 0; text-align: center; }
 }
 </style>
 
