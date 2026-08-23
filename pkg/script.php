@@ -2,7 +2,7 @@
 /**
  * Package install/uninstall script for Club Leadership Directory.
  *
- * v2.0.135+ handles zombie extension rows and missing manifest files.
+ * v2.0.136+ handles zombie extension rows and missing manifest files.
  *
  * @package     Joomla.Administrator
  * @subpackage  pkg_clubleaddir
@@ -27,7 +27,7 @@ class pkg_clubleaddirInstallerScript
         $this->ensureManifestDirectories();
 
         // Step 3: Copy manifests to canonical locations
-        $this->copyManifests();
+        $this->copyManifestsRobust();
     }
 
     /**
@@ -37,7 +37,6 @@ class pkg_clubleaddirInstallerScript
     {
         $db = \Joomla\CMS\Factory::getDbo();
 
-        // Elements that could be zombie entries
         $elements = [
             'pkg_clubleaddir',
             'pkg_pkg_clubleaddir',  // buggy old packaging
@@ -71,7 +70,6 @@ class pkg_clubleaddirInstallerScript
         $dirs = [
             JPATH_ADMINISTRATOR . '/manifests/components/',
             JPATH_ADMINISTRATOR . '/manifests/modules/',
-            JPATH_ADMINISTRATOR . '/manifests/plugins/',
         ];
         foreach ($dirs as $dir) {
             if (!is_dir($dir)) {
@@ -81,16 +79,54 @@ class pkg_clubleaddirInstallerScript
     }
 
     /**
-     * Copy manifests to canonical locations.
-     * These files are included in the package zip at their final destinations.
+     * Copy manifests using robust PHP file functions.
+     * Tries multiple possible source locations.
      */
-    private function copyManifests()
+    private function copyManifestsRobust()
     {
-        // Component manifest (included at root of child zip, copied by Joomla)
-        $destComp = JPATH_ADMINISTRATOR . '/manifests/components/com_clubleaddir.xml';
-        $srcComp = JPATH_ADMINISTRATOR . '/components/com_clubleaddir/com_clubleaddir.xml';
-        if (is_file($srcComp) && (!is_file($destComp) || md5_file($srcComp) !== md5_file($destComp))) {
-            @copy($srcComp, $destComp);
+        // Component: try multiple possible locations for the manifest
+        $compSrcs = [
+            JPATH_ADMINISTRATOR . '/components/com_clubleaddir/com_clubleaddir.xml',
+            JPATH_ROOT . '/administrator/components/com_clubleaddir/com_clubleaddir.xml',
+        ];
+        foreach ($compSrcs as $src) {
+            if (is_file($src)) {
+                $dst = JPATH_ADMINISTRATOR . '/manifests/components/com_clubleaddir.xml';
+                $this->safeCopy($src, $dst);
+                break;
+            }
         }
+
+        // Module: try multiple possible locations for the manifest
+        $modSrcs = [
+            JPATH_ROOT . '/modules/mod_clubleaddir/mod_clubleaddir.xml',
+            JPATH_SITE . '/modules/mod_clubleaddir/mod_clubleaddir.xml',
+        ];
+        foreach ($modSrcs as $src) {
+            if (is_file($src)) {
+                $dst = JPATH_ADMINISTRATOR . '/manifests/modules/mod_clubleaddir.xml';
+                $this->safeCopy($src, $dst);
+                break;
+            }
+        }
+    }
+
+    /**
+     * Safely copy a file, creating directories if needed.
+     */
+    private function safeCopy($src, $dst)
+    {
+        if (!is_file($src) || is_file($dst)) {
+            return false;
+        }
+        $dir = dirname($dst);
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0755, true);
+        }
+        $content = @file_get_contents($src);
+        if ($content === false) {
+            return false;
+        }
+        return @file_put_contents($dst, $content) !== false;
     }
 }
