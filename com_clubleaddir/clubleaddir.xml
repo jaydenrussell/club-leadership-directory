@@ -6,7 +6,7 @@
     <authorEmail>noreply@simcoecurlingclub.ca</authorEmail>
     <copyright>Copyright (C) 2026 Jayden Russell</copyright>
     <license>GNU General Public License version 2 or later</license>
-    <version>2.0.115</version>
+    <version>2.0.116</version>
     <description>COM_CLUBLEADDIR_DESC</description>
 
     <administration>
@@ -26,9 +26,6 @@
             <folder>sql</folder>
             <folder>language</folder>
         </files>
-        <config>
-            <file>config.xml</file>
-        </config>
         <languages folder="admin/language">
             <language tag="en-GB">en-GB/en-GB.com_clubleaddir.ini</language>
             <language tag="en-GB">en-GB/en-GB.com_clubleaddir.sys.ini</language>
@@ -48,6 +45,9 @@
         </update>
     </administration>
 
+    <config>
+        <file>config.xml</file>
+    </config>
     <files>
         <filename>clubleaddir.php</filename>
         <filename>controller.php</filename>
