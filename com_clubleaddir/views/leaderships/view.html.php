@@ -62,6 +62,9 @@ class ClubleaddirViewLeaderships extends HtmlView
             'staff'            => (int) $cfg->get('show_photos_staff', 0),
         );
 
+        // HtmlView expects $this->params to be a Registry object.
+        $this->params = ClubleaddirHelper::getGlobalConfig();
+
         parent::display($tpl);
     }
 }
