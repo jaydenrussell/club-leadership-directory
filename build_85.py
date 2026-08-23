@@ -43,6 +43,7 @@ build_child("com_clubleaddir", ["com_clubleaddir/clubleaddir.xml", "com_clublead
 build_child("mod_clubleaddir", ["mod_clubleaddir/mod_clubleaddir.xml"])
 
 shutil.copy2(os.path.join(base, "pkg", "pkg_clubleaddir.xml"), os.path.join(src, "pkg_clubleaddir.xml"))
+shutil.copy2(os.path.join(base, "pkg", "script.php"), os.path.join(src, "script.php"))
 
 old = os.getcwd()
 os.chdir(src)

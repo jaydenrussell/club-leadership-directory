@@ -1,119 +1,84 @@
 <?php
 /**
- * Package installer script for Club Leadership Directory.
+ * Package install/uninstall script.
  *
- * On install/update it ensures the "Club Leadership Directory Update" update
- * site points at the github.com-hosted update.xml (raw.githubusercontent.com is
- * blocked on some hosting) and is ENABLED, and removes any stale
- * raw.githubusercontent.com update site. Joomla sometimes registers
- * package-declared <updateservers> as disabled (or leaves stale duplicates),
- * which silently breaks update detection.
+ * Joomla 3's PackageAdapter uninstalls each child extension by reading the
+ * child's manifest from administrator/manifests/components|modules/<element>.xml.
+ * If that file is missing (e.g. a prior broken install left a zombie row), the
+ * child uninstall fails with "Missing manifest file" and the whole package
+ * uninstall aborts.
  *
- * A diagnostic log is written to the web-served photos directory so the run
- * can be confirmed without DB access.
+ * This script guarantees those canonical manifest files exist after EVERY
+ * install/update by copying them from the deployed extension folders.
  *
  * @package     Joomla.Administrator
  * @subpackage  pkg_clubleaddir
  * @copyright   Copyright (C) 2026 Jayden Russell. All rights reserved.
- * @license     GNU General Public License version 2 or later
+ * @license     GNU General Public License version 2 or later; see LICENSE.txt
  */
 
 defined('_JEXEC') or die;
 
-use Joomla\CMS\Factory;
-
-/**
- * Package installer script.
- */
-class pkg_clubleaddirInstallerScript
+class Pkg_ClubleaddirInstallerScript
 {
     /**
-     * Run after install/update.
-     *
-     * @param   string  $type    'install' | 'update' | 'discover_install'
-     * @param   object  $parent  Installer parent
-     *
-     * @return  void
+     * Ensure the component and module manifests exist at their canonical
+     * Joomla locations so that uninstall (and Discover) can find them.
      */
+    private function syncManifests()
+    {
+        $done = array();
+
+        // component: administrator/components/com_clubleaddir/clubleaddir.xml
+        //   -> administrator/manifests/components/com_clubleaddir.xml
+        $srcComp = JPATH_ADMINISTRATOR . '/components/com_clubleaddir/clubleaddir.xml';
+        $dstComp = JPATH_ADMINISTRATOR . '/manifests/components/com_clubleaddir.xml';
+        if (is_file($srcComp) && (!is_file($dstComp) || md5_file($srcComp) !== md5_file($dstComp))) {
+            try {
+                JFile::copy($srcComp, $dstComp);
+                $done[] = 'component';
+            } catch (\Throwable $e) {
+                // Try plain copy as fallback
+                @copy($srcComp, $dstComp);
+            }
+        }
+
+        // module: modules/mod_clubleaddir/mod_clubleaddir.xml
+        //   -> administrator/manifests/modules/mod_clubleaddir.xml
+        $srcMod = JPATH_ROOT . '/modules/mod_clubleaddir/mod_clubleaddir.xml';
+        $dstMod = JPATH_ADMINISTRATOR . '/manifests/modules/mod_clubleaddir.xml';
+        if (is_file($srcMod) && (!is_file($dstMod) || md5_file($srcMod) !== md5_file($dstMod))) {
+            try {
+                JFile::copy($srcMod, $dstMod);
+                $done[] = 'module';
+            } catch (\Throwable $e) {
+                @copy($srcMod, $dstMod);
+            }
+        }
+
+        return $done;
+    }
+
+    public function install($parent)
+    {
+        $this->syncManifests();
+        return true;
+    }
+
+    public function update($parent)
+    {
+        $this->syncManifests();
+        return true;
+    }
+
     public function postflight($type, $parent)
     {
-        $this->fixUpdateSite();
+        $this->syncManifests();
+        return true;
     }
 
-    /**
-     * Make the github.com update site enabled and remove stale raw sites.
-     *
-     * @return  void
-     */
-    private function fixUpdateSite()
+    public function uninstall($parent)
     {
-        $log = array();
-        try {
-            $db = Factory::getDbo();
-        } catch (\Throwable $e) {
-            $this->log('DB_UNAVAILABLE: ' . $e->getMessage());
-            return;
-        }
-
-        $name  = 'Club Leadership Directory Update';
-        $good  = 'github.com/jaydenrussell/club-leadership-directory/releases/latest/download/update.xml';
-        $bad   = 'raw.githubusercontent.com';
-
-        try {
-            // Enable the github.com-hosted site.
-            $q = $db->getQuery(true)
-                ->update($db->quoteName('#__update_sites'))
-                ->set($db->quoteName('enabled') . ' = 1')
-                ->where($db->quoteName('name') . ' = ' . $db->quote($name))
-                ->where($db->quoteName('location') . ' LIKE ' . $db->quote('%' . $good . '%'));
-            $db->setQuery($q);
-            $db->execute();
-            $log[] = 'enabled_github=' . $db->getAffectedRows();
-
-            // Point any site with the right name but a stale/bad location at github.com.
-            $q = $db->getQuery(true)
-                ->update($db->quoteName('#__update_sites'))
-                ->set($db->quoteName('location') . ' = ' . $db->quote('https://github.com/jaydenrussell/club-leadership-directory/releases/latest/download/update.xml'))
-                ->set($db->quoteName('enabled') . ' = 1')
-                ->where($db->quoteName('name') . ' = ' . $db->quote($name));
-            $db->setQuery($q);
-            $db->execute();
-            $log[] = 'repointed=' . $db->getAffectedRows();
-
-            // Remove stale raw.githubusercontent.com sites.
-            $q = $db->getQuery(true)
-                ->delete($db->quoteName('#__update_sites'))
-                ->where($db->quoteName('name') . ' = ' . $db->quote($name))
-                ->where($db->quoteName('location') . ' LIKE ' . $db->quote('%' . $bad . '%'));
-            $db->setQuery($q);
-            $db->execute();
-            $log[] = 'removed_raw=' . $db->getAffectedRows();
-        } catch (\Throwable $e) {
-            $log[] = 'ERROR: ' . $e->getMessage();
-        }
-
-        $this->log(implode(' | ', $log));
-    }
-
-    /**
-     * Write a diagnostic log line to the web-served photos directory.
-     *
-     * @param   string  $msg  Message
-     *
-     * @return  void
-     */
-    private function log($msg)
-    {
-        try {
-            $dir = defined('JPATH_ROOT') ? JPATH_ROOT . '/images/clubleaddir/photos' : __DIR__;
-            if (!is_dir($dir)) {
-                $dir = __DIR__;
-            }
-            $file = $dir . '/_script_ran.log';
-            $line = date('c') . ' ' . $msg . "\n";
-            file_put_contents($file, $line, FILE_APPEND);
-        } catch (\Throwable $e) {
-            // Non-fatal.
-        }
+        return true;
     }
 }
