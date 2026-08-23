@@ -115,6 +115,8 @@ class com_clubleaddirInstallerScript
      */
     public function postflight($type, $parent)
     {
+        @file_put_contents('/tmp/_clble_postflight_ran.txt', date('c') . ' type=' . $type);
+
         try {
             $db = \Joomla\CMS\Factory::getDbo();
             $query = $db->getQuery(true)
