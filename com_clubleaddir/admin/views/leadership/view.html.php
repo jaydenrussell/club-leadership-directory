@@ -24,6 +24,7 @@ class ClubleaddirViewLeadership extends HtmlView
         $id         = Factory::getApplication()->input->getInt('id', 0);
         $model      = $this->getModel('Leadership');
         $this->item = $model->getItem($id);
+        $this->state = $model->getState();
 
         $this->addToolbar();
 

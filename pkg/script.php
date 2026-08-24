@@ -13,8 +13,8 @@ class pkg_clubleaddirInstallerScript
 {
     public function preflight($stage, $parent)
     {
-        // Clean BEFORE any installation
-        $this->forceCleanState();
+        // Clean orphaned files BEFORE installation, but do NOT delete DB rows here.
+        $this->removeOrphanedFiles();
     }
 
     public function postflight($stage, $parent)
