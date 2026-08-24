@@ -77,13 +77,13 @@ class ClubleaddirViewLeaderships extends HtmlView
                 return;
             }
 
-            $vacancy = ClubleaddirHelper::getModuleVacancySettings();
-            if ((int) $vacancy->contact_id > 0 || trim((string) $vacancy->email) !== '') {
+            $vacancy = ClubleaddirHelper::getGlobalConfig();
+            if ((int) $vacancy->get('vacant_contact_id', 0) > 0 || trim((string) $vacancy->get('vacancy_default_email', '')) !== '') {
                 return;
             }
 
-            $msg = Text::_('COM_CLUBLEADDIR_VACANCY_CONFIG_WARNING');
-            $msg .= ' ' . Text::_('COM_CLUBLEADDIR_VACANCY_CONFIG_LINK');
+            $app = Factory::getApplication();
+            $app->enqueueMessage(Text::_('COM_CLUBLEADDIR_VACANCY_CONFIG_WARNING'), 'warning');
         } catch (\Throwable $e) {
             // Never fatal: config warning is advisory only.
         }

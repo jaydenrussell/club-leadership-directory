@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<metadata>
+	<layout title="COM_CLUBLEADDIR_LEADERSHIPS_VIEW_DEFAULT_TITLE" option="COM_CLUBLEADDIR_LEADERSHIPS_VIEW_DEFAULT_OPTION">
+		<message>
+			<![CDATA[COM_CLUBLEADDIR_LEADERSHIPS_VIEW_DEFAULT_DESC]]>
+		</message>
+	</layout>
+
+	<!-- Standard "Page Display" tab options handled automatically by Joomla. -->
+	<fields name="params">
+		<fieldset name="basic">
+			<field
+				name="show_page_heading_note"
+				type="note"
+				label="COM_CLUBLEADDIR_MENU_ITEM_NOTE_LABEL"
+				description="COM_CLUBLEADDIR_MENU_ITEM_NOTE_DESC"
+			/>
+		</fieldset>
+	</fields>
+</metadata>

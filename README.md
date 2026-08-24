@@ -8,7 +8,8 @@ A Joomla 3 component + module that publishes your club's leadership roster
 Builder MySQL database. There is no shared table and no CB dependency, so the
 extension can never take down the site database or leak into CB. If the server
 lacks the `pdo_sqlite` PHP extension, it automatically falls back to a **JSON**
-file with identical behaviour.
+file with identical behaviour. A corrupted store is quarantined (renamed with a
+timestamp suffix) and a fresh one is created — the public page never 500s.
 
 ---
 
@@ -16,98 +17,100 @@ file with identical behaviour.
 
 - **Component** (`com_clubleaddir`) — administrator CRUD for leadership records:
   name, role type (Officer / Director / League-Appointed / Staff), league name,
-  board term, bio, photo, role-based contact fields (email / phone / SMS),
-  publish state and a manual ordering.
+  board term, bio, photo, contact linkage to `com_contact`, publish state and
+  manual ordering.
+- **Single source of configuration** — every display / contact / vacancy option
+  lives in **Components → Club Leadership Directory → Options**
+  (`administrator/components/com_clubleaddir/config.xml`). The menu item offers
+  only the standard page-heading options; the module offers only position,
+  layout and CSS class.
 - **Status history** — every record is `active` or `archived`. Archiving a board
-  keeps it as a permanent record and removes it from the public display, so you
-  never lose the record of a previous board.
+  keeps it as a permanent record and removes it from the public display.
 - **Module** (`mod_clubleaddir`) — drops the current **published** leadership
-  onto any page (typically a sidebar), grouped by role type, ordered by the
-  component's ordering field.
+  onto any page, grouped by role type, using the same shared renderers as the
+  component view.
+- **Registered menu item type** ("Leadership Directory") so it appears in
+  **Menus → New Item** like any core component view (`site/views/leaderships/metadata.xml`).
+- **Vacancy handling** — vacant roles render a Vacant card; enquiries go to one
+  global target (a Joomla Contact or a default email). A banner can be shown
+  when any role is vacant.
 - **Isolated, injection-proof data store** — prepared statements (SQLite) or a
   plain file (JSON). No user input ever reaches a query string.
 - **Safe uploads** — photos are validated by real MIME type (`finfo`), capped at
-  2 MB, stored under a random name.
+  2 MB, stored under a random name in `images/clubleaddir/photos/` (`.htaccess`
+  locked down).
 
 ## Requirements
 
 | | |
 |---|---|
-| Joomla | 3.x (tested conceptually against 3.10.x) |
+| Joomla | 3.x (tested against 3.10.x) |
 | PHP | 7.4+ recommended |
 | Storage | `pdo_sqlite` (preferred) — **or** any PHP install for the JSON fallback |
-| Web server | Apache (the data folder is protected by a generated `.htaccess`). On nginx/LiteSpeed add your own `deny` rule — see *Security* below. |
+| Web server | Apache (data + upload folders get generated `.htaccess` files). On nginx/LiteSpeed add your own `deny` rule — see *Security* below. |
 
 ## Install (one file, one click)
 
-The extension ships as a **single package**: **`pkg_clubleaddir.zip`**. There
-is no separate component or module zip — the package installs (and contains)
-both.
+The extension ships as a **single package**: **`pkg_clubleaddir.zip`**.
 
-1. Download **`pkg_clubleaddir.zip`** from the
-   [Releases](../../releases) page.
+1. Download **`pkg_clubleaddir.zip`** from the [Releases](../../releases) page.
 2. **System → Extensions → Install**, upload the package.
-3. The component installs first (it creates the data file), then the module.
-4. **Components → Club Leadership** to add / edit / archive records.
-5. Publish the **Club Leadership** module to a template position.
+3. **Components → Club Leadership Directory** to add / edit / archive records;
+   use its **Options** button for all display settings.
+4. Either publish the **Club Leadership Directory** module, or create a
+   **menu item** of type *Club Leadership Directory → Leadership Directory*.
+5. Upgrading from v2.x? The installer auto-repairs legacy leftovers: it removes
+   the old hidden menu + "Inquire" item, zombie package rows, stale update-site
+   entries, root-level debug logs, and re-enables its own extension rows.
 
-A fresh install starts with an empty roster — add your current board, mark the
-records `published = Yes` and `status = active`.
+## Uninstall behaviour
 
-## Update
+1. The roster is exported to `images/clubleaddir-backup-YYYYMMDD-HHMM.json`
+   first (a message shows where).
+2. All code, media, data files, upload folders, own menu items, hidden-menu
+   artifacts, logs and orphan manifests are removed.
+3. Nothing is written to `#__extensions` beyond this extension's own rows, which
+   are removed by Joomla's normal package uninstall.
 
-The package is pre-wired to a Joomla update server. After installing, updates
-show up under **Components → Joomla! Update** (or **System → Update** depending
-on your Joomla 3 build) — click **Find Updates** and install, exactly like
-updating core. Re-uploading `pkg_clubleaddir.zip` via **Install** also
-upgrades in place (the manifests use `method="upgrade"`).
+## Update server
 
-To cut a new release:
-- bump `<version>` in `pkg/pkg_com_clubleaddir.xml` (and the child manifests if you
-  changed them),
-- update `version` and the `downloadurl` in `update.xml`,
-- rebuild + tag + publish the new `pkg_clubleaddir.zip` to a matching
-  GitHub release.
+The package manifest points at the GitHub Pages collection
+(`update.xml` → `update-full.xml`). To cut a release:
+
+- bump `<version>` in all three manifests (`com_clubleaddir.xml`,
+  `mod_clubleaddir.xml`, `pkg/pkg_clubleaddir.xml`),
+- run the build, compute the SHA-256 of `dist/pkg_clubleaddir.zip`,
+- set `version`, `downloadurl` and `sha256` in `update-full.xml` (+ version in
+  `update.xml`),
+- tag and attach `dist/pkg_clubleaddir.zip` to the matching GitHub release.
 
 ## Build from source
 
-The repo holds the raw extension files plus a small Python assembler (no `zip`
-binary required). It produces **only** the single package zip:
+Requires PowerShell 7+:
 
-```bash
-cd club-leadership
-python3 build_zips.py
-# produces ../pkg_out/pkg_clubleaddir.zip  (com + mod nested inside)
+```powershell
+pwsh -NoProfile -File scripts/build.ps1
+# produces dist/com_clubleaddir.zip, dist/mod_clubleaddir.zip,
+#          dist/pkg_clubleaddir.zip
 ```
-
-Install `pkg_out/pkg_clubleaddir.zip`.
-
-## Data location & uninstall
-
-- Data file: `media/com_clubleaddir/data/clubleaddir.sqlite`  (created by the installer)
-  (or `clubleaddir.json` in fallback mode).
-- On **uninstall** the data file is removed — the extension leaves nothing behind
-  in the Joomla database.
 
 ## Security notes
 
-- **No SQL injection surface.** All reads/writes go through parameterized SQLite
-  statements; the JSON fallback has no query language at all.
+- **No SQL injection surface.** Roster reads/writes go through parameterized
+  SQLite statements; the JSON fallback has no query language at all.
+- The installer never manipulates `#__update_sites` or hand-inserts extension
+  rows — Joomla's own installer handles everything.
 - **Output is escaped**; phone numbers are stripped before being placed in a
   `tel:` link.
 - **CSRF** protected on every write (POST + token).
-- **ACL** gates delete / publish / reorder to users with the appropriate
-  permission.
-- **Data file exposure:** the installer writes a `Deny from all` `.htaccess`
-  into the data folder. This protects you on **Apache**. On **nginx or LiteSpeed**
-  add a server rule such as:
+- **ACL** gates delete / publish / reorder.
+- **Data file exposure:** the installer writes `Deny from all` `.htaccess`
+  files into the data and photo folders. On **nginx or LiteSpeed** add your own
+  rule, e.g.:
 
   ```nginx
   location ~* /media/com_clubleaddir/data/ { deny all; }
   ```
-
-  The PHP store validates the path on every load and refuses to run if the file
-  is not where it expects, but a good server rule is the real backstop.
 
 ## License
 

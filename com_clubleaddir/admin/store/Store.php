@@ -72,16 +72,45 @@ class ClubleaddirStoreSqlite extends ClubleaddirStoreBackend
 
     public function __construct($dbPath)
     {
+        $this->open($dbPath);
+    }
+
+    /**
+     * Open (and lazily create) the SQLite database. If the existing file is
+     * corrupt (truncated upload, disk hiccup, botched manual edit), it is
+     * quarantined as clubleaddir.db.corrupt-<timestamp> so nothing is silently
+     * destroyed, and a fresh database is started in its place.
+     */
+    private function open($dbPath)
+    {
         $dir = dirname($dbPath);
         if (!is_dir($dir)) {
             @mkdir($dir, 0755, true);
         }
 
-        $this->pdo = new PDO('sqlite:' . $dbPath, null, null, array(
-            PDO::ATTR_ERRMODE          => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_OBJ,
-            PDO::ATTR_EMULATE_PREPARES => false,
-        ));
+        $options = array(
+            PDO::ATTR_ERRMODE             => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE  => PDO::FETCH_OBJ,
+            PDO::ATTR_EMULATE_PREPARES    => false,
+        );
+
+        try {
+            $this->connect($dbPath, $options);
+        } catch (\Throwable $e) {
+            // Quarantine the bad file (best-effort) and start over cleanly.
+            @$this->pdo = null;
+
+            if (is_file($dbPath)) {
+                @rename($dbPath, $dbPath . '.corrupt-' . date('Ymd-His'));
+            }
+
+            $this->connect($dbPath, $options);
+        }
+    }
+
+    private function connect($dbPath, array $options)
+    {
+        $this->pdo = new PDO('sqlite:' . $dbPath, null, null, $options);
 
         $this->pdo->exec(
             'CREATE TABLE IF NOT EXISTS records (' .
@@ -109,6 +138,14 @@ class ClubleaddirStoreSqlite extends ClubleaddirStoreBackend
             'modified_by INTEGER NOT NULL DEFAULT 0' .
             ')'
         );
+
+        // Integrity gate: an existing-but-corrupt file passes CREATE TABLE IF
+        // NOT EXISTS yet explodes later. Detect it here and bail out to the
+        // quarantine path in open().
+        $check = (string) $this->pdo->query('PRAGMA quick_check')->fetchColumn();
+        if ($check !== 'ok') {
+            throw new RuntimeException('SQLite database failed quick_check: ' . $check);
+        }
 
         // Self-healing migration: a DB file created by an EARLIER version may be
         // missing columns added later (e.g. start_year/end_year). CREATE TABLE
@@ -335,14 +372,26 @@ class ClubleaddirStoreJson extends ClubleaddirStoreBackend
             @mkdir($dir, 0755, true);
         }
         if (is_file($this->file)) {
-            $raw = file_get_contents($this->file);
+            $raw    = file_get_contents($this->file);
+            $dec    = null;
+            $broken = false;
+
             try {
                 $dec = json_decode($raw, true, 512, JSON_THROW_ON_ERROR);
             } catch (\JsonException $e) {
-                $dec = null;
+                $broken = true;
             }
+
             if (is_array($dec) && isset($dec['records']) && is_array($dec['records'])) {
                 $this->data = $dec;
+            } else {
+                $broken = true;
+            }
+
+            // Quarantine an unreadable file so its contents are never silently
+            // lost; the store then starts fresh.
+            if ($broken && !empty($raw)) {
+                @rename($this->file, $this->file . '.corrupt-' . date('Ymd-His'));
             }
         }
         if (!isset($this->data['records']) || !is_array($this->data['records'])) {

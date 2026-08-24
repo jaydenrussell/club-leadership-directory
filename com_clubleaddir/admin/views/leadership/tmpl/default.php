@@ -613,7 +613,6 @@ function jClubleaddirSelectContact(id, name) {
                             </div>
                             <div class="controls">
                                 <input type="email" name="jform[email]" id="email" class="inputbox clble-w-main" value="<?php echo $this->escape($item->email); ?>">
-                                <p class="help-block muted" style="font-size:11px;">@simcoecurlingclub.ca</p>
                             </div>
                         </div>
                     </div>

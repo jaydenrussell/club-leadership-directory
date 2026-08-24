@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<extension type="component" version="2.5" method="upgrade">
+<extension type="component" version="3.9" method="upgrade">
     <name>COM_CLUBLEADDIR</name>
     <creationDate>2026-08-23</creationDate>
     <author>Jayden Russell</author>
     <authorEmail>noreply@simcoecurlingclub.ca</authorEmail>
     <copyright>Copyright (C) 2026 Jayden Russell</copyright>
     <license>GNU General Public License version 2 or later</license>
-    <version>2.0.150</version>
+    <version>3.0.0</version>
     <description>COM_CLUBLEADDIR_DESC</description>
+    <scriptfile>script.php</scriptfile>
 
     <administration>
         <menu img="class:icon-users">COM_CLUBLEADDIR</menu>
@@ -21,32 +22,29 @@
             <filename>script.php</filename>
             <filename>access.xml</filename>
             <filename>config.xml</filename>
-            <folder>views</folder>
+            <folder>controllers</folder>
+            <folder>models</folder>
             <folder>store</folder>
+            <folder>views</folder>
             <folder>language</folder>
         </files>
         <languages folder="admin/language">
             <language tag="en-GB">en-GB/en-GB.com_clubleaddir.ini</language>
             <language tag="en-GB">en-GB/en-GB.com_clubleaddir.sys.ini</language>
         </languages>
-        <scriptfile>script.php</scriptfile>
     </administration>
 
-    <scriptfile>script.php</scriptfile>
-
-    <config>
-        <file>config.xml</file>
-    </config>
-    <files>
-        <filename>com_clubleaddir.xml</filename>
+    <files folder="site">
         <filename>clubleaddir.php</filename>
-        <filename>config.xml</filename>
         <folder>views</folder>
         <folder>language</folder>
     </files>
-
-    <languages folder="language">
+    <languages folder="site/language">
         <language tag="en-GB">en-GB/en-GB.com_clubleaddir.ini</language>
     </languages>
 
+    <media folder="media" destination="com_clubleaddir">
+        <folder>css</folder>
+        <folder>images</folder>
+    </media>
 </extension>

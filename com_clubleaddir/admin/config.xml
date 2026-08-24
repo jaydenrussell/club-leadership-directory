@@ -1,11 +1,251 @@
 <?xml version="1.0" encoding="utf-8"?>
 <config>
-	<fieldset name="component" label="COM_CLUBLEADDIR_CONFIG_COMPONENT_LABEL">
+	<fieldset
+		name="roster"
+		label="COM_CLUBLEADDIR_CONFIG_DISPLAY_LABEL"
+		description="COM_CLUBLEADDIR_CONFIG_DISPLAY_DESC"
+	>
+
 		<field
-			name="note"
-			type="note"
-			label="COM_CLUBLEADDIR_CONFIG_NOTE_LABEL"
-			description="COM_CLUBLEADDIR_CONFIG_NOTE_DESC"
+			name="display_title"
+			type="text"
+			label="COM_CLUBLEADDIR_CONFIG_DISPLAY_TITLE_LABEL"
+			description="COM_CLUBLEADDIR_CONFIG_DISPLAY_TITLE_DESC"
+			default="Club Leadership"
+			filter="string"
 		/>
+
+		<field
+			name="intro_text"
+			type="textarea"
+			label="COM_CLUBLEADDIR_CONFIG_INTRO_TEXT_LABEL"
+			description="COM_CLUBLEADDIR_CONFIG_INTRO_TEXT_DESC"
+			default=""
+			filter="safehtml"
+			rows="4"
+		/>
+
+		<field
+			name="show_officers"
+			type="radio"
+			label="COM_CLUBLEADDIR_CONFIG_SHOW_OFFICERS_LABEL"
+			default="1"
+			class="btn-group btn-group-yesno"
+			filter="integer"
+		>
+			<option value="1">JYES</option>
+			<option value="0">JNO</option>
+		</field>
+
+		<field
+			name="show_directors"
+			type="radio"
+			label="COM_CLUBLEADDIR_CONFIG_SHOW_DIRECTORS_LABEL"
+			default="1"
+			class="btn-group btn-group-yesno"
+			filter="integer"
+		>
+			<option value="1">JYES</option>
+			<option value="0">JNO</option>
+		</field>
+
+		<field
+			name="show_staff"
+			type="radio"
+			label="COM_CLUBLEADDIR_CONFIG_SHOW_STAFF_LABEL"
+			default="1"
+			class="btn-group btn-group-yesno"
+			filter="integer"
+		>
+			<option value="1">JYES</option>
+			<option value="0">JNO</option>
+		</field>
+
+		<field
+			name="show_section_titles"
+			type="radio"
+			label="COM_CLUBLEADDIR_CONFIG_SHOW_SECTION_TITLES_LABEL"
+			default="1"
+			class="btn-group btn-group-yesno"
+			filter="integer"
+		>
+			<option value="1">JYES</option>
+			<option value="0">JNO</option>
+		</field>
+
+		<field
+			name="show_term"
+			type="radio"
+			label="COM_CLUBLEADDIR_CONFIG_SHOW_TERM_LABEL"
+			default="1"
+			class="btn-group btn-group-yesno"
+			filter="integer"
+		>
+			<option value="1">JYES</option>
+			<option value="0">JNO</option>
+		</field>
+
+		<field
+			name="max_items"
+			type="text"
+			label="COM_CLUBLEADDIR_CONFIG_MAX_ITEMS_LABEL"
+			description="COM_CLUBLEADDIR_CONFIG_MAX_ITEMS_DESC"
+			default="0"
+			filter="integer"
+		/>
+	</fieldset>
+
+	<fieldset
+		name="photos"
+		label="COM_CLUBLEADDIR_CONFIG_PHOTOS_LABEL"
+		description="COM_CLUBLEADDIR_CONFIG_PHOTOS_DESC"
+	>
+
+		<field
+			name="show_photos_officers"
+			type="radio"
+			label="COM_CLUBLEADDIR_CONFIG_SHOW_PHOTOS_OFFICERS_LABEL"
+			default="1"
+			class="btn-group btn-group-yesno"
+			filter="integer"
+		>
+			<option value="1">JYES</option>
+			<option value="0">JNO</option>
+		</field>
+
+		<field
+			name="show_photos_directors"
+			type="radio"
+			label="COM_CLUBLEADDIR_CONFIG_SHOW_PHOTOS_DIRECTORS_LABEL"
+			default="0"
+			class="btn-group btn-group-yesno"
+			filter="integer"
+		>
+			<option value="1">JYES</option>
+			<option value="0">JNO</option>
+		</field>
+
+		<field
+			name="show_photos_staff"
+			type="radio"
+			label="COM_CLUBLEADDIR_CONFIG_SHOW_PHOTOS_STAFF_LABEL"
+			default="0"
+			class="btn-group btn-group-yesno"
+			filter="integer"
+		>
+			<option value="1">JYES</option>
+			<option value="0">JNO</option>
+		</field>
+
+		<field
+			name="photo_size"
+			type="text"
+			label="COM_CLUBLEADDIR_CONFIG_PHOTO_SIZE_LABEL"
+			default="120"
+			filter="integer"
+		/>
+
+		<field
+			name="circular_avatars"
+			type="radio"
+			label="COM_CLUBLEADDIR_CONFIG_CIRCULAR_AVATARS_LABEL"
+			default="1"
+			class="btn-group btn-group-yesno"
+			filter="integer"
+		>
+			<option value="1">JYES</option>
+			<option value="0">JNO</option>
+		</field>
+
+		<field
+			name="header_tag"
+			type="list"
+			label="COM_CLUBLEADDIR_CONFIG_HEADER_TAG_LABEL"
+			default="h3"
+		>
+			<option value="h1">COM_CLUBLEADDIR_CONFIG_HEADER_TAG_H1</option>
+			<option value="h2">COM_CLUBLEADDIR_CONFIG_HEADER_TAG_H2</option>
+			<option value="h3">COM_CLUBLEADDIR_CONFIG_HEADER_TAG_H3</option>
+			<option value="h4">COM_CLUBLEADDIR_CONFIG_HEADER_TAG_H4</option>
+			<option value="p">COM_CLUBLEADDIR_CONFIG_HEADER_TAG_P</option>
+			<option value="div">COM_CLUBLEADDIR_CONFIG_HEADER_TAG_DIV</option>
+		</field>
+
+		<field
+			name="vacant_logo_url"
+			type="text"
+			label="COM_CLUBLEADDIR_CONFIG_VACANT_LOGO_LABEL"
+			description="COM_CLUBLEADDIR_CONFIG_VACANT_LOGO_DESC"
+			default=""
+			filter="string"
+		/>
+	</fieldset>
+
+	<fieldset
+		name="contact"
+		label="COM_CLUBLEADDIR_CONFIG_CONTACT_LABEL"
+	>
+
+		<field
+			name="require_login_for_contact"
+			type="radio"
+			label="COM_CLUBLEADDIR_CONFIG_REQUIRE_LOGIN_LABEL"
+			default="1"
+			class="btn-group btn-group-yesno"
+			filter="integer"
+		>
+			<option value="1">JYES</option>
+			<option value="0">JNO</option>
+		</field>
+
+		<field
+			name="contact_hidden_text"
+			type="text"
+			label="COM_CLUBLEADDIR_CONFIG_CONTACT_HIDDEN_TEXT_LABEL"
+			default="Log in to see how to reach this person."
+			filter="string"
+		/>
+	</fieldset>
+
+	<fieldset
+		name="vacancy"
+		label="COM_CLUBLEADDIR_CONFIG_VACANCY_LABEL"
+		description="COM_CLUBLEADDIR_CONFIG_VACANCY_DESC"
+	>
+
+		<field
+			name="vacant_contact_id"
+			type="sql"
+			label="COM_CLUBLEADDIR_FIELD_VACANT_CONTACT_LABEL"
+			description="COM_CLUBLEADDIR_FIELD_VACANT_CONTACT_DESC"
+			query="SELECT CONCAT(a.name, ' (', a.email_to, ')') AS text, a.id AS value FROM #__contact_details a ORDER BY a.name ASC"
+			key_field="value"
+			value_field="text"
+			multiple="false"
+		>
+			<option value="0">COM_CLUBLEADDIR_FIELD_VACANT_CONTACT_NONE</option>
+		</field>
+
+		<field
+			name="vacancy_default_email"
+			type="text"
+			label="COM_CLUBLEADDIR_FIELD_VACANCY_EMAIL"
+			description="COM_CLUBLEADDIR_FIELD_VACANCY_EMAIL_HELP"
+			filter="string"
+			showon="vacant_contact_id:0"
+		/>
+
+		<field
+			name="vacancy_banner_enabled"
+			type="radio"
+			label="COM_CLUBLEADDIR_CONFIG_VACANCY_BANNER_LABEL"
+			description="COM_CLUBLEADDIR_CONFIG_VACANCY_BANNER_DESC"
+			default="1"
+			class="btn-group btn-group-yesno"
+			filter="integer"
+		>
+			<option value="1">JYES</option>
+			<option value="0">JNO</option>
+		</field>
 	</fieldset>
 </config>

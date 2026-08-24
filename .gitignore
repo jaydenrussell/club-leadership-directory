@@ -1,2 +1,2 @@
-# Build output (run python3 build_zips.py to regenerate)
-pkg_out/
+# Build output (run scripts/build.ps1 to regenerate)
+dist/
