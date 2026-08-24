@@ -121,13 +121,26 @@ class pkg_clubleaddirInstallerScript
      */
     private function createExtensionEntry($db, $element)
     {
-        $type = ($element === 'pkg_clubleaddir') ? 'package' : 
-                ($element === 'com_clubleaddir') ? 'component' : 'module';
-        $clientId = ($type === 'component' || $type === 'package') ? 0 : 1;
-        
-        $manifestPath = ($type === 'component') ? JPATH_ADMINISTRATOR . '/manifests/components/com_clubleaddir.xml' :
-                     ($type === 'module') ? JPATH_ADMINISTRATOR . '/manifests/modules/mod_clubleaddir.xml' :
-                     JPATH_ADMINISTRATOR . '/manifests/packages/pkg_clubleaddir.xml';
+        if ($element === 'pkg_clubleaddir') {
+            $type = 'package';
+        } elseif ($element === 'com_clubleaddir') {
+            $type = 'component';
+        } else {
+            $type = 'module';
+        }
+
+        $clientId = 0;
+        if ($type === 'module') {
+            $clientId = 1;
+        }
+
+        if ($type === 'component') {
+            $manifestPath = JPATH_ADMINISTRATOR . '/manifests/components/com_clubleaddir.xml';
+        } elseif ($type === 'module') {
+            $manifestPath = JPATH_ADMINISTRATOR . '/manifests/modules/mod_clubleaddir.xml';
+        } else {
+            $manifestPath = JPATH_ADMINISTRATOR . '/manifests/packages/pkg_clubleaddir.xml';
+        }
 
         if (!is_file($manifestPath)) {
             return;
