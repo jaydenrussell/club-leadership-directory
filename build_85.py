@@ -26,13 +26,15 @@ def build_child_zip(name, source_dir):
     
     return archive
 
-# Build component zip - copy all files from source to flat structure
+# Build component zip - copy all files from source to flat structure,
+# but exclude the site controller.php so Joomla does not clobber admin/controller.php
 com_source = os.path.join(base, "com_clubleaddir")
 com_temp = os.path.join(src, "_temp_com")
 os.makedirs(com_temp)
 
-# Copy everything from component source
 for item in os.listdir(com_source):
+    if item == "controller.php":
+        continue
     srcpath = os.path.join(com_source, item)
     dstpath = os.path.join(com_temp, item)
     if os.path.isdir(srcpath):
