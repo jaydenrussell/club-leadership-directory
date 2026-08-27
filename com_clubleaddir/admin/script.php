@@ -9,7 +9,7 @@
  *  - On upgrade it repairs damage left by legacy 2.0.x installs (zombie
  *    package rows, hidden "stealth" menu leftovers, stale update sites,
  *    stray debug logs) — idempotently.
- *  - On uninstall it exports the roster to a JSON backup under /images/,
+ *  - On uninstall it exports the roster to a JSON backup under /logs/,
  *    then removes every trace of itself (data file, photos, code).
  *
  * @package     Joomla.Administrator
@@ -22,6 +22,7 @@ defined('_JEXEC') or die;
 
 use Joomla\CMS\Factory;
 use Joomla\CMS\Language\Text;
+use Joomla\CMS\Log\Log;
 
 class com_clubleaddirInstallerScript
 {
@@ -77,7 +78,7 @@ class com_clubleaddirInstallerScript
 
 	/**
 	 * Create the isolated data directory under /media/com_clubleaddir/data
-	 * and lock it down so the SQLite/JSON file can never be fetched over HTTP.
+	 * and lock it down so the JSON file can never be fetched over HTTP.
 	 */
 	private function initDataDir()
 	{
@@ -109,6 +110,28 @@ class com_clubleaddirInstallerScript
 		if (is_dir($dir) && !is_file($idx)) {
 			file_put_contents($idx, '');
 		}
+
+		// IIS: block access to the data directory via web.config.
+		$wc = $dir . '/web.config';
+		if (is_dir($dir) && !is_file($wc)) {
+			file_put_contents($wc,
+				"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+				. "<configuration>\n"
+				. "    <system.webServer>\n"
+				. "        <security>\n"
+				. "            <requestFiltering>\n"
+				. "                <hiddenSegments>\n"
+				. "                    <add segment=\"data\" />\n"
+				. "                </hiddenSegments>\n"
+				. "            </requestFiltering>\n"
+				. "        </security>\n"
+				. "    </system.webServer>\n"
+				. "</configuration>\n"
+			);
+		}
+
+		// Nginx: add this to your server block to block access to the data directory.
+		// location ~* ^/media/com_clubleaddir/data/ { deny all; return 404; }
 
 		$this->initUploadDir();
 	}
@@ -170,7 +193,7 @@ class com_clubleaddirInstallerScript
 				->where($db->quoteName('element') . ' = ' . $db->quote('pkg_pkg_clubleaddir'));
 			$db->setQuery($query)->execute();
 		} catch (\Throwable $e) {
-			// Non-fatal.
+			Log::add('Clubleaddir repairLegacy step 1 failed: ' . $e->getMessage(), Log::WARNING, 'com_clubleaddir');
 		}
 
 		// ...and its orphaned manifest file, if any.
@@ -203,7 +226,7 @@ class com_clubleaddirInstallerScript
 				->where($db->quoteName('element') . ' = ' . $db->quote('pkg_clubleaddir'));
 			$db->setQuery($query)->execute();
 		} catch (\Throwable $e) {
-			// Non-fatal.
+			Log::add('Clubleaddir repairLegacy step 2 failed: ' . $e->getMessage(), Log::WARNING, 'com_clubleaddir');
 		}
 
 		// 3. Legacy update-site rows pointing at raw.githubusercontent.com were
@@ -216,7 +239,7 @@ class com_clubleaddirInstallerScript
 				->where($db->quoteName('location') . ' LIKE ' . $db->quote('%raw.githubusercontent.com%'));
 			$db->setQuery($query)->execute();
 		} catch (\Throwable $e) {
-			// Non-fatal.
+			Log::add('Clubleaddir repairLegacy step 3 failed: ' . $e->getMessage(), Log::WARNING, 'com_clubleaddir');
 		}
 
 		// 4. Stray debug log files written by legacy installers.
@@ -262,7 +285,7 @@ class com_clubleaddirInstallerScript
 				->where($db->quoteName('menutype') . ' = ' . $db->quote('hiddenmenu'));
 			$db->setQuery($query)->execute();
 		} catch (\Throwable $e) {
-			// Non-fatal.
+			Log::add('Clubleaddir removeStealthMenu failed: ' . $e->getMessage(), Log::WARNING, 'com_clubleaddir');
 		}
 	}
 
@@ -301,16 +324,15 @@ class com_clubleaddirInstallerScript
 			'records' => $records,
 		);
 
-		$destDir = JPATH_ROOT . '/images';
-
-		if (!is_dir($destDir) || !is_writable($destDir)) {
+		$logDir = JPATH_ROOT . '/logs/com_clubleaddir';
+		if (!is_dir($logDir) && !mkdir($logDir, 0700, true) && !is_dir($logDir)) {
 			return;
 		}
 
-		$file = 'clubleaddir-backup-' . date('Ymd-His') . '.json';
+		$file = 'backup-' . date('Ymd-His') . '.json';
 
-		if (@file_put_contents($destDir . '/' . $file, json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)) !== false) {
-			$this->backupPath = 'images/' . $file;
+		if (@file_put_contents($logDir . '/' . $file, json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)) !== false) {
+			$this->backupPath = 'logs/com_clubleaddir/' . $file;
 		}
 	}
 
@@ -353,13 +375,18 @@ class com_clubleaddirInstallerScript
 				}
 			}
 		} catch (\Throwable $e) {
-			// Non-fatal: Joomla already greys out items whose component is gone.
+			Log::add('Clubleaddir removeOwnMenuItems failed: ' . $e->getMessage(), Log::WARNING, 'com_clubleaddir');
 		}
 	}
 
 	private function deleteRecursive($dir)
 	{
 		if (!is_dir($dir)) {
+			return;
+		}
+
+		$realDir = realpath($dir);
+		if ($realDir === false || $realDir === '/') {
 			return;
 		}
 
@@ -371,9 +398,16 @@ class com_clubleaddirInstallerScript
 			$path = $dir . '/' . $item;
 
 			if (is_dir($path)) {
+				$realPath = realpath($path);
+				if ($realPath === false || strpos($realPath, $realDir) !== 0) {
+					continue;
+				}
 				$this->deleteRecursive($path);
 			} else {
-				unlink($path);
+				$realPath = realpath($path);
+				if ($realPath !== false && strpos($realPath, $realDir) === 0) {
+					unlink($path);
+				}
 			}
 		}
 

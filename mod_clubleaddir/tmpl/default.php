@@ -53,7 +53,7 @@ $cardOpts = array(
 		<<?php echo $opts['headerTag']; ?> class="clubleadership-title"><?php echo htmlspecialchars($header, ENT_QUOTES, 'UTF-8'); ?></<?php echo $opts['headerTag']; ?>>
 		<hr class="clubleadership-title-accent" />
 		<?php if ($intro !== ''): ?>
-		<p class="clubleadership-intro"><?php echo $intro; ?></p>
+		<p class="clubleadership-intro"><?php echo htmlspecialchars($intro, ENT_QUOTES, 'UTF-8'); ?></p>
 		<?php endif; ?>
 		<?php if (!$showContact): ?>
 		<p class="clubleadership-login-notice">

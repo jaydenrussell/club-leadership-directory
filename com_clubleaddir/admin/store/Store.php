@@ -56,6 +56,23 @@ class ClubleaddirStoreJson
             if (!is_file($idx)) {
                 @file_put_contents($idx, '');
             }
+            $wc = $dir . '/web.config';
+            if (!is_file($wc)) {
+                @file_put_contents($wc,
+                    "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+                    . "<configuration>\n"
+                    . "    <system.webServer>\n"
+                    . "        <security>\n"
+                    . "            <requestFiltering>\n"
+                    . "                <hiddenSegments>\n"
+                    . "                    <add segment=\"data\" />\n"
+                    . "                </hiddenSegments>\n"
+                    . "            </requestFiltering>\n"
+                    . "        </security>\n"
+                    . "    </system.webServer>\n"
+                    . "</configuration>\n"
+                );
+            }
         }
         if (is_file($this->file)) {
             $raw = @file_get_contents($this->file);
@@ -84,6 +101,22 @@ class ClubleaddirStoreJson
                 rename($this->file, $quarantine);
             }
         }
+
+        if ((!isset($this->data['records']) || empty($this->data['records'])) && is_file($this->file . '.bak')) {
+            $bak = @file_get_contents($this->file . '.bak');
+            if ($bak !== false) {
+                try {
+                    $dec = json_decode($bak, true, 512, JSON_THROW_ON_ERROR);
+                    if (is_array($dec) && isset($dec['records']) && is_array($dec['records'])) {
+                        $this->data = $dec;
+                        $this->save();
+                    }
+                } catch (\JsonException $e) {
+                    // .bak is also corrupt; leave data empty.
+                }
+            }
+        }
+
         if (!isset($this->data['records']) || !is_array($this->data['records'])) {
             $this->data['records'] = array();
         }
@@ -112,15 +145,13 @@ class ClubleaddirStoreJson
         }
     }
 
-    public function getBackendName()
-    {
-        return 'JSON';
-    }
-
     private function save()
     {
         $lock = fopen($this->file, 'c');
         if ($lock && flock($lock, LOCK_EX)) {
+            if (is_file($this->file)) {
+                @copy($this->file, $this->file . '.bak');
+            }
             $ok = file_put_contents($this->file, json_encode($this->data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES), LOCK_EX) !== false;
             flock($lock, LOCK_UN);
             fclose($lock);

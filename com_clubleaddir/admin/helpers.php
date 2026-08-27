@@ -843,6 +843,13 @@ class ClubleaddirHelper
 		$custom = trim((string) self::getGlobalConfig()->get('vacant_logo_url', ''));
 
 		if ($custom !== '') {
+			$lower = strtolower($custom);
+			if (preg_match('#^(https?|ftp|file|javascript|data|vbscript|ldap|gopher):#i', $lower)) {
+				return '/media/com_clubleaddir/images/vacant-person.svg';
+			}
+			if (strpos($lower, '//') === 0) {
+				return '/media/com_clubleaddir/images/vacant-person.svg';
+			}
 			return self::photoUrl($custom);
 		}
 

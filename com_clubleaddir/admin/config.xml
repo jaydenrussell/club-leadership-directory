@@ -21,7 +21,7 @@
 			label="COM_CLUBLEADDIR_CONFIG_INTRO_TEXT_LABEL"
 			description="COM_CLUBLEADDIR_CONFIG_INTRO_TEXT_DESC"
 			default=""
-			filter="safehtml"
+			filter="raw"
 			buttons="true"
 			hide="readmore,pagebreak"
 		/>

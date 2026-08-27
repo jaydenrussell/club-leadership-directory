@@ -88,6 +88,8 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
     }
     protected function makeSquareCrop($src,$dest,$size=400){
         if(!function_exists('imagecreatefromstring')) return false;
+        $dims=getimagesize($src);
+        if($dims && ($dims[0]*$dims[1]*4*2 + 4*1024*1024) > $this->memoryAvailable()){ $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_PHOTO_DIMENSIONS')); return false; }
         $img=imagecreatefromstring(file_get_contents($src)); if($img===false) return false;
         $sw=imagesx($img); $sh=imagesy($img); if(!$sw||!$sh){ imagedestroy($img); return false; }
         $side=min($sw,$sh); $srcX=(int)(($sw-$side)/2); $srcY=(int)(($sh-$side)*0.38); if($srcY<0) $srcY=0;
@@ -182,4 +184,17 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
         }
     }
     public function setError($msg){ Factory::getApplication()->enqueueMessage($msg,'error'); }
+
+    private function memoryAvailable()
+    {
+        $limit = ini_get('memory_limit');
+        if ($limit === '' || $limit === '-1') {
+            return 536870912;
+        }
+        $limit = (int) $limit;
+        if ($limit <= 0) {
+            return 536870912;
+        }
+        return max(0, $limit * 1024 * 1024 - memory_get_usage(true));
+    }
 }

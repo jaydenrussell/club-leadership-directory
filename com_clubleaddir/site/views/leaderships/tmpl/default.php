@@ -59,7 +59,7 @@ if ($showPageHead) {
 		<hr class="clubleadership-title-accent" />
 		<?php endif; ?>
 		<?php if ($introText !== ''): ?>
-		<p class="clubleadership-intro"><?php echo $introText; ?></p>
+		<p class="clubleadership-intro"><?php echo htmlspecialchars($introText, ENT_QUOTES, 'UTF-8'); ?></p>
 		<?php endif; ?>
 	</header>
 	<?php endif; ?>
