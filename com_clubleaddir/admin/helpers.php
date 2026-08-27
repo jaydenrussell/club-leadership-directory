@@ -330,8 +330,17 @@ class ClubleaddirHelper
 		// Photo box only for officers/directors with photos — vacant cards are compact text-only with shaded background (no logo image).
 		$showPhotoBox = $showPhoto && ($hasPhoto || $isOfficer);
 
-		// Vacant positions always display "Vacant" as the name (role goes underneath in metaHtml). Backend still stores the real name (e.g. Bar) for admin access.
-		$displayName = $isVacant ? Text::_('COM_CLUBLEADDIR_VACANT') : (string) ($person->name ?? '');
+		// Vacant: show "Role is Vacant" as the name (e.g. "Bar is Vacant") so the spot is obvious at a glance. Backend still stores real name for admin access.
+		if ($isVacant) {
+			$roleText = trim((string) ($person->role ?? ''));
+			if ($roleText !== '') {
+				$displayName = $roleText . ' ' . Text::_('COM_CLUBLEADDIR_IS_VACANT');
+			} else {
+				$displayName = Text::_('COM_CLUBLEADDIR_VACANT');
+			}
+		} else {
+			$displayName = (string) ($person->name ?? '');
+		}
 		$size        = (int) ($options['photoSize'] ?? 120);
 		$logoSize    = (int) round($size * 0.75);
 		$boxSize     = $isVacant ? $logoSize : $size;
@@ -360,7 +369,7 @@ class ClubleaddirHelper
 
 		$metaHtml = '';
 
-		if (!empty($person->role)) {
+		if (!empty($person->role) && !$isVacant) {
 			$metaHtml .= '<div class="clubleadership-card-role">' . htmlspecialchars($person->role, ENT_QUOTES, 'UTF-8') . '</div>';
 		}
 
@@ -410,7 +419,17 @@ class ClubleaddirHelper
 	public static function leagueCardHtml($person, array $options)
 	{
 		$isVacant   = !empty($person->vacant);
-		$displayName = $isVacant ? Text::_('COM_CLUBLEADDIR_VACANT') : (string) ($person->name ?? '');
+		if ($isVacant) {
+			$leagueLabel = !empty($person->league_name) ? self::leagueNameLabel($person->league_name) : '';
+			if ($leagueLabel !== '' && $leagueLabel !== $person->league_name) {
+				$displayName = $leagueLabel . ' ' . Text::_('COM_CLUBLEADDIR_IS_VACANT');
+			} else {
+				$roleText = trim((string) ($person->role ?? ''));
+				$displayName = $roleText !== '' ? $roleText . ' ' . Text::_('COM_CLUBLEADDIR_IS_VACANT') : Text::_('COM_CLUBLEADDIR_VACANT');
+			}
+		} else {
+			$displayName = (string) ($person->name ?? '');
+		}
 
 		$metaHtml = '<div class="clubleadership-card-role">' . Text::_('MOD_CLUBLEADDIR_LEAGUE_REP_TITLE') . '</div>';
 

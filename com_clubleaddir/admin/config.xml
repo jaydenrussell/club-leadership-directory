@@ -17,12 +17,13 @@
 
 		<field
 			name="intro_text"
-			type="textarea"
+			type="editor"
 			label="COM_CLUBLEADDIR_CONFIG_INTRO_TEXT_LABEL"
 			description="COM_CLUBLEADDIR_CONFIG_INTRO_TEXT_DESC"
 			default=""
 			filter="safehtml"
-			rows="4"
+			buttons="true"
+			hide="readmore,pagebreak"
 		/>
 
 		<field
