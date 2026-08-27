@@ -362,7 +362,7 @@ class ClubleaddirHelper
 
 		$metaHtml = '';
 
-		if (!empty($person->role) && !$nameEmpty) {
+		if (!empty($person->role)) {
 			$metaHtml .= '<div class="clubleadership-card-role">' . htmlspecialchars($person->role, ENT_QUOTES, 'UTF-8') . '</div>';
 		}
 
