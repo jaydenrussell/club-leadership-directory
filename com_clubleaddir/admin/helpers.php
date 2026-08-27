@@ -330,16 +330,13 @@ class ClubleaddirHelper
 		// Photo box only for officers/directors with photos — vacant cards are compact text-only with shaded background (no logo image).
 		$showPhotoBox = $showPhoto && ($hasPhoto || $isOfficer);
 
-		// Vacant: show "Role is Vacant" as the name (e.g. "Bar is Vacant") so the spot is obvious at a glance. Backend still stores real name for admin access.
+		// Vacant: no person name; show a full-width "Position is Vacant" banner instead. Backend still stores real name for admin access.
 		if ($isVacant) {
-			$roleText = trim((string) ($person->role ?? ''));
-			if ($roleText !== '') {
-				$displayName = $roleText . ' ' . Text::_('COM_CLUBLEADDIR_IS_VACANT');
-			} else {
-				$displayName = Text::_('COM_CLUBLEADDIR_VACANT');
-			}
+			$displayName = '';
+			$vacantBanner = '<div class="clubleadership-card-vacant-banner">' . htmlspecialchars(Text::_('COM_CLUBLEADDIR_POSITION_VACANT'), ENT_QUOTES, 'UTF-8') . '</div>';
 		} else {
 			$displayName = (string) ($person->name ?? '');
+			$vacantBanner = '';
 		}
 		$size        = (int) ($options['photoSize'] ?? 120);
 		$logoSize    = (int) round($size * 0.75);
@@ -387,10 +384,6 @@ class ClubleaddirHelper
 			}
 		}
 
-		if ($isVacant) {
-			$metaHtml .= '<span class="clubleadership-card-vacant">' . htmlspecialchars(Text::_('COM_CLUBLEADDIR_VACANT'), ENT_QUOTES, 'UTF-8') . '</span>';
-		}
-
 		$contactHtml = self::contactHtml(
 			$person,
 			!empty($options['showContact']),
@@ -402,8 +395,9 @@ class ClubleaddirHelper
 		return '<article class="clubleadership-card clubleaddir-card--' . htmlspecialchars($person->type ?? '', ENT_QUOTES, 'UTF-8') . ($isVacant ? ' clubleaddir-card--vacant' : '') . '">'
 			. $photoHtml
 			. '<div class="clubleadership-card-content">'
-			. '<h4 class="clubleadership-card-name">' . htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8') . '</h4>'
+			. ($isVacant ? '' : '<h4 class="clubleadership-card-name">' . htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8') . '</h4>')
 			. $metaHtml
+			. $vacantBanner
 			. $contactHtml
 			. '</div>'
 			. '</article>';
@@ -420,25 +414,17 @@ class ClubleaddirHelper
 	{
 		$isVacant   = !empty($person->vacant);
 		if ($isVacant) {
-			$leagueLabel = !empty($person->league_name) ? self::leagueNameLabel($person->league_name) : '';
-			if ($leagueLabel !== '' && $leagueLabel !== $person->league_name) {
-				$displayName = $leagueLabel . ' ' . Text::_('COM_CLUBLEADDIR_IS_VACANT');
-			} else {
-				$roleText = trim((string) ($person->role ?? ''));
-				$displayName = $roleText !== '' ? $roleText . ' ' . Text::_('COM_CLUBLEADDIR_IS_VACANT') : Text::_('COM_CLUBLEADDIR_VACANT');
-			}
+			$displayName = '';
+			$vacantBanner = '<div class="clubleadership-card-vacant-banner">' . htmlspecialchars(Text::_('COM_CLUBLEADDIR_POSITION_VACANT'), ENT_QUOTES, 'UTF-8') . '</div>';
 		} else {
 			$displayName = (string) ($person->name ?? '');
+			$vacantBanner = '';
 		}
 
 		$metaHtml = '<div class="clubleadership-card-role">' . Text::_('MOD_CLUBLEADDIR_LEAGUE_REP_TITLE') . '</div>';
 
 		if (!empty($person->league_name)) {
 			$metaHtml .= '<div class="clubleadership-card-league">' . htmlspecialchars(self::leagueNameLabel($person->league_name), ENT_QUOTES, 'UTF-8') . '</div>';
-		}
-
-		if ($isVacant) {
-			$metaHtml .= '<span class="clubleadership-card-vacant">' . htmlspecialchars(Text::_('COM_CLUBLEADDIR_VACANT'), ENT_QUOTES, 'UTF-8') . '</span>';
 		}
 
 		$contactHtml = self::contactHtml(
@@ -452,8 +438,9 @@ class ClubleaddirHelper
 		return '<article class="clubleadership-card clubleaddir-card--director' . ($isVacant ? ' clubleaddir-card--vacant' : '') . '">'
 			. '<div class="clubleadership-card-photo"></div>'
 			. '<div class="clubleadership-card-content">'
-			. '<h4 class="clubleadership-card-name">' . htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8') . '</h4>'
+			. ($isVacant ? '' : '<h4 class="clubleadership-card-name">' . htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8') . '</h4>')
 			. $metaHtml
+			. $vacantBanner
 			. $contactHtml
 			. '</div>'
 			. '</article>';
