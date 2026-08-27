@@ -35,7 +35,7 @@ if (!$hasContent) {
 $showContact       = !$opts['requireLogin'] || !Factory::getUser()->guest;
 $contactHiddenText = $opts['contactHiddenText'] !== ''
 	? $opts['contactHiddenText']
-	: Text::_('MOD_CLUBLEADDIRECTION_LOGIN_TO_VIEW');
+	: Text::_('MOD_CLUBLEADDIR_LOGIN_TO_VIEW');
 
 $cardOpts = array(
 	'showContact'         => $showContact,
@@ -47,7 +47,7 @@ $cardOpts = array(
 	'vacancyDefaultEmail' => $opts['vacancyDefaultEmail'],
 );
 ?>
-<div class="clbleaddir mod-clubleaddir<?php echo $sfx ? ' ' . $sfx : ''; ?>">
+<div class="clubleaddir mod-clubleaddir<?php echo $sfx ? ' ' . $sfx : ''; ?>">
 	<?php if ($header !== ''): ?>
 	<header class="clubleadership-header">
 		<<?php echo $opts['headerTag']; ?> class="clubleadership-title"><?php echo htmlspecialchars($header, ENT_QUOTES, 'UTF-8'); ?></<?php echo $opts['headerTag']; ?>>
@@ -73,7 +73,7 @@ $cardOpts = array(
 		<?php if ($opts['showSectionTitles']): ?>
 		<h3 class="clubleadership-section-title">
 			<span class="section-icon" aria-hidden="true">&#9733;</span>
-			<?php echo Text::_('MOD_CLUBLEADDIRECTION_OFFICERS'); ?>
+			<?php echo Text::_('MOD_CLUBLEADDIR_OFFICERS'); ?>
 		</h3>
 		<?php endif; ?>
 		<div class="clubleadership-grid grid-officers">
@@ -90,7 +90,7 @@ $cardOpts = array(
 		<?php if ($opts['showSectionTitles']): ?>
 		<h3 class="clubleadership-section-title">
 			<span class="section-icon" aria-hidden="true">&#128101;</span>
-			<?php echo Text::_('MOD_CLUBLEADDIRECTION_DIRECTORS'); ?>
+			<?php echo Text::_('MOD_CLUBLEADDIR_DIRECTORS'); ?>
 		</h3>
 		<?php endif; ?>
 		<?php if (!empty($directors)): ?>
@@ -103,7 +103,7 @@ $cardOpts = array(
 		<?php endif; ?>
 		<?php if (!empty($directorsLeague)): ?>
 		<div class="clubleadership-subsection">
-			<h4 class="clubleadership-subsection-title"><?php echo Text::_('MOD_CLUBLEADDIRECTION_LEAGUE_APPOINTED_DIRECTORS'); ?></h4>
+			<h4 class="clubleadership-subsection-title"><?php echo Text::_('MOD_CLUBLEADDIR_LEAGUE_APPOINTED_DIRECTORS'); ?></h4>
 			<div class="clubleadership-grid grid-directors">
 				<?php foreach ($directorsLeague as $person):
 					echo ClubleaddirHelper::leagueCardHtml($person, $cardOpts);
@@ -119,7 +119,7 @@ $cardOpts = array(
 		<?php if ($opts['showSectionTitles']): ?>
 		<h3 class="clubleadership-section-title">
 			<span class="section-icon" aria-hidden="true">&#9881;</span>
-			<?php echo Text::_('MOD_CLUBLEADDIRECTION_STAFF'); ?>
+			<?php echo Text::_('MOD_CLUBLEADDIR_STAFF'); ?>
 		</h3>
 		<?php endif; ?>
 		<div class="clubleadership-grid grid-staff">

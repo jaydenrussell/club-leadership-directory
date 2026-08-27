@@ -20,7 +20,7 @@ $groups = $this->groups;
 $showContact       = !$opts['requireLogin'] || !JFactory::getUser()->guest;
 $contactHiddenText = $opts['contactHiddenText'] !== ''
 	? $opts['contactHiddenText']
-	: Text::_('MOD_CLUBLEADDIRECTION_LOGIN_TO_VIEW');
+	: Text::_('MOD_CLUBLEADDIR_LOGIN_TO_VIEW');
 
 // Shared card options; the per-section photo flag is set in each loop below.
 $cardOpts = array(
@@ -47,9 +47,21 @@ if ($showPageHead) {
 	}
 }
 ?>
-<div class="clbleaddir com-clubleaddir-view<?php echo $pageClassSfx ? ' ' . $pageClassSfx : ''; ?>">
-	<?php if ($showPageHead && $pageHeading !== ''): ?>
-	<h1 class="clbleaddir-page-heading"><?php echo $this->escape($pageHeading); ?></h1>
+<div class="clubleaddir com-clubleaddir-view<?php echo $pageClassSfx ? ' ' . $pageClassSfx : ''; ?>">
+	<?php
+	$displayTitle = trim((string) ($opts['displayTitle'] ?? ''));
+	$introText   = trim((string) ($opts['introText'] ?? ''));
+	?>
+	<?php if ($displayTitle !== '' || $introText !== ''): ?>
+	<header class="clubleadership-header">
+		<?php if ($displayTitle !== ''): ?>
+		<<?php echo $opts['headerTag'] ?? 'h2'; ?> class="clubleadership-title"><?php echo $this->escape($displayTitle); ?></<?php echo $opts['headerTag'] ?? 'h2'; ?>>
+		<hr class="clubleadership-title-accent" />
+		<?php endif; ?>
+		<?php if ($introText !== ''): ?>
+		<p class="clubleadership-intro"><?php echo $introText; ?></p>
+		<?php endif; ?>
+	</header>
 	<?php endif; ?>
 
 	<?php
@@ -59,10 +71,10 @@ if ($showPageHead) {
 	?>
 
 	<?php foreach (array(
-		'officers'         => array('label' => Text::_('MOD_CLUBLEADDIRECTION_OFFICERS'), 'icon' => '&#9733;', 'photoKey' => 'showPhotosOfficers'),
-		'directors'        => array('label' => Text::_('MOD_CLUBLEADDIRECTION_DIRECTORS'), 'icon' => '&#128101;', 'photoKey' => 'showPhotosDirectors'),
-		'directors_league' => array('label' => Text::_('MOD_CLUBLEADDIRECTION_LEAGUE_APPOINTED_DIRECTORS'), 'icon' => '&#128101;', 'photoKey' => 'showPhotosDirectors'),
-		'staff'            => array('label' => Text::_('MOD_CLUBLEADDIRECTION_STAFF'), 'icon' => '&#9881;', 'photoKey' => 'showPhotosStaff'),
+		'officers'         => array('label' => Text::_('MOD_CLUBLEADDIR_OFFICERS'), 'icon' => '&#9733;', 'photoKey' => 'showPhotosOfficers'),
+		'directors'        => array('label' => Text::_('MOD_CLUBLEADDIR_DIRECTORS'), 'icon' => '&#128101;', 'photoKey' => 'showPhotosDirectors'),
+		'directors_league' => array('label' => Text::_('MOD_CLUBLEADDIR_LEAGUE_APPOINTED_DIRECTORS'), 'icon' => '&#128101;', 'photoKey' => 'showPhotosDirectors'),
+		'staff'            => array('label' => Text::_('MOD_CLUBLEADDIR_STAFF'), 'icon' => '&#9881;', 'photoKey' => 'showPhotosStaff'),
 	) as $key => $section):
 		$items = $groups[$key] ?? array();
 

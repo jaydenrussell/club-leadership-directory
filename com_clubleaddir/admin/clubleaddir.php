@@ -8,7 +8,14 @@
 
 defined('_JEXEC') or die;
 
+use Joomla\CMS\Factory;
+use Joomla\CMS\MVC\Controller\BaseController;
+
 // Admin dispatcher: bootstraps the MVC controller and runs the requested task.
-$controller = JControllerLegacy::getInstance('Clubleaddir');
-$controller->execute(JFactory::getApplication()->input->get('task'));
+$input = Factory::getApplication()->input;
+if (!$input->get('view')) {
+    $input->set('view', 'leaderships');
+}
+$controller = BaseController::getInstance('Clubleaddir');
+$controller->execute($input->get('task'));
 $controller->redirect();

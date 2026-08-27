@@ -9,7 +9,6 @@
 defined('_JEXEC') or die;
 
 use Joomla\CMS\MVC\View\HtmlView;
-use Joomla\CMS\Registry\Registry;
 
 require_once JPATH_ADMINISTRATOR . '/components/com_clubleaddir/helpers.php';
 
@@ -40,7 +39,7 @@ class ClubleaddirViewLeaderships extends HtmlView
 		// (page heading, page class suffix). Behaviour never comes from here.
 		$app         = JFactory::getApplication();
 		$active      = $app->getMenu()->getActive();
-		$this->params = $active ? clone $active->params : new Registry;
+		$this->params = $active ? clone $active->params : new \JRegistry;
 
 		parent::display($tpl);
 	}

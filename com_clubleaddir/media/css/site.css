@@ -4,30 +4,30 @@
  * by BOTH the component site view and mod_clubleaddir.
  */
 
-.clbleaddir, .clbleaddir * { box-sizing: border-box; }
-.clbleaddir {
+.clubleaddir, .clubleaddir * { box-sizing: border-box; }
+.clubleaddir {
 	font-family: 'Muli', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 	color: #555;
 	line-height: 1.6;
 	width: 100%;
 }
-.clbleaddir .clbleaddir-page-heading { margin: 0 0 1rem; }
+.clubleaddir .clubleaddir-page-heading { margin: 0 0 1rem; }
 
 /* Module/component header */
-.clbleaddir .clubleadership-header {
+.clubleaddir .clubleadership-header {
 	text-align: center;
 	padding: 2rem 1.5rem 1.25rem;
 	max-width: 1100px;
 	margin: 0 auto;
 }
-.clbleaddir .clubleadership-title {
+.clubleaddir .clubleadership-title {
 	font-size: 1.6rem;
 	font-weight: 700;
 	color: #15324A;
 	margin: 0;
 	letter-spacing: 0.02em;
 }
-.clbleaddir .clubleadership-title-accent {
+.clubleaddir .clubleadership-title-accent {
 	display: block;
 	width: 60px;
 	height: 3px;
@@ -36,8 +36,8 @@
 	border-radius: 2px;
 	margin: 0.75rem auto 0;
 }
-.clbleaddir .clubleadership-intro { margin-top: 0.75rem; }
-.clbleaddir .clubleadership-login-notice {
+.clubleaddir .clubleadership-intro { margin-top: 0.75rem; }
+.clubleaddir .clubleadership-login-notice {
 	display: inline-flex;
 	align-items: center;
 	gap: 0.35rem;
@@ -45,44 +45,44 @@
 	font-size: 0.8rem;
 	color: #999;
 }
-.clbleaddir .clubleadership-login-notice .icon-lock { color: #305789; font-size: 0.9rem; }
+.clubleaddir .clubleadership-login-notice .icon-lock { color: #305789; font-size: 0.9rem; }
 
 /* Sections */
-.clbleaddir .clubleadership-section { padding: 1.75rem 1rem; }
-.clbleaddir .clubleadership-section:nth-of-type(odd) { background: #fff; }
-.clbleaddir .clubleadership-section:nth-of-type(even) { background: #f5f7fa; }
-.clbleaddir .clubleadership-section-title {
+.clubleaddir .clubleadership-section { padding: 1.25rem 1rem; }
+.clubleaddir .clubleadership-section:nth-of-type(odd) { background: #fff; }
+.clubleaddir .clubleadership-section:nth-of-type(even) { background: #f5f7fa; }
+.clubleaddir .clubleadership-section-title {
 	display: flex;
 	align-items: center;
 	gap: 0.4rem;
 	font-size: 1.05rem;
 	font-weight: 700;
 	color: #15324A;
-	margin: 0 auto 1rem;
+	margin: 0 auto 0.75rem;
 	max-width: 1100px;
 	padding-bottom: 0.4rem;
 	border-bottom: 2px solid #305789;
 }
-.clbleaddir .section-icon { color: #b8963e; font-size: 1em; }
-.clbleaddir .clubleadership-subsection { margin-top: 1.25rem; }
-.clbleaddir .clubleadership-subsection-title {
+.clubleaddir .section-icon { color: #b8963e; font-size: 1em; }
+.clubleaddir .clubleadership-subsection { margin-top: 1rem; }
+.clubleaddir .clubleadership-subsection-title {
 	font-size: 0.85rem;
 	font-weight: 600;
 	color: #305789;
-	margin: 0 auto 0.75rem;
+	margin: 0 auto 0.6rem;
 	max-width: 1100px;
 	padding-left: 0.5rem;
 	border-left: 3px solid #b8963e;
 }
 
 /* Grids */
-.clbleaddir .clubleadership-grid { display: grid; gap: 1.25rem; max-width: 1100px; margin: 0 auto; }
-.clbleaddir .grid-officers { grid-template-columns: repeat(4, 1fr); gap: 1rem; }
-.clbleaddir .grid-directors { grid-template-columns: repeat(4, 230px); justify-content: space-evenly; }
-.clbleaddir .grid-staff { grid-template-columns: repeat(4, 230px); justify-content: space-evenly; }
+.clubleaddir .clubleadership-grid { display: grid; gap: 1rem; max-width: 1100px; margin: 0 auto; }
+.clubleaddir .grid-officers { grid-template-columns: repeat(4, 1fr); gap: 0.875rem; }
+.clubleaddir .grid-directors { grid-template-columns: repeat(4, 230px); justify-content: space-evenly; }
+.clubleaddir .grid-staff { grid-template-columns: repeat(4, 230px); justify-content: space-evenly; }
 
 /* Cards */
-.clbleaddir .clubleadership-card {
+.clubleaddir .clubleadership-card {
 	position: relative;
 	background: #fff;
 	border-radius: 12px;
@@ -92,19 +92,19 @@
 	transition: box-shadow 0.2s, transform 0.2s;
 	text-align: center;
 }
-.clbleaddir .clubleadership-card:hover {
+.clubleaddir .clubleadership-card:hover {
 	box-shadow: 0 6px 24px rgba(21, 50, 74, 0.14);
 	transform: translateY(-2px);
 }
-.clbleaddir .clubleaddir-card--officer { }
-.clbleaddir .clubleaddir-card--director,
-.clbleaddir .clubleaddir-card--staff {
+.clubleaddir .clubleaddir-card--officer { }
+.clubleaddir .clubleaddir-card--director,
+.clubleaddir .clubleaddir-card--staff {
 	display: flex;
 	flex-direction: column;
 	min-height: 110px;
 	align-items: center;
 }
-.clbleaddir .clubleadership-card-photo {
+.clubleaddir .clubleadership-card-photo {
 	position: relative;
 	overflow: hidden;
 	background: #f5f7fa;
@@ -112,16 +112,16 @@
 	align-items: center;
 	justify-content: center;
 }
-.clbleaddir .clubleadership-card-photo.is-visible { display: flex; }
-.clbleaddir .clubleadership-card-photo.is-circular {
+.clubleaddir .clubleadership-card-photo.is-visible { display: flex; }
+.clubleaddir .clubleadership-card-photo.is-circular {
 	border-radius: 50%;
 	border: 3px solid #fff;
 	box-shadow: 0 2px 8px rgba(21, 50, 74, 0.12);
 }
-.clbleaddir .clubleadership-card-photo.is-rect { border-radius: 8px; border: 1px solid #d5dfe8; }
-.clbleaddir .clubleadership-card-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.clbleaddir .clubleaddir-card--officer .clubleadership-card-photo { margin: 0.875rem auto 0; }
-.clbleaddir .clubleadership-card-photo--initials {
+.clubleaddir .clubleadership-card-photo.is-rect { border-radius: 8px; border: 1px solid #d5dfe8; }
+.clubleaddir .clubleadership-card-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.clubleaddir .clubleaddir-card--officer .clubleadership-card-photo { margin: 0.875rem auto 0; }
+.clubleaddir .clubleadership-card-photo--initials {
 	width: 100%;
 	height: 100%;
 	display: flex;
@@ -132,7 +132,7 @@
 	font-size: 1.1rem;
 	font-weight: 700;
 }
-.clbleaddir .clubleadership-card-content {
+.clubleaddir .clubleadership-card-content {
 	padding: 0.625rem 0.75rem 0.75rem;
 	display: flex;
 	flex-direction: column;
@@ -140,14 +140,14 @@
 	justify-content: center;
 	flex: 1;
 }
-.clbleaddir .clubleaddir-card--officer .clubleadership-card-content { padding: 0.5rem 0.75rem 0.875rem; justify-content: flex-start; }
-.clbleaddir .clubleadership-card-name { font-size: 0.8rem; font-weight: 600; color: #1a2a3a; margin: 0 0 0.1rem; line-height: 1.3; }
-.clbleaddir .clubleaddir-card--officer .clubleadership-card-name { font-size: 1rem; margin-top: 0.35rem; }
-.clbleaddir .clubleadership-card-role { font-size: 0.7rem; font-weight: 600; color: #305789; }
-.clbleaddir .clubleaddir-card--officer .clubleadership-card-role { color: #b8963e; font-size: 0.8rem; }
-.clbleaddir .clubleadership-card-term { font-size: 0.65rem; color: #999; }
-.clbleaddir .clubleadership-card-league { font-size: 0.68rem; color: #555; font-style: italic; margin-top: 0.1rem; }
-.clbleaddir .clubleadership-card-vacant {
+.clubleaddir .clubleaddir-card--officer .clubleadership-card-content { padding: 0.5rem 0.75rem 0.875rem; justify-content: flex-start; }
+.clubleaddir .clubleadership-card-name { font-size: 0.8rem; font-weight: 600; color: #1a2a3a; margin: 0 0 0.1rem; line-height: 1.3; }
+.clubleaddir .clubleaddir-card--officer .clubleadership-card-name { font-size: 1rem; margin-top: 0.35rem; }
+.clubleaddir .clubleadership-card-role { font-size: 0.7rem; font-weight: 600; color: #305789; }
+.clubleaddir .clubleaddir-card--officer .clubleadership-card-role { color: #b8963e; font-size: 0.8rem; }
+.clubleaddir .clubleadership-card-term { font-size: 0.65rem; color: #999; }
+.clubleaddir .clubleadership-card-league { font-size: 0.68rem; color: #555; font-style: italic; margin-top: 0.1rem; }
+.clubleaddir .clubleadership-card-vacant {
 	display: inline-block;
 	margin-top: 0.25rem;
 	padding: 0.1rem 0.5rem;
@@ -161,7 +161,7 @@
 }
 
 /* Contact links */
-.clbleaddir .clubleadership-card-contact {
+.clubleaddir .clubleadership-card-contact {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 0.3rem;
@@ -170,8 +170,8 @@
 	border-top: 1px solid #d5dfe8;
 	justify-content: center;
 }
-.clbleaddir .clubleaddir-card--officer .clubleadership-card-contact { justify-content: center; }
-.clbleaddir .clubleadership-contact-link {
+.clubleaddir .clubleaddir-card--officer .clubleadership-card-contact { justify-content: center; }
+.clubleaddir .clubleadership-contact-link {
 	display: inline-flex;
 	align-items: center;
 	gap: 0.2rem;
@@ -184,90 +184,102 @@
 	text-decoration: none;
 	transition: background 0.2s, color 0.2s;
 }
-.clbleaddir .clubleadership-contact-link:hover { background: #305789; color: #fff; }
-.clbleaddir .clubleadership-contact-text { display: none; }
-@media (min-width: 400px) { .clbleaddir .clubleadership-contact-text { display: inline; } }
-.clbleaddir .clubleadership-contact-hidden {
+.clubleaddir .clubleadership-contact-link:hover { background: #305789; color: #fff; }
+.clubleaddir .clubleadership-contact-text { display: none; }
+@media (min-width: 400px) { .clubleaddir .clubleadership-contact-text { display: inline; } }
+.clubleaddir .clubleadership-contact-hidden {
 	display: inline-flex;
 	align-items: center;
 	gap: 0.2rem;
 	font-size: 0.65rem;
 	color: #bbb;
 }
-.clbleaddir .clubleadership-contact-hidden .icon-lock { color: #305789; }
+.clubleaddir .clubleadership-contact-hidden .icon-lock { color: #305789; }
 
 /* Responsive grids */
 @media (max-width: 1100px) {
-	.clbleaddir .grid-officers { grid-template-columns: repeat(2, 1fr); }
-	.clbleaddir .grid-directors { grid-template-columns: repeat(3, 1fr); }
-	.clbleaddir .grid-staff { grid-template-columns: repeat(2, 1fr); }
+	.clubleaddir .grid-officers { grid-template-columns: repeat(2, 1fr); }
+	.clubleaddir .grid-directors { grid-template-columns: repeat(3, 1fr); }
+	.clubleaddir .grid-staff { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 640px) {
-	.clbleaddir .grid-officers { grid-template-columns: repeat(2, 1fr); }
-	.clbleaddir .grid-directors { grid-template-columns: repeat(2, 1fr); }
-	.clbleaddir .grid-staff { grid-template-columns: 1fr; }
+	.clubleaddir .grid-officers { grid-template-columns: repeat(2, 1fr); }
+	.clubleaddir .grid-directors { grid-template-columns: repeat(2, 1fr); }
+	.clubleaddir .grid-staff { grid-template-columns: 1fr; }
 }
 @media (max-width: 480px) {
-	.clbleaddir .grid-officers,
-	.clbleaddir .grid-directors { grid-template-columns: 1fr; }
+	.clubleaddir .grid-officers,
+	.clubleaddir .grid-directors { grid-template-columns: 1fr; }
 }
 
 /* Vacancy recruitment banner */
-.clbleaddir .clubleaddir-vacancy-banner {
+.clubleaddir .clubleaddir-vacancy-banner {
 	display: flex;
 	align-items: center;
 	gap: 1rem;
 	max-width: 1100px;
-	margin: 0 auto 1.5rem;
+	margin: 0 auto 0.75rem;
 	padding: 1rem 1.25rem;
 	background: linear-gradient(135deg, #e3ebf5 0%, #f4f8fc 100%);
 	border: 1px solid #c5d8ee;
-	border-left: 5px solid #1890d7;
-	border-radius: 12px;
-	box-shadow: 0 4px 16px rgba(24, 144, 215, 0.12);
+	border-left: 5px solid #305789;
+	border-radius: 10px;
+	box-shadow: 0 2px 8px rgba(48, 87, 137, 0.08);
 }
-.clbleaddir .clubleaddir-vacancy-banner-icon {
+.clubleaddir .clubleaddir-vacancy-banner-icon {
 	flex: 0 0 auto;
-	width: 46px;
-	height: 46px;
+	width: 48px;
+	height: 48px;
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	font-size: 1.6rem;
-	background: #1890d7;
-	color: #fff;
-	border-radius: 50%;
+	color: #b8963e;
+	background: #fdf6e3;
+	border: 1px solid #e8d9a8;
+	border-radius: 10px;
 }
-.clbleaddir .clubleaddir-vacancy-banner-body { flex: 1 1 auto; }
-.clbleaddir .clubleaddir-vacancy-banner-title {
-	margin: 0 0 0.25rem;
-	font-size: 1.1rem;
+.clubleaddir .clubleaddir-vacancy-banner-body { flex: 1 1 auto; }
+.clubleaddir .clubleaddir-vacancy-banner-title {
+	margin: 0 0 0.15rem;
+	font-size: 1.05rem;
 	font-weight: 700;
-	color: #0f5b8a;
+	color: #15324A;
 }
-.clbleaddir .clubleaddir-vacancy-banner-text {
+.clubleaddir .clubleaddir-vacancy-banner-text {
 	margin: 0;
-	font-size: 0.9rem;
+	font-size: 0.85rem;
 	line-height: 1.4;
 	color: #305789;
 }
-.clbleaddir .clubleaddir-vacancy-banner-cta {
+.clubleaddir .clubleaddir-vacancy-banner-summary {
+	margin: 0.3rem 0 0;
+	font-size: 0.8rem;
+	color: #666;
+}
+.clubleaddir .clubleaddir-vacancy-banner-actions {
 	flex: 0 0 auto;
+	margin-left: auto;
+}
+.clubleaddir .clubleaddir-vacancy-banner-cta {
 	display: inline-block;
-	padding: 0.6rem 1.25rem;
-	background: #1890d7;
-	color: #fff !important;
+	padding: 0.5rem 1.25rem;
+	background: transparent;
+	color: #305789 !important;
 	font-weight: 600;
 	text-decoration: none;
-	border-radius: 999px;
+	border: 2px solid #305789;
+	border-radius: 4px;
 	white-space: nowrap;
-	transition: background 0.2s, transform 0.2s;
+	transition: background 0.2s, color 0.2s;
+	font-size: 0.85rem;
+	letter-spacing: 0.01em;
 }
-.clbleaddir .clubleaddir-vacancy-banner-cta:hover {
-	background: #0f5b8a;
-	transform: translateY(-1px);
+.clubleaddir .clubleaddir-vacancy-banner-cta:hover {
+	background: #305789;
+	color: #fff !important;
 }
 @media (max-width: 560px) {
-	.clbleaddir .clubleaddir-vacancy-banner { flex-wrap: wrap; }
-	.clbleaddir .clubleaddir-vacancy-banner-cta { flex: 1 1 100%; text-align: center; }
+	.clubleaddir .clubleaddir-vacancy-banner { flex-wrap: wrap; }
+	.clubleaddir .clubleaddir-vacancy-banner-actions { margin-left: 0; width: 100%; text-align: center; margin-top: 0.5rem; }
+	.clubleaddir .clubleaddir-vacancy-banner-cta { width: 100%; text-align: center; }
 }
