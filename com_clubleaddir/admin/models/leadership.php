@@ -16,6 +16,10 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
     }
     public function save(array $data){
         $date=Factory::getDate()->toSql(); $userId=(int)Factory::getUser()->id; $data=$this->validate($data); if($data===false) return false;
+        // Vacant: name is logical "Vacant", role is the unique identifier (keeps admin access)
+        if (!empty($data['vacant']) && trim((string)($data['name'] ?? '')) === '') {
+            $data['name'] = 'Vacant';
+        }
         // Hard caps — cheap hosting, maintainer copy-paste long bio
         $data['name']=mb_substr(trim((string)($data['name']??'')),0,120);
         $data['role']=mb_substr(trim((string)($data['role']??'')),0,80);

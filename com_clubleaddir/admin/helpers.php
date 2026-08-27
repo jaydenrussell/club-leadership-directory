@@ -332,8 +332,8 @@ class ClubleaddirHelper
 		// the club logo; directors/staff only show a box when they have a photo.
 		$showPhotoBox = $showPhoto && ($hasPhoto || $isOfficer || $isVacant);
 
-		$nameEmpty   = $isVacant && empty(trim((string) ($person->name ?? '')));
-		$displayName = $nameEmpty ? (string) ($person->role ?? '') : (string) ($person->name ?? '');
+		// Vacant positions always display "Vacant" as the name (role goes underneath in metaHtml). Backend still stores the real name (e.g. Bar) for admin access.
+		$displayName = $isVacant ? Text::_('COM_CLUBLEADDIR_VACANT') : (string) ($person->name ?? '');
 		$size        = (int) ($options['photoSize'] ?? 120);
 		$logoSize    = (int) round($size * 0.75);
 		$boxSize     = $isVacant ? $logoSize : $size;
@@ -412,8 +412,7 @@ class ClubleaddirHelper
 	public static function leagueCardHtml($person, array $options)
 	{
 		$isVacant   = !empty($person->vacant);
-		$nameEmpty  = $isVacant && empty(trim((string) ($person->name ?? '')));
-		$displayName = $nameEmpty ? (string) ($person->role ?? '') : (string) ($person->name ?? '');
+		$displayName = $isVacant ? Text::_('COM_CLUBLEADDIR_VACANT') : (string) ($person->name ?? '');
 
 		$metaHtml = '<div class="clubleadership-card-role">' . Text::_('MOD_CLUBLEADDIR_LEAGUE_REP_TITLE') . '</div>';
 

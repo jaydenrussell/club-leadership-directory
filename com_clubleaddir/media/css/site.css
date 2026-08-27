@@ -141,18 +141,18 @@
 	flex: 1;
 }
 .clubleaddir .clubleaddir-card--officer .clubleadership-card-content { padding: 0.5rem 0.75rem 0.875rem; justify-content: flex-start; }
-.clubleaddir .clubleadership-card-name { font-size: 0.8rem; font-weight: 600; color: #1a2a3a; margin: 0 0 0.1rem; line-height: 1.3; }
-.clubleaddir .clubleaddir-card--officer .clubleadership-card-name { font-size: 1rem; margin-top: 0.35rem; }
-.clubleaddir .clubleadership-card-role { font-size: 0.7rem; font-weight: 600; color: #305789; }
-.clubleaddir .clubleaddir-card--officer .clubleadership-card-role { color: #b8963e; font-size: 0.8rem; }
-.clubleaddir .clubleadership-card-term { font-size: 0.65rem; color: #999; }
-.clubleaddir .clubleadership-card-league { font-size: 0.68rem; color: #555; font-style: italic; margin-top: 0.1rem; }
+.clubleaddir .clubleadership-card-name { font-size: 0.95rem; font-weight: 600; color: #1a2a3a; margin: 0 0 0.15rem; line-height: 1.3; }
+.clubleaddir .clubleadership-card--officer .clubleadership-card-name { font-size: 1.15rem; margin-top: 0.35rem; }
+.clubleaddir .clubleadership-card-role { font-size: 0.85rem; font-weight: 600; color: #305789; }
+.clubleaddir .clubleadership-card--officer .clubleadership-card-role { color: #b8963e; font-size: 0.95rem; }
+.clubleaddir .clubleadership-card-term { font-size: 0.75rem; color: #999; }
+.clubleaddir .clubleadership-card-league { font-size: 0.8rem; color: #555; font-style: italic; margin-top: 0.15rem; }
 .clubleaddir .clubleadership-card-vacant {
 	display: inline-block;
-	margin-top: 0.25rem;
-	padding: 0.1rem 0.5rem;
+	margin-top: 0.3rem;
+	padding: 0.15rem 0.6rem;
 	border-radius: 50px;
-	font-size: 0.6rem;
+	font-size: 0.7rem;
 	font-weight: 700;
 	text-transform: uppercase;
 	letter-spacing: 0.04em;
@@ -174,12 +174,12 @@
 .clubleaddir .clubleadership-contact-link {
 	display: inline-flex;
 	align-items: center;
-	gap: 0.2rem;
-	padding: 0.2rem 0.45rem;
+	gap: 0.25rem;
+	padding: 0.3rem 0.55rem;
 	background: #e8f0f8;
 	color: #305789;
 	border-radius: 6px;
-	font-size: 0.65rem;
+	font-size: 0.75rem;
 	font-weight: 600;
 	text-decoration: none;
 	transition: background 0.2s, color 0.2s;

@@ -70,36 +70,79 @@ if ($showPageHead) {
 	endif;
 	?>
 
-	<?php foreach (array(
-		'officers'         => array('label' => Text::_('MOD_CLUBLEADDIR_OFFICERS'), 'icon' => '&#9733;', 'photoKey' => 'showPhotosOfficers'),
-		'directors'        => array('label' => Text::_('MOD_CLUBLEADDIR_DIRECTORS'), 'icon' => '&#128101;', 'photoKey' => 'showPhotosDirectors'),
-		'directors_league' => array('label' => Text::_('MOD_CLUBLEADDIR_LEAGUE_APPOINTED_DIRECTORS'), 'icon' => '&#128101;', 'photoKey' => 'showPhotosDirectors'),
-		'staff'            => array('label' => Text::_('MOD_CLUBLEADDIR_STAFF'), 'icon' => '&#9881;', 'photoKey' => 'showPhotosStaff'),
-	) as $key => $section):
-		$items = $groups[$key] ?? array();
-
-		if (empty($items)) {
-			continue;
-		}
-
-		$cardOpts['showPhoto'] = !empty($opts[$section['photoKey']]);
+	<?php
+	// Board of Directors + League Appointed Directors share one background — league is a subsection of Board
+	$directors = $groups['directors'] ?? array();
+	$league    = $groups['directors_league'] ?? array();
+	$hasBoard  = !empty($directors) || !empty($league);
+	?>
+	<?php
+	// Officers — first
+	$items = $groups['officers'] ?? array();
+	if (!empty($items)):
+		$cardOpts['showPhoto'] = !empty($opts['showPhotosOfficers']);
 	?>
 	<section class="clubleadership-section">
 		<?php if ($opts['showSectionTitles']): ?>
 		<h2 class="clubleadership-section-title">
-			<span class="section-icon" aria-hidden="true"><?php echo $section['icon']; ?></span>
-			<?php echo $section['label']; ?>
+			<span class="section-icon" aria-hidden="true">&#9733;</span>
+			<?php echo Text::_('MOD_CLUBLEADDIR_OFFICERS'); ?>
 		</h2>
 		<?php endif; ?>
-		<div class="clubleadership-grid grid-<?php echo $key === 'directors_league' ? 'directors' : $key; ?>">
+		<div class="clubleadership-grid grid-officers">
 			<?php foreach ($items as $person): ?>
-				<?php
-				echo ($person->type === 'director_league')
-					? ClubleaddirHelper::leagueCardHtml($person, $cardOpts)
-					: ClubleaddirHelper::cardHtml($person, $cardOpts);
-				?>
+				<?php echo ClubleaddirHelper::cardHtml($person, $cardOpts); ?>
 			<?php endforeach; ?>
 		</div>
 	</section>
-	<?php endforeach; ?>
+	<?php endif; ?>
+
+	<?php if ($hasBoard): ?>
+	<?php $cardOpts['showPhoto'] = !empty($opts['showPhotosDirectors']); ?>
+	<section class="clubleadership-section">
+		<?php if ($opts['showSectionTitles']): ?>
+		<h2 class="clubleadership-section-title">
+			<span class="section-icon" aria-hidden="true">&#128101;</span>
+			<?php echo Text::_('MOD_CLUBLEADDIR_DIRECTORS'); ?>
+		</h2>
+		<?php endif; ?>
+		<?php if (!empty($directors)): ?>
+		<div class="clubleadership-grid grid-directors">
+			<?php foreach ($directors as $person): ?>
+				<?php echo ClubleaddirHelper::cardHtml($person, $cardOpts); ?>
+			<?php endforeach; ?>
+		</div>
+		<?php endif; ?>
+		<?php if (!empty($league)): ?>
+		<div class="clubleadership-subsection">
+			<h4 class="clubleadership-subsection-title"><?php echo Text::_('MOD_CLUBLEADDIR_LEAGUE_APPOINTED_DIRECTORS'); ?></h4>
+			<div class="clubleadership-grid grid-directors">
+				<?php foreach ($league as $person): ?>
+					<?php echo ClubleaddirHelper::leagueCardHtml($person, $cardOpts); ?>
+				<?php endforeach; ?>
+			</div>
+		</div>
+		<?php endif; ?>
+	</section>
+	<?php endif; ?>
+
+	<?php
+	$items = $groups['staff'] ?? array();
+	if (!empty($items)):
+		$cardOpts['showPhoto'] = !empty($opts['showPhotosStaff']);
+	?>
+	<section class="clubleadership-section">
+		<?php if ($opts['showSectionTitles']): ?>
+		<h2 class="clubleadership-section-title">
+			<span class="section-icon" aria-hidden="true">&#9881;</span>
+			<?php echo Text::_('MOD_CLUBLEADDIR_STAFF'); ?>
+		</h2>
+		<?php endif; ?>
+		<div class="clubleadership-grid grid-staff">
+			<?php foreach ($items as $person): ?>
+				<?php echo ClubleaddirHelper::cardHtml($person, $cardOpts); ?>
+			<?php endforeach; ?>
+		</div>
+	</section>
+	<?php endif; ?>
 </div>
