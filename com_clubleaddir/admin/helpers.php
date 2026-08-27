@@ -330,13 +330,11 @@ class ClubleaddirHelper
 		// Photo box only for officers/directors with photos — vacant cards are compact text-only with shaded background (no logo image).
 		$showPhotoBox = $showPhoto && ($hasPhoto || $isOfficer);
 
-		// Vacant: no person name; show a full-width "Position is Vacant" banner instead. Backend still stores real name for admin access.
+		// Vacant: show "Position is Vacant" in the name slot. Backend still stores real name for admin access.
 		if ($isVacant) {
-			$displayName = '';
-			$vacantBanner = '<div class="clubleadership-card-vacant-banner">' . htmlspecialchars(Text::_('COM_CLUBLEADDIR_POSITION_VACANT'), ENT_QUOTES, 'UTF-8') . '</div>';
+			$displayName = Text::_('COM_CLUBLEADDIR_POSITION_VACANT');
 		} else {
 			$displayName = (string) ($person->name ?? '');
-			$vacantBanner = '';
 		}
 		$size        = (int) ($options['photoSize'] ?? 120);
 		$logoSize    = (int) round($size * 0.75);
@@ -395,9 +393,8 @@ class ClubleaddirHelper
 		return '<article class="clubleadership-card clubleaddir-card--' . htmlspecialchars($person->type ?? '', ENT_QUOTES, 'UTF-8') . ($isVacant ? ' clubleaddir-card--vacant' : '') . '">'
 			. $photoHtml
 			. '<div class="clubleadership-card-content">'
-			. ($isVacant ? '' : '<h4 class="clubleadership-card-name">' . htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8') . '</h4>')
+			. '<h4 class="clubleadership-card-name">' . htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8') . '</h4>'
 			. $metaHtml
-			. $vacantBanner
 			. $contactHtml
 			. '</div>'
 			. '</article>';
@@ -414,11 +411,9 @@ class ClubleaddirHelper
 	{
 		$isVacant   = !empty($person->vacant);
 		if ($isVacant) {
-			$displayName = '';
-			$vacantBanner = '<div class="clubleadership-card-vacant-banner">' . htmlspecialchars(Text::_('COM_CLUBLEADDIR_POSITION_VACANT'), ENT_QUOTES, 'UTF-8') . '</div>';
+			$displayName = Text::_('COM_CLUBLEADDIR_POSITION_VACANT');
 		} else {
 			$displayName = (string) ($person->name ?? '');
-			$vacantBanner = '';
 		}
 
 		$metaHtml = '<div class="clubleadership-card-role">' . Text::_('MOD_CLUBLEADDIR_LEAGUE_REP_TITLE') . '</div>';
@@ -438,9 +433,8 @@ class ClubleaddirHelper
 		return '<article class="clubleadership-card clubleaddir-card--director' . ($isVacant ? ' clubleaddir-card--vacant' : '') . '">'
 			. '<div class="clubleadership-card-photo"></div>'
 			. '<div class="clubleadership-card-content">'
-			. ($isVacant ? '' : '<h4 class="clubleadership-card-name">' . htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8') . '</h4>')
+			. '<h4 class="clubleadership-card-name">' . htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8') . '</h4>'
 			. $metaHtml
-			. $vacantBanner
 			. $contactHtml
 			. '</div>'
 			. '</article>';
