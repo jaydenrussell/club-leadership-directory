@@ -90,11 +90,11 @@ try:
         txt = re.sub(r"<sha256>[^<]+</sha256>", f"<sha256>{sha256_hash}</sha256>", txt)
         full.write_text(txt, encoding="utf-8")
         print(f"Updated {full} to v{ver}")
-    # update.xml
+    # update.xml - only the <extension> version, not the <?xml?> declaration
     upd = REPO_ROOT / "update.xml"
     if upd.exists():
         txt = upd.read_text(encoding="utf-8")
-        txt = re.sub(r'version="[^"]+"', f'version="{ver}"', txt, count=1)
+        txt = re.sub(r'(<extension[^>]*\bversion=")[^"]+(")', f'\\g<1>{ver}\\g<2>', txt, count=1)
         upd.write_text(txt, encoding="utf-8")
         print(f"Updated {upd} to v{ver}")
     # remove typo artifact
