@@ -63,7 +63,7 @@ class ClubleaddirViewLeaderships extends HtmlView
         $this->addToolbar();
         $this->checkVacancyConfig();
 
-        if (\ClubleaddirStore::$sqliteFallback) {
+        if (\ClubleaddirStore::hasSqliteFallback()) {
             Factory::getApplication()->enqueueMessage(Text::_('COM_CLUBLEADDIR_SQLITE_FALLBACK_WARNING'), 'warning');
         }
 

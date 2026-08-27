@@ -944,6 +944,11 @@ class ClubleaddirStore
         }
     }
 
+    public static function hasSqliteFallback()
+    {
+        return self::$sqliteFallback;
+    }
+
     /**
      * Health status for admin display.
      *
