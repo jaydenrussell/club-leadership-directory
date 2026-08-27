@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="3.21.20" encoding="utf-8"?>
 <extensionset name="Club Leadership Directory" description="Club Leadership Directory Joomla 3 package updates">
     <extension name="Club Leadership Directory"
               description="Joomla 3 package: component (standalone SQLite/JSON store) + module."

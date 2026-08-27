@@ -1,0 +1,38 @@
+name: CI
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php: ['7.4', '8.0', '8.1']
+        sqlite: ['on', 'off']
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup PHP ${{ matrix.php }} sqlite=${{ matrix.sqlite }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: json, gd
+          coverage: none
+      - name: Disable pdo_sqlite when matrix off
+        if: matrix.sqlite == 'off'
+        run: php -m | grep -q pdo_sqlite && sudo phpdismod pdo_sqlite || true
+      - name: Install deps
+        run: composer install --no-interaction --prefer-dist
+      - name: Run phpunit
+        run: vendor/bin/phpunit --testdox
+      - name: Build packages
+        run: python3 build-pkgs.py
+      - name: Verify no dead files in zip
+        run: |
+          python3 -c "import zipfile; z=zipfile.ZipFile('dist/com_clubleaddir.zip'); assert 'controller.php' not in z.namelist(), 'dead controller shipped'; assert 'helper.php' not in z.namelist(), 'dead helper shipped'; print('zip clean')"
+          test -f dist/pkg_clubleaddir.zip
+      - name: Verify update channel
+        run: |
+          grep -q "$(grep -oP '(?<=<version>)[^<]+' com_clubleaddir/com_clubleaddir.xml | head -1)" update-full.xml

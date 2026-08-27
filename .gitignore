@@ -1,2 +1,7 @@
 # Build output (run scripts/build.ps1 to regenerate)
 dist/
+# Release helpers contain secrets — use GH_TOKEN env var
+release-v*.py
+create-release*.py
+github_create_release.ps1
+replace-asset.py

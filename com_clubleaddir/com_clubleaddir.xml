@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <extension type="component" version="3.9" method="upgrade">
     <name>COM_CLUBLEADDIR</name>
-    <creationDate>2026-08-23</creationDate>
+    <creationDate>August 2026</creationDate>
     <author>Jayden Russell</author>
     <authorEmail>noreply@simcoecurlingclub.ca</authorEmail>
     <copyright>Copyright (C) 2026 Jayden Russell</copyright>
     <license>GNU General Public License version 2 or later</license>
-    <version>3.1.1</version>
+    <version>3.21.20</version>
     <description>COM_CLUBLEADDIR_DESC</description>
     <scriptfile>script.php</scriptfile>
 

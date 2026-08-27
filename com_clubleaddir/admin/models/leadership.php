@@ -129,13 +129,19 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
                 $record['created']    = $existing->created;
                 $record['created_by'] = $existing->created_by;
             }
-            return (bool) $this->store->update((int) $data['id'], $record);
+            $result = (bool) $this->store->update((int) $data['id'], $record);
+        } else {
+            $record['created']    = $date;
+            $record['created_by'] = $userId;
+            $result = (bool) $this->store->insert($record);
         }
 
-        $record['created']    = $date;
-        $record['created_by'] = $userId;
+        // Auto-sort by ordering after save
+        if ($result && $this->store !== null) {
+            $this->store->reorderAll($record['type'] ?? null);
+        }
 
-        return (bool) $this->store->insert($record);
+        return $result;
     }
 
     private function validate(array $data)
@@ -157,6 +163,11 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
         }
         if ($data['type'] === 'director_league' && empty(trim($data['league_name'] ?? ''))) {
             $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_LEAGUE_REQUIRED'));
+            return false;
+        }
+        // Server-side email format check (client JS validates too)
+        if (!empty(trim($data['email'] ?? '')) && !filter_var(trim($data['email']), FILTER_VALIDATE_EMAIL)) {
+            $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_EMAIL_INVALID'));
             return false;
         }
         // Officers may only use the four club governance titles.
@@ -192,6 +203,12 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
 
         if (!in_array($mimeType, $allowedMimes, true)) {
             $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_PHOTO_INVALID_TYPE'));
+            return false;
+        }
+        // Dimension cap prevents decompression bomb (e.g. 2MB highly compressed -> 100MP)
+        $dims = @getimagesize($fileInfo['tmp_name']);
+        if ($dims && ($dims[0] > 4000 || $dims[1] > 4000)) {
+            $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_PHOTO_DIMENSIONS'));
             return false;
         }
 

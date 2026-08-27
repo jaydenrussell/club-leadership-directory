@@ -59,6 +59,9 @@ abstract class ClubleaddirStoreBackend
     /** Set an explicit ordering value for one record (native Save Order). Returns bool. */
     abstract public function setOrdering($id, $ordering);
 
+    /** Reorder all records of a given type by their ordering field. Returns bool. */
+    abstract public function reorderAll($type = null);
+
     /** Which backend is in use (for admin display). */
     abstract public function getBackendName();
 }
@@ -111,6 +114,9 @@ class ClubleaddirStoreSqlite extends ClubleaddirStoreBackend
     private function connect($dbPath, array $options)
     {
         $this->pdo = new PDO('sqlite:' . $dbPath, null, null, $options);
+        // H-3: handle concurrent admin saves (two tabs saving at once)
+        $this->pdo->exec('PRAGMA busy_timeout = 5000');
+        $this->pdo->exec('PRAGMA journal_mode = WAL');
 
         $this->pdo->exec(
             'CREATE TABLE IF NOT EXISTS records (' .
@@ -340,8 +346,15 @@ class ClubleaddirStoreSqlite extends ClubleaddirStoreBackend
         }
 
         $tmp = $row->ordering;
-        $this->update($id, array('ordering' => $neighbor->ordering));
-        $this->update($neighbor->id, array('ordering' => $tmp));
+        $this->pdo->beginTransaction();
+        try {
+            $this->update($id, array('ordering' => $neighbor->ordering));
+            $this->update($neighbor->id, array('ordering' => $tmp));
+            $this->pdo->commit();
+        } catch (\Throwable $e) {
+            $this->pdo->rollBack();
+            throw $e;
+        }
 
         return true;
     }
@@ -353,6 +366,37 @@ class ClubleaddirStoreSqlite extends ClubleaddirStoreBackend
         $stmt->bindValue(':id', (int) $id, PDO::PARAM_INT);
 
         return $stmt->execute();
+    }
+
+    public function reorderAll($type = null)
+    {
+        $sql = 'SELECT * FROM records';
+        $params = array();
+        if ($type !== null) {
+            $sql .= ' WHERE type = :type';
+            $params[':type'] = $type;
+        }
+        $sql .= ' ORDER BY ordering ASC, name ASC';
+
+        $stmt = $this->pdo->prepare($sql);
+        foreach ($params as $k => $v) {
+            $stmt->bindValue($k, $v, is_int($v) ? PDO::PARAM_INT : PDO::PARAM_STR);
+        }
+        $stmt->execute();
+        $rows = $stmt->fetchAll();
+
+        $this->pdo->beginTransaction();
+        try {
+            foreach ($rows as $i => $row) {
+                $this->setOrdering($row->id, $i + 1);
+            }
+            $this->pdo->commit();
+        } catch (\Throwable $e) {
+            $this->pdo->rollBack();
+            throw $e;
+        }
+
+        return true;
     }
 }
 
@@ -406,7 +450,7 @@ class ClubleaddirStoreJson extends ClubleaddirStoreBackend
 
     private function save()
     {
-        return file_put_contents($this->file, json_encode($this->data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)) !== false;
+        return file_put_contents($this->file, json_encode($this->data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES), LOCK_EX) !== false;
     }
 
     private function nextId()
@@ -467,6 +511,22 @@ class ClubleaddirStoreJson extends ClubleaddirStoreBackend
             'photo_full' => '',
             'start_year' => 0,
             'end_year'   => 0,
+            'bio'        => '',
+            'phone'      => '',
+            'email'      => '',
+            'vacant'     => 0,
+            'status'     => 'active',
+            'role'       => '',
+            'league_name'=> '',
+            'term'       => '',
+            'photo'      => '',
+            'contact_id' => 0,
+            'ordering'   => 0,
+            'published'  => 1,
+            'created'    => '',
+            'modified'   => '',
+            'created_by' => 0,
+            'modified_by'=> 0,
         );
         foreach ($defaults as $k => $v) {
             if (!isset($r[$k])) {
@@ -581,6 +641,31 @@ class ClubleaddirStoreJson extends ClubleaddirStoreBackend
             }
         }
         return false;
+    }
+
+    public function reorderAll($type = null)
+    {
+        $rows = $this->data['records'];
+        if ($type !== null) {
+            $rows = array_filter($rows, function ($r) use ($type) {
+                return $r['type'] === $type;
+            });
+        }
+
+        usort($rows, function ($a, $b) {
+            $oa = (int) ($a['ordering'] ?? 0);
+            $ob = (int) ($b['ordering'] ?? 0);
+            if ($oa !== $ob) {
+                return $oa <=> $ob;
+            }
+            return strcmp($a['name'] ?? '', $b['name'] ?? '');
+        });
+
+        foreach ($rows as $i => $r) {
+            $this->setOrdering($r['id'], $i + 1);
+        }
+
+        return true;
     }
 }
 

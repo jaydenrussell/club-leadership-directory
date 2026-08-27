@@ -46,10 +46,31 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
 
         $items = $this->store->getAll($filters);
 
-        // Apply the same predefined display order used on the front-end so the
-        // backend list matches what visitors see (officers/staff by role rank,
-        // directors by manual ordering).
-        $items = ClubleaddirHelper::sortForDisplay($items);
+        // Backend ordering: default to manual ordering so drag-to-reorder
+        // is WYSIWYG.  The role-rank grouping in sortForDisplay() is for
+        // front-end display only; the admin list must show the raw
+        // ordering field so Save Order / drag actually persists.
+        $orderCol  = $app->input->get('filter_order', 'ordering');
+        $orderDirn = $app->input->get('filter_order_Dir', 'asc');
+        if (!$orderCol) {
+            $orderCol = 'ordering';
+        }
+
+        $dir = strtoupper($orderDirn) === 'DESC' ? -1 : 1;
+        usort($items, function ($a, $b) use ($orderCol, $dir) {
+            $av = $this->orderValue($a, $orderCol);
+            $bv = $this->orderValue($b, $orderCol);
+            if ($av === $bv) {
+                // Tie-breaker keeps groups stable (type then name) when
+                // ordering values are equal (e.g. all zeros on first use).
+                $ta = strcmp($a->type ?? '', $b->type ?? '');
+                if ($ta !== 0) {
+                    return $ta;
+                }
+                return strcmp(strtolower($a->name ?? ''), strtolower($b->name ?? ''));
+            }
+            return ($av < $bv) ? -$dir : $dir;
+        });
 
         foreach ($items as &$item) {
             $item->type_label = $this->getTypeLabel($item->type);
@@ -57,6 +78,26 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
         }
 
         return $items;
+    }
+
+    private function orderValue($item, $col)
+    {
+        switch ($col) {
+            case 'name':
+                return strtolower((string) ($item->name ?: ''));
+            case 'role':
+                return strtolower((string) ($item->role ?: ''));
+            case 'type':
+                return strtolower((string) ($item->type ?: ''));
+            case 'term':
+                return strtolower((string) ($item->term ?: ''));
+            case 'published':
+                return (int) $item->published;
+            case 'ordering':
+                return (int) $item->ordering;
+            default:
+                return strtolower((string) ($item->name ?: ''));
+        }
     }
 
     public function getPagination()

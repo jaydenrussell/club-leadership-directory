@@ -14,20 +14,9 @@ use Joomla\CMS\Language\Text;
 use Joomla\CMS\Router\Route;
 use Joomla\CMS\Uri\Uri;
 
-// Load the modal behavior so the "Look up Contact" SqueezeBox link opens the
-// Contact Component picker as a modal (search by name -> auto-fill ID).
-// NOTE: behavior.modal exists in J3.10 (only behavior.core was removed).
 HTMLHelper::_('behavior.modal');
 
-// NOTE: do NOT call HTMLHelper::_('behavior.core') / ('behavior.formvalidator').
-// The JHtmlBehavior helper was removed in Joomla 3.10 and calling it fatals the
-// admin (HTTP 500). We use native HTML5 `required` + a submit shim that blocks
-// submit on empty required fields and outlines them with a red border.
-
 $item   = $this->item;
-// Normalise: legacy records in the store may lack newer columns. Provide safe
-// defaults so every property access below is defined (PHP 8.0 warns on reads
-// of undefined stdClass properties).
 $itemDefaults = array(
     'id' => 0, 'name' => '', 'type' => '', 'role' => '', 'league_name' => '',
     'term' => '', 'bio' => '', 'photo' => '', 'email' => '', 'phone' => '',
@@ -46,14 +35,12 @@ if (is_object($item)) {
 $isEdit = !empty($item->id);
 $hasContactComponent = ComponentHelper::isEnabled('com_contact');
 
-// League representative options (only relevant when type = director_league).
 $leagueOptions = array(
     'day_ladies'       => Text::_('COM_CLUBLEADDIR_LEAGUE_DAY_LADIES'),
     'evening_ladies'   => Text::_('COM_CLUBLEADDIR_LEAGUE_EVENING_LADIES'),
     'senior_men'       => Text::_('COM_CLUBLEADDIR_LEAGUE_SENIOR_MEN'),
 );
 
-// Officer role/title is restricted to these (per club governance).
 $officerRoles = array(
     'President'       => Text::_('COM_CLUBLEADDIR_ROLE_PRESIDENT'),
     'Vice President'  => Text::_('COM_CLUBLEADDIR_ROLE_VICE_PRESIDENT'),
@@ -61,8 +48,6 @@ $officerRoles = array(
     'Treasurer'      => Text::_('COM_CLUBLEADDIR_ROLE_TREASURER'),
 );
 
-// Default Term for a new (Add) record: current season.
-// Season starts in (assumed) June: on/after June -> YEAR-(YEAR+1), else (YEAR-1)-YEAR.
 $thisYear  = (int) date('Y');
 $thisMonth = (int) date('n');
 if ($thisMonth >= 6) {
@@ -74,7 +59,6 @@ if ($thisMonth >= 6) {
 
 <script>
 function toggleTypeFields(type) {
-    // League reps only.
     var leagueWrap = document.getElementById('league-fields');
     if (type === 'director_league') {
         leagueWrap.style.display = 'block';
@@ -83,7 +67,6 @@ function toggleTypeFields(type) {
         var lsel = document.getElementById('league_name');
         if (lsel) { lsel.value = ''; }
     }
-    // Officer role is a restricted dropdown; other types use free text.
     var isOfficer = (type === 'officer');
     var isLeague = (type === 'director_league');
     var roleSelect = document.getElementById('role_select');
@@ -97,8 +80,6 @@ function toggleTypeFields(type) {
         roleHidden.value = roleSelect.value;
         setRoleDisabled(false);
     } else if (isLeague) {
-        // League directors are identified by their league, not a job title.
-        // Grey out and disable the Role/Title field so it can't be set.
         roleSelect.style.display = 'none';
         roleText.style.display = 'none';
         roleHidden.value = '';
@@ -108,22 +89,18 @@ function toggleTypeFields(type) {
     } else {
         roleSelect.style.display = 'none';
         roleText.style.display = 'block';
-        // Leaving officer/league: clear any restricted role so it isn't inherited.
         roleHidden.value = '';
         roleText.value = '';
         roleSelect.value = '';
         setRoleDisabled(false);
     }
-    // Staff use employment years instead of a "term".
     var staffWrap = document.getElementById('staff-fields');
     if (staffWrap) {
         staffWrap.style.display = (type === 'staff') ? 'block' : 'none';
     }
-    // Re-evaluate which role input is required (visible one only) after a type change.
     setRoleRequired();
 }
 
-// Grey out + disable the Role/Title control group (used for league directors).
 function setRoleDisabled(disabled) {
     var group = document.getElementById('role-control-group');
     if (group) {
@@ -136,9 +113,6 @@ function setRoleDisabled(disabled) {
     });
 }
 
-// Mark Role/Title as required ONLY on the visible role input. Joomla's
-// form-validate still validates hidden (display:none) required fields, so we
-// must never leave the hidden role input carrying a required attribute.
 function setRoleRequired()
 {
     var isVacant = document.getElementById('vacant')
@@ -156,19 +130,11 @@ function setRoleRequired()
     });
 }
 
-// When a position is vacant: contact details are irrelevant (the vacancy enquiry
-// email handles it), so grey those fields out; the role/title stays required;
-// and the photo becomes the club logo (no personal upload needed).
 function toggleVacantFields(isVacant) {
-    // The vacancy enquiry target / warning block (help note + enquiries box +
-    // backend warning) is only relevant when the position is vacant — hide it
-    // entirely otherwise so it doesn't clutter the form for filled roles.
     var vacantSettings = document.getElementById('vacant-settings');
     if (vacantSettings) {
         vacantSettings.style.display = isVacant ? 'block' : 'none';
     }
-
-    // Grey + disable the personal contact fields (email / phone / Joomla contact).
     var fieldset = document.getElementById('contact-info-fieldset');
     if (fieldset) {
         fieldset.classList.toggle('clble-disabled', isVacant);
@@ -177,17 +143,9 @@ function toggleVacantFields(isVacant) {
             if (el) { el.disabled = isVacant; }
         });
     }
-
-    // Photo upload is unnecessary when vacant (club logo is shown instead).
     var photo = document.getElementById('photo');
     if (photo) { photo.disabled = isVacant; }
-
-    // Role/Title is required for a vacancy (it is the role being advertised).
-    // Only the VISIBLE role input may carry the required attribute — Joomla's
-    // form-validate also validates hidden (display:none) required fields, so the
-    // hidden role input must never be marked required.
     setRoleRequired();
-    // A vacant post has no named person yet, so the name is optional.
     var nameEl = document.getElementById('name');
     if (nameEl) {
         if (isVacant) { nameEl.removeAttribute('required'); }
@@ -217,8 +175,6 @@ function toggleVacantFields(isVacant) {
 }
 function toggleLeagueFields(type) { toggleTypeFields(type); }
 
-// Live preview of the chosen photo so the upload can be confirmed immediately
-// (before saving). Falls back gracefully if FileReader is unavailable.
 function clblePreviewPhoto(input) {
     var box = document.getElementById('photo_preview');
     if (!box) { return; }
@@ -253,7 +209,15 @@ function clblePreviewPhoto(input) {
     }
 }
 
-// Joomla 3.10 submit shim (replaces behavior.formvalidator).
+function clbleStripPhone(input) {
+    input.value = input.value.replace(/[^0-9+\-\s()]/g, '');
+}
+
+function clbleValidateEmail(input) {
+    var re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return !input.value || re.test(input.value);
+}
+
 if (typeof Joomla === 'undefined') { var Joomla = {}; }
 Joomla.submitbutton = function (task) {
     if (task === 'leadership.cancel') {
@@ -270,6 +234,10 @@ Joomla.submitbutton = function (task) {
         if (el.id === 'league_name' && document.getElementById('league-fields').style.display === 'none') { continue; }
         if (!el.value || !el.value.trim()) { el.classList.add('clble-invalid'); ok = false; }
     }
+    var emailEl = document.getElementById('email');
+    if (emailEl && emailEl.value && !clbleValidateEmail(emailEl)) {
+        emailEl.classList.add('clble-invalid'); ok = false;
+    }
     if (!ok) {
         alert('<?php echo Text::_('COM_CLUBLEADDIR_ERROR_REQUIRED_FIELDS'); ?>');
         return;
@@ -277,10 +245,6 @@ Joomla.submitbutton = function (task) {
     Joomla.submitform(task, form);
 };
 
-// Contact Component picker: com_contact's modal overwrites window.jSelectContact
-// with its own version that discards the id, so we use a unique callback name
-// passed via the modal's `function` URL param. The modal calls
-// window.parent['jClubleaddirSelectContact'](id, title, null, null, uri, lang, null).
 function jClubleaddirSelectContact(id, name) {
     var field = document.getElementById('contact_id');
     if (field) { field.value = id; }
@@ -291,7 +255,6 @@ function jClubleaddirSelectContact(id, name) {
     return false;
 }
 
-// Initialise field visibility (league/role/staff toggles) on load.
 (function () {
     var typeEl = document.getElementById('type');
     if (typeEl) {
@@ -305,95 +268,78 @@ function jClubleaddirSelectContact(id, name) {
 </script>
 
 <style>
-/* Lightly themed cards to group sections (off-white, slightly different from white). */
-.clble-card {
-    background: #f7f8fa;
-    border: 1px solid #e3e7ea;
-    border-radius: 6px;
-    padding: 16px 18px 4px;
-    margin-bottom: 18px;
-}
-.clble-card > legend,
-.clble-card-title {
-    display: block;
-    font-size: 13px;
-    font-weight: 600;
-    color: #44515e;
-    text-transform: uppercase;
-    letter-spacing: .04em;
-    margin: 0 0 12px;
-    padding-bottom: 6px;
-    border-bottom: 1px solid #e3e7ea;
-}
 .clble-invalid { border-color: #b94a48 !important; box-shadow: 0 0 0 1px #b94a48 !important; }
-/* Uniform field widths so the form reads consistently. */
-.clble-w-main { width: 350px; max-width: 100%; }
-.clble-w-short { width: 160px; max-width: 100%; }
-.clble-edit-grid .control-label { width: 160px; }
-.clble-edit-grid .controls { margin-left: 180px; }
-.clble-contact-picked { font-size: 12px; color: #555; margin-top: 4px; }
-.clble-help-note { font-size: 11px; color: #8a6d3b; margin-top: 4px; font-style: italic; }
-/* Greyed-out (disabled) control group, e.g. Role/Title for league directors. */
 .clble-disabled { opacity: 0.5; pointer-events: none; }
 .clble-disabled .control-label label { color: #999; }
 .clble-photo-col { text-align: center; }
 .clble-photo-col .thumbnail,
 .clble-photo-col .clble-photo-placeholder {
-    width: 140px; height: 140px; line-height: 140px;
-    text-align: center; color: #bbb; margin: 0 auto 8px;
-    background: #eef0f2; border: 1px solid #e3e7ea; border-radius: 4px;
+	width: 120px; height: 120px; line-height: 120px;
+	text-align: center; color: #bbb; margin: 0 auto 8px;
+	background: #eef0f2; border: 1px solid #e3e7ea; border-radius: 4px;
 }
 .clble-photo-col img.thumbnail { object-fit: cover; }
+.clble-contact-picked { font-size: 11px; color: #555; margin-top: 4px; }
+.clble-help-note { font-size: 10px; color: #8a6d3b; margin-top: 3px; font-style: italic; }
+#bio { resize: vertical; min-height: 120px; width: 100%; max-width: 100%; box-sizing: border-box; }
+.clble-edit-section .inputbox,
+.clble-edit-section .controls input[type="text"],
+.clble-edit-section .controls input[type="email"],
+.clble-edit-section .controls input[type="tel"],
+.clble-edit-section .controls select,
+.clble-edit-section .controls textarea {
+	width: 100%;
+	max-width: 100%;
+	box-sizing: border-box;
+}
+.clble-edit-section .controls .input-append { width: 100%; }
+.clble-edit-section .controls .input-append input#contact_id { width: 90px !important; flex: 0 0 90px; }
+.clble-edit-section #name,
+.clble-edit-section #type,
+.clble-edit-section #role,
+.clble-edit-section #role_select,
+.clble-edit-section #role_text,
+.clble-edit-section #term,
+.clble-edit-section #league_name { min-width: 0; }
+.clble-edit-section .controls textarea#bio { min-height: 140px; }
 
-/* ---- Mobile / responsive (Bootstrap 2 breakpoint at 767px) ---- */
+.clble-edit-section {
+	background: #f8f9fa;
+	border: 1px solid #dee2e6;
+	border-radius: 4px;
+	padding: 16px 14px;
+	margin-bottom: 16px;
+}
+.clble-edit-section legend {
+	font-size: 14px;
+	font-weight: 600;
+	color: #333;
+	padding: 0 8px;
+	width: auto;
+	border: none;
+	margin-bottom: 10px;
+	float: none;
+}
+.clble-edit-section .control-label label {
+	font-weight: 600;
+	color: #444;
+	font-size: 12px;
+}
+.clble-edit-section .help-block {
+	font-size: 11px;
+	color: #888;
+	margin-top: 2px;
+}
+.clble-section-divider {
+	border: none;
+	border-top: 1px solid #dee2e6;
+	margin: 14px 0;
+}
 @media (max-width: 767px) {
-    .clble-edit-grid .row-fluid .span3,
-    .clble-edit-grid .row-fluid .span9,
-    .clble-edit-grid .row-fluid .span6,
-    .clble-edit-grid .row-fluid .span4,
-    .clble-edit-grid .row-fluid .span8 {
-        width: 100% !important;
-        margin-left: 0 !important;
-        float: none !important;
-    }
-    .clble-edit-grid .control-label {
-        width: 100% !important;
-        margin-bottom: 2px;
-        text-align: left !important;
-    }
-    .clble-edit-grid .controls { margin-left: 0 !important; }
-    /* Inputs fill the card on phones instead of fixed 350px. */
-    .clble-w-main, .clble-w-short,
-    .clble-edit-grid input[type="text"],
-    .clble-edit-grid input[type="email"],
-    .clble-edit-grid input[type="tel"],
-    .clble-edit-grid input[type="number"],
-    .clble-edit-grid select,
-    .clble-edit-grid textarea {
-        width: 100% !important;
-        max-width: 100% !important;
-        box-sizing: border-box;
-    }
-    .clble-photo-col { text-align: left; }
-    .input-append { display: flex; flex-wrap: wrap; }
-    .input-append .btn { margin-top: 6px; }
-}
-.clble-vacancy-target {
-    margin: 6px 0 0 0;
-    padding: 6px 8px;
-    background: #f5f7fa;
-    border: 1px solid #e3ebf5;
-    border-radius: 4px;
-    font-size: 12px;
-    color: #6b7785;
-    font-style: italic;
-}
-#vacant-settings { display: none; }
-.clble-vacancy-target-label {
-    font-weight: 600;
-    font-style: normal;
-    color: #465c71;
-    margin-right: 4px;
+	.clble-edit-grid .row-fluid { flex-direction: column !important; }
+	.clble-edit-grid .span2,
+	.clble-edit-grid .span3,
+	.clble-edit-grid .span4 { flex: 0 0 100% !important; max-width: 100% !important; }
 }
 </style>
 
@@ -401,110 +347,83 @@ function jClubleaddirSelectContact(id, name) {
       method="post" name="adminForm" id="adminForm" class="form-validate" enctype="multipart/form-data">
 
     <div class="row-fluid clble-edit-grid">
-        <!-- MAIN COLUMN -->
-        <div class="span8">
-            <fieldset class="adminform clble-card">
-                <legend class="clble-card-title"><?php echo Text::_('COM_CLUBLEADDIR_LEADERSHIP_DETAILS'); ?></legend>
 
-                <div class="row-fluid">
-                    <div class="span3 clble-photo-col">
-                        <div class="control-group">
-                            <div class="controls">
-                                <div id="photo_preview" style="margin-bottom:8px;">
-                                    <?php if ($item->photo): ?>
-                                        <img src="<?php echo $this->escape(ClubleaddirHelper::photoUrl($item->photo)); ?>" alt="<?php echo $this->escape($item->name); ?>"
-                                             class="thumbnail" style="max-width:140px;max-height:140px;display:inline-block;vertical-align:middle;">
-                                        <p class="help-block" style="word-break:break-all;font-size:11px;margin-top:4px;"><?php echo $this->escape(basename($item->photo)); ?></p>
-                                    <?php else: ?>
-                                        <div class="clble-photo-placeholder"><span class="icon-user" style="font-size:46px;"></span></div>
-                                    <?php endif; ?>
-                                </div>
-                                <input type="file" name="jform[photo]" id="photo" class="inputbox" accept="image/*" onchange="clblePreviewPhoto(this)">
-                                <p class="help-block"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_PHOTO_HELP'); ?><?php if ($item->photo): ?> <span class="muted">(<?php echo Text::_('COM_CLUBLEADDIR_FIELD_PHOTO_REPLACE'); ?>)</span><?php endif; ?></p>
-                            </div>
-                        </div>
+        <div class="span3"></div>
+
+        <div class="span4">
+
+            <fieldset class="clble-edit-section">
+                <legend><?php echo Text::_('COM_CLUBLEADDIR_LEADERSHIP_DETAILS'); ?></legend>
+
+                <div class="control-group">
+                    <div class="control-label">
+                        <label for="name" class="required"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_NAME'); ?> <span class="star">*</span></label>
                     </div>
-                    <div class="span9">
-                        <div class="control-group">
-                            <div class="control-label">
-                                <label for="name" class="required"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_NAME'); ?> <span class="star">*</span></label>
-                            </div>
-                            <div class="controls">
-                                <input type="text" name="jform[name]" id="name" class="inputbox clble-w-main" value="<?php echo $this->escape($item->name); ?>" required>
-                            </div>
-                        </div>
+                    <div class="controls">
+                        <input type="text" name="jform[name]" id="name" class="inputbox" value="<?php echo $this->escape($item->name); ?>" required>
+                    </div>
+                </div>
 
-                        <div class="control-group">
-                            <div class="control-label">
-                                <label for="type" class="required"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_TYPE'); ?> <span class="star">*</span></label>
-                            </div>
-                            <div class="controls">
-                                <select name="jform[type]" id="type" class="inputbox clble-w-main" required onchange="toggleTypeFields(this.value)">
-                                    <option value="" <?php echo $item->type === '' ? 'selected' : ''; ?>><?php echo Text::_('COM_CLUBLEADDIR_SELECT_TYPE'); ?></option>
-                                    <option value="officer" <?php echo $item->type === 'officer' ? 'selected' : ''; ?>><?php echo Text::_('COM_CLUBLEADDIR_TYPE_OFFICER'); ?></option>
-                                    <option value="director" <?php echo $item->type === 'director' ? 'selected' : ''; ?>><?php echo Text::_('COM_CLUBLEADDIR_TYPE_DIRECTOR'); ?></option>
-                                    <option value="director_league" <?php echo $item->type === 'director_league' ? 'selected' : ''; ?>><?php echo Text::_('COM_CLUBLEADDIR_TYPE_DIRECTOR_LEAGUE'); ?></option>
-                                    <option value="staff" <?php echo $item->type === 'staff' ? 'selected' : ''; ?>><?php echo Text::_('COM_CLUBLEADDIR_TYPE_STAFF'); ?></option>
-                                </select>
-                            </div>
-                        </div>
+                <div class="control-group">
+                    <div class="control-label">
+                        <label for="type" class="required"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_TYPE'); ?> <span class="star">*</span></label>
+                    </div>
+                    <div class="controls">
+                        <select name="jform[type]" id="type" class="inputbox" required onchange="toggleTypeFields(this.value)">
+                            <option value="" <?php echo $item->type === '' ? 'selected' : ''; ?>><?php echo Text::_('COM_CLUBLEADDIR_SELECT_TYPE'); ?></option>
+                            <option value="officer" <?php echo $item->type === 'officer' ? 'selected' : ''; ?>><?php echo Text::_('COM_CLUBLEADDIR_TYPE_OFFICER'); ?></option>
+                            <option value="director" <?php echo $item->type === 'director' ? 'selected' : ''; ?>><?php echo Text::_('COM_CLUBLEADDIR_TYPE_DIRECTOR'); ?></option>
+                            <option value="director_league" <?php echo $item->type === 'director_league' ? 'selected' : ''; ?>><?php echo Text::_('COM_CLUBLEADDIR_TYPE_DIRECTOR_LEAGUE'); ?></option>
+                            <option value="staff" <?php echo $item->type === 'staff' ? 'selected' : ''; ?>><?php echo Text::_('COM_CLUBLEADDIR_TYPE_STAFF'); ?></option>
+                        </select>
+                    </div>
+                </div>
 
-                        <div class="control-group">
-                            <div class="controls">
-                                <label class="checkbox">
-                                    <input type="checkbox" name="jform[vacant]" id="vacant" value="1" <?php echo (!empty($item->vacant) ? 'checked' : ''); ?>
-                                           onchange="toggleVacantFields(this.checked);">
-                                    <?php echo Text::_('COM_CLUBLEADDIR_FIELD_VACANT'); ?>
-                                </label>
-                                <span class="clble-help-note"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_VACANT_HELP'); ?></span>
-                                <div id="vacant-settings" style="margin-top:6px;">
-                                <p class="clble-vacancy-target" id="vacancy-target">
-                                    <span class="clble-vacancy-target-label"><?php echo Text::_('COM_CLUBLEADDIR_VACANCY_TARGET_LABEL'); ?></span>
-                                    <?php echo $this->escape(ClubleaddirHelper::vacancyEnquiryDisplay()); ?>
-                                </p>
-                                <?php if (ClubleaddirHelper::vacancyEnquiryDisplay() === Text::_('COM_CLUBLEADDIR_VACANCY_USES_NONE')): ?>
-                                <div class="alert alert-warning" id="vacancy-misconfig" style="margin:10px 0;">
-                                    <span class="icon-warning-1" aria-hidden="true"></span>
-                                    <strong><?php echo Text::_('COM_CLUBLEADDIR_VACANCY_MISCONFIG_TITLE'); ?></strong>
-                                    <?php echo Text::_('COM_CLUBLEADDIR_VACANCY_MISCONFIG_BODY'); ?>
-                                    <a href="<?php echo (string) Route::_('index.php?option=com_clubleaddir'); ?>" class="btn btn-mini btn-warning" style="margin-left:8px;">
-                                        <?php echo Text::_('COM_CLUBLEADDIR_VACANCY_MISCONFIG_CONFIGURE'); ?>
-                                    </a>
-                                </div>
-                                <?php endif; ?>
-                                </div>
-                            </div>
-                        </div>
+                <div class="control-group" id="role-control-group">
+                    <div class="control-label">
+                        <label for="role"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_ROLE'); ?></label>
+                    </div>
+                    <div class="controls">
+                        <?php
+                        $isOfficer = ($item->type === 'officer');
+                        $isLeague  = ($item->type === 'director_league');
+                        $officerRoleVal = array_key_exists($item->role, $officerRoles) ? $item->role : '';
+                        ?>
+                        <input type="hidden" name="jform[role]" id="role" value="<?php echo $this->escape($item->role); ?>">
+                        <select id="role_select" class="inputbox" style="display:<?php echo $isOfficer ? 'block' : 'none'; ?>;"
+                                onchange="document.getElementById('role').value = this.value;">
+                            <option value=""><?php echo Text::_('COM_CLUBLEADDIR_SELECT_ROLE'); ?></option>
+                            <?php foreach ($officerRoles as $val => $label): ?>
+                                <option value="<?php echo $this->escape($val); ?>" <?php echo $officerRoleVal === $val ? 'selected' : ''; ?>><?php echo $label; ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <input type="text" id="role_text" class="inputbox" style="display:<?php echo (!$isOfficer && !$isLeague) ? 'block' : 'none'; ?>;"
+                               value="<?php echo $this->escape($item->role); ?>" placeholder="<?php echo Text::_('COM_CLUBLEADDIR_FIELD_ROLE_PLACEHOLDER'); ?>"
+                               oninput="document.getElementById('role').value = this.value;">
+                        <?php if ($isLeague): ?>
+                            <p class="clble-help-note"><?php echo Text::_('COM_CLUBLEADDIR_ROLE_DISABLED_FOR_LEAGUE'); ?></p>
+                        <?php endif; ?>
+                    </div>
+                </div>
 
-                        <div class="control-group" id="role-control-group">
-                            <div class="control-label">
-                                <label for="role"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_ROLE'); ?></label>
-                            </div>
-                            <div class="controls">
-                                <?php
-                                $isOfficer = ($item->type === 'officer');
-                                $isLeague  = ($item->type === 'director_league');
-                                $officerRoleVal = array_key_exists($item->role, $officerRoles) ? $item->role : '';
-                                ?>
-                                <!-- Hidden carries the actual submitted value. -->
-                                <input type="hidden" name="jform[role]" id="role" value="<?php echo $this->escape($item->role); ?>">
-                                <!-- Officer: restricted dropdown. -->
-                                <select id="role_select" class="inputbox clble-w-main" style="display:<?php echo $isOfficer ? 'block' : 'none'; ?>;"
-                                        onchange="document.getElementById('role').value = this.value;">
-                                    <option value=""><?php echo Text::_('COM_CLUBLEADDIR_SELECT_ROLE'); ?></option>
-                                    <?php foreach ($officerRoles as $val => $label): ?>
-                                        <option value="<?php echo $this->escape($val); ?>" <?php echo $officerRoleVal === $val ? 'selected' : ''; ?>><?php echo $label; ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                                <!-- Other types: free text. -->
-                                <input type="text" id="role_text" class="inputbox clble-w-main" style="display:<?php echo (!$isOfficer && !$isLeague) ? 'block' : 'none'; ?>;"
-                                       value="<?php echo $this->escape($item->role); ?>" placeholder="<?php echo Text::_('COM_CLUBLEADDIR_FIELD_ROLE_PLACEHOLDER'); ?>"
-                                       oninput="document.getElementById('role').value = this.value;">
-                                <?php if ($isLeague): ?>
-                                    <p class="clble-help-note"><?php echo Text::_('COM_CLUBLEADDIR_ROLE_DISABLED_FOR_LEAGUE'); ?></p>
-                                <?php endif; ?>
-                            </div>
-                        </div>
+                <div class="control-group">
+                    <div class="control-label">
+                        <label for="term"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_TERM'); ?></label>
+                    </div>
+                    <div class="controls">
+                        <input type="text" name="jform[term]" id="term" class="inputbox" value="<?php echo $this->escape($item->term ?: ($isEdit ? '' : $defaultTerm)); ?>" placeholder="2025-2027" maxlength="9">
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <div class="control-label">
+                        <label for="vacant"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_VACANT'); ?></label>
+                    </div>
+                    <div class="controls">
+                        <label class="checkbox" for="vacant">
+                            <input type="checkbox" name="jform[vacant]" id="vacant" value="1" <?php echo $item->vacant ? 'checked' : ''; ?> onchange="toggleVacantFields(this.checked)">
+                            <?php echo Text::_('COM_CLUBLEADDIR_FIELD_VACANT_DESC'); ?>
+                        </label>
                     </div>
                 </div>
 
@@ -514,7 +433,7 @@ function jClubleaddirSelectContact(id, name) {
                             <label for="league_name" class="required"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_LEAGUE_NAME'); ?> <span class="star">*</span></label>
                         </div>
                         <div class="controls">
-                            <select name="jform[league_name]" id="league_name" class="inputbox clble-w-main">
+                            <select name="jform[league_name]" id="league_name" class="inputbox">
                                 <option value=""><?php echo Text::_('COM_CLUBLEADDIR_SELECT_LEAGUE'); ?></option>
                                 <?php foreach ($leagueOptions as $val => $label): ?>
                                     <option value="<?php echo $val; ?>" <?php echo ($item->league_name ?? '') === $val ? 'selected' : ''; ?>><?php echo $label; ?></option>
@@ -525,22 +444,13 @@ function jClubleaddirSelectContact(id, name) {
                     </div>
                 </div>
 
-                <div class="control-group">
-                    <div class="control-label">
-                        <label for="term"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_TERM'); ?></label>
-                    </div>
-                    <div class="controls">
-                        <input type="text" name="jform[term]" id="term" class="inputbox clble-w-short" value="<?php echo $this->escape($item->term ?: ($isEdit ? '' : $defaultTerm)); ?>" placeholder="2025-2027">
-                    </div>
-                </div>
-
                 <div id="staff-fields" style="display:<?php echo $item->type === 'staff' ? 'block' : 'none'; ?>;">
                     <div class="control-group">
                         <div class="control-label">
                             <label for="start_year"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_START_YEAR'); ?></label>
                         </div>
                         <div class="controls">
-                            <input type="number" name="jform[start_year]" id="start_year" class="inputbox clble-w-short" value="<?php echo (int) $item->start_year; ?>" placeholder="<?php echo date('Y'); ?>">
+                            <input type="number" name="jform[start_year]" id="start_year" class="inputbox" value="<?php echo (int) $item->start_year; ?>" placeholder="<?php echo date('Y'); ?>">
                             <p class="help-block"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_START_YEAR_HELP'); ?></p>
                         </div>
                     </div>
@@ -549,7 +459,7 @@ function jClubleaddirSelectContact(id, name) {
                             <label for="end_year"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_END_YEAR'); ?></label>
                         </div>
                         <div class="controls">
-                            <input type="number" name="jform[end_year]" id="end_year" class="inputbox clble-w-short" value="<?php echo (int) $item->end_year; ?>" placeholder="<?php echo Text::_('COM_CLUBLEADDIR_FIELD_END_YEAR_CURRENT'); ?>">
+                            <input type="number" name="jform[end_year]" id="end_year" class="inputbox" value="<?php echo (int) $item->end_year; ?>" placeholder="<?php echo Text::_('COM_CLUBLEADDIR_FIELD_END_YEAR_CURRENT'); ?>">
                             <p class="help-block"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_END_YEAR_HELP'); ?></p>
                         </div>
                     </div>
@@ -560,13 +470,31 @@ function jClubleaddirSelectContact(id, name) {
                         <label for="bio"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_BIO'); ?></label>
                     </div>
                     <div class="controls">
-                        <textarea name="jform[bio]" id="bio" class="inputbox clble-w-main" rows="4" style="height:auto;"><?php echo $this->escape($item->bio); ?></textarea>
+                        <textarea name="jform[bio]" id="bio" class="inputbox" rows="4"><?php echo $this->escape($item->bio); ?></textarea>
                     </div>
                 </div>
             </fieldset>
 
-            <fieldset class="adminform clble-card" id="contact-info-fieldset">
-                <legend class="clble-card-title"><?php echo Text::_('COM_CLUBLEADDIR_CONTACT_INFO'); ?></legend>
+            <fieldset class="clble-edit-section" id="contact-info-fieldset">
+                <legend><?php echo Text::_('COM_CLUBLEADDIR_CONTACT_INFO'); ?></legend>
+
+                <div class="control-group">
+                    <div class="control-label">
+                        <label for="email"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_EMAIL'); ?></label>
+                    </div>
+                    <div class="controls">
+                        <input type="email" name="jform[email]" id="email" class="inputbox" value="<?php echo $this->escape($item->email); ?>">
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <div class="control-label">
+                        <label for="phone"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_PHONE'); ?></label>
+                    </div>
+                    <div class="controls">
+                        <input type="tel" name="jform[phone]" id="phone" class="inputbox" value="<?php echo $this->escape($item->phone); ?>" placeholder="705-555-0100" maxlength="20" oninput="clbleStripPhone(this)">
+                    </div>
+                </div>
 
                 <div class="control-group">
                     <div class="control-label">
@@ -574,10 +502,10 @@ function jClubleaddirSelectContact(id, name) {
                     </div>
                     <div class="controls">
                         <div class="input-append">
-                            <input type="number" name="jform[contact_id]" id="contact_id" class="inputbox clble-w-short" style="width:140px;"
+                            <input type="number" name="jform[contact_id]" id="contact_id" class="inputbox" style="width:100px;"
                                    value="<?php echo (int) $item->contact_id; ?>">
                             <?php if ($hasContactComponent): ?>
-                            <a class="btn modal btn-contact-pick" title="<?php echo Text::_('COM_CLUBLEADDIR_FIELD_CONTACT_ID_HELP'); ?>"
+                            <a class="btn modal" title="<?php echo Text::_('COM_CLUBLEADDIR_FIELD_CONTACT_ID_HELP'); ?>"
                                href="<?php echo Route::_('index.php?option=com_contact&view=contacts&layout=modal&tmpl=component&function=jClubleaddirSelectContact'); ?>"
                                rel="{handler: 'iframe', size: {x: 800, y: 500}}">
                                 <span class="icon-search"></span> <?php echo Text::_('COM_CLUBLEADDIR_LOOKUP_CONTACT'); ?>
@@ -604,43 +532,40 @@ function jClubleaddirSelectContact(id, name) {
                         </div>
                     </div>
                 </div>
+            </fieldset>
 
-                <div class="row-fluid">
-                    <div class="span6">
-                        <div class="control-group">
-                            <div class="control-label">
-                                <label for="email"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_EMAIL'); ?></label>
-                            </div>
-                            <div class="controls">
-                                <input type="email" name="jform[email]" id="email" class="inputbox clble-w-main" value="<?php echo $this->escape($item->email); ?>">
-                            </div>
+        </div>
+
+        <div class="span3">
+
+            <fieldset class="clble-edit-section">
+                <legend><?php echo Text::_('COM_CLUBLEADDIR_PHOTO'); ?></legend>
+                <div class="control-group">
+                    <div class="controls clble-photo-col">
+                        <div id="photo_preview" style="margin-bottom:8px;">
+                            <?php if ($item->photo): ?>
+                                <img src="<?php echo $this->escape(ClubleaddirHelper::photoUrl($item->photo)); ?>" alt="<?php echo $this->escape($item->name); ?>"
+                                     class="thumbnail" style="max-width:120px;max-height:120px;display:inline-block;vertical-align:middle;">
+                                <p class="help-block" style="word-break:break-all;font-size:11px;margin-top:4px;"><?php echo $this->escape(basename($item->photo)); ?></p>
+                            <?php else: ?>
+                                <div class="clble-photo-placeholder"><span class="icon-user" style="font-size:40px;"></span></div>
+                            <?php endif; ?>
                         </div>
-                    </div>
-                    <div class="span6">
-                        <div class="control-group">
-                            <div class="control-label">
-                                <label for="phone"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_PHONE'); ?></label>
-                            </div>
-                            <div class="controls">
-                                <input type="tel" name="jform[phone]" id="phone" class="inputbox clble-w-main" value="<?php echo $this->escape($item->phone); ?>" placeholder="705-555-0100">
-                            </div>
-                        </div>
+                        <input type="file" name="jform[photo]" id="photo" class="inputbox" accept="image/*" onchange="clblePreviewPhoto(this)">
+                        <p class="help-block"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_PHOTO_HELP'); ?><?php if ($item->photo): ?> <span class="muted">(<?php echo Text::_('COM_CLUBLEADDIR_FIELD_PHOTO_REPLACE'); ?>)</span><?php endif; ?></p>
                     </div>
                 </div>
             </fieldset>
-        </div>
 
-        <!-- SIDE COLUMN -->
-        <div class="span4">
-            <fieldset class="adminform clble-card">
-                <legend class="clble-card-title"><?php echo Text::_('COM_CLUBLEADDIR_PUBLISHING'); ?></legend>
+            <fieldset class="clble-edit-section">
+                <legend><?php echo Text::_('COM_CLUBLEADDIR_PUBLISHING'); ?></legend>
 
                 <div class="control-group">
                     <div class="control-label">
                         <label for="status"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_BOARD_STATUS'); ?></label>
                     </div>
                     <div class="controls">
-                        <select name="jform[status]" id="status" class="inputbox clble-w-main">
+                        <select name="jform[status]" id="status" class="inputbox">
                             <option value="active" <?php echo ($item->status ?? 'active') === 'active' ? 'selected' : ''; ?>><?php echo Text::_('COM_CLUBLEADDIR_STATUS_ACTIVE'); ?></option>
                             <option value="archived" <?php echo ($item->status ?? 'active') === 'archived' ? 'selected' : ''; ?>><?php echo Text::_('COM_CLUBLEADDIR_STATUS_ARCHIVED'); ?></option>
                         </select>
@@ -653,7 +578,7 @@ function jClubleaddirSelectContact(id, name) {
                         <label for="published"><?php echo Text::_('JSTATUS'); ?></label>
                     </div>
                     <div class="controls">
-                        <select name="jform[published]" id="published" class="inputbox clble-w-main">
+                        <select name="jform[published]" id="published" class="inputbox">
                             <option value="1" <?php echo $item->published ? 'selected' : ''; ?>><?php echo Text::_('JPUBLISHED'); ?></option>
                             <option value="0" <?php echo !$item->published ? 'selected' : ''; ?>><?php echo Text::_('JUNPUBLISHED'); ?></option>
                         </select>
@@ -665,23 +590,23 @@ function jClubleaddirSelectContact(id, name) {
                         <label for="ordering"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_ORDERING'); ?></label>
                     </div>
                     <div class="controls">
-                        <input type="number" name="jform[ordering]" id="ordering" class="inputbox clble-w-short" value="<?php echo (int) $item->ordering; ?>">
+                        <input type="number" name="jform[ordering]" id="ordering" class="inputbox" value="<?php echo (int) $item->ordering; ?>">
                     </div>
                 </div>
 
                 <?php if ($isEdit): ?>
-                <hr>
-                <table class="table table-condensed" style="margin-bottom:0;">
+                <hr class="clble-section-divider">
+                <table class="table table-condensed" style="margin-bottom:0;font-size:11px;">
                     <tbody>
-                        <tr style="font-size:12px;">
+                        <tr>
                             <td style="border-top:none;color:#666;width:40%;"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_ID'); ?></td>
                             <td style="border-top:none;"><?php echo (int) $item->id; ?></td>
                         </tr>
-                        <tr style="font-size:12px;">
+                        <tr>
                             <td style="border-top:none;color:#666;"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_CREATED'); ?></td>
                             <td style="border-top:none;"><?php echo $this->escape($item->created); ?></td>
                         </tr>
-                        <tr style="font-size:12px;">
+                        <tr>
                             <td style="border-top:none;color:#666;"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_MODIFIED'); ?></td>
                             <td style="border-top:none;"><?php echo $this->escape($item->modified); ?></td>
                         </tr>
@@ -689,7 +614,10 @@ function jClubleaddirSelectContact(id, name) {
                 </table>
                 <?php endif; ?>
             </fieldset>
+
         </div>
+
+        <div class="span2"></div>
     </div>
 
     <input type="hidden" name="jform[id]" value="<?php echo (int) $item->id; ?>">

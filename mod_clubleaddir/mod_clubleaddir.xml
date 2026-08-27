@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <extension type="module" version="3.9" client="site" method="upgrade">
-    <name>MOD_CLUBLEADDIRECTION</name>
-    <author>Jayden Russell</author>
+    <name>MOD_CLUBLEADDIR</name>
     <creationDate>August 2026</creationDate>
-    <copyright>Jayden Russell</copyright>
-    <license>GNU General Public License version 2 or later</license>
+    <author>Jayden Russell</author>
     <authorEmail>info@simcoecurlingclub.ca</authorEmail>
+    <copyright>Copyright (C) 2026 Jayden Russell</copyright>
+    <license>GNU General Public License version 2 or later</license>
     <authorUrl>https://simcoecurlingclub.ca</authorUrl>
-    <version>3.1.1</version>
-    <description>MOD_CLUBLEADDIRECTION_DESC</description>
+    <version>3.21.20</version>
+    <description>MOD_CLUBLEADDIR_DESC</description>
 
     <files>
         <filename module="mod_clubleaddir">mod_clubleaddir.php</filename>
@@ -28,12 +28,6 @@
                     name="module_class_sfx"
                     type="text"
                     label="COM_MODULES_FIELD_MODULECLASS_SFX_LABEL"
-                />
-                <field
-                    name="config_note"
-                    type="note"
-                    label="MOD_CLUBLEADDIRECTION_CONFIG_NOTE_LABEL"
-                    description="MOD_CLUBLEADDIRECTION_CONFIG_NOTE_DESC"
                 />
             </fieldset>
         </fields>

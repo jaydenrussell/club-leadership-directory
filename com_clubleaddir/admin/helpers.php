@@ -72,6 +72,7 @@ class ClubleaddirHelper
 			'showOfficers'         => (int) $cfg->get('show_officers', 1) === 1,
 			'showDirectors'        => (int) $cfg->get('show_directors', 1) === 1,
 			'showStaff'            => (int) $cfg->get('show_staff', 1) === 1,
+
 			'showSectionTitles'    => (int) $cfg->get('show_section_titles', 1) === 1,
 			'showTerm'             => (int) $cfg->get('show_term', 1) === 1,
 			'maxItems'             => max(0, (int) $cfg->get('max_items', 0)),
@@ -205,8 +206,8 @@ class ClubleaddirHelper
 		if ($path[0] === '/') {
 			return $path;
 		}
-		// Already a scheme/absolute URL?
-		if (preg_match('#^[a-z]+://#i', $path) || strpos($path, '//') === 0) {
+		// Already a scheme/absolute URL? Only http(s) allowed — reject javascript:, data:, etc.
+		if (preg_match('#^https?://#i', $path) || strpos($path, '//') === 0) {
 			return $path;
 		}
 		return '/' . ltrim($path, '/');
@@ -371,7 +372,7 @@ class ClubleaddirHelper
 				$ey = (int) ($person->end_year ?? 0);
 
 				if ($sy > 0) {
-					$end = $ey > 0 ? (string) $ey : Text::_('MOD_CLUBLEADDIRECTION_EMPLOYED_CURRENT');
+					$end = $ey > 0 ? (string) $ey : Text::_('MOD_CLUBLEADDIR_EMPLOYED_CURRENT');
 					$metaHtml .= '<div class="clubleadership-card-term">' . htmlspecialchars($sy . ' – ' . $end, ENT_QUOTES, 'UTF-8') . '</div>';
 				}
 			} elseif (!empty($person->term)) {
@@ -414,7 +415,7 @@ class ClubleaddirHelper
 		$nameEmpty  = $isVacant && empty(trim((string) ($person->name ?? '')));
 		$displayName = $nameEmpty ? (string) ($person->role ?? '') : (string) ($person->name ?? '');
 
-		$metaHtml = '<div class="clubleadership-card-role">' . Text::_('MOD_CLUBLEADDIRECTION_LEAGUE_REP_TITLE') . '</div>';
+		$metaHtml = '<div class="clubleadership-card-role">' . Text::_('MOD_CLUBLEADDIR_LEAGUE_REP_TITLE') . '</div>';
 
 		if (!empty($person->league_name)) {
 			$metaHtml .= '<div class="clubleadership-card-league">' . htmlspecialchars(self::leagueNameLabel($person->league_name), ENT_QUOTES, 'UTF-8') . '</div>';
@@ -539,15 +540,14 @@ class ClubleaddirHelper
 	}
 
 	/**
-	 * Build a "stealth" route to a Joomla contact.
+	 * Build a route to a Joomla contact page.
 	 *
-	 * If a published menu item already points at this exact contact, we route
-	 * through its Itemid so the URL is a clean SEF alias instead of exposing
-	 * index.php?option=com_contact&view=contact&id=N. Otherwise the standard
-	 * component route is returned.
+	 * The lookup tries progressively looser menu-item matches so that the
+	 * contact form page opens correctly whether the site uses legacy IDs,
+	 * full SEF routing, or a mix.  mailto: is the last resort.
 	 *
 	 * @param   int  $contactId
-	 * @return  string
+	 * @return  string  URL or '' if nothing works.
 	 */
 	public static function contactRoute($contactId)
 	{
@@ -557,23 +557,169 @@ class ClubleaddirHelper
 		}
 
 		try {
-			$db     = Factory::getDbo();
-			$query  = $db->getQuery(true)
+			$db = Factory::getDbo();
+
+			// Fetch the contact row with fields needed for Joomla's own
+			// published / access / language / category checks. If any of
+			// these would cause com_contact to raise a 404, we bail out
+			// here and return '' so the caller falls through to mailto:/
+			// plain email instead of generating a broken link.
+			$query = $db->getQuery(true)
+				->select(array(
+					$db->qn('c.id'),
+					$db->qn('c.catid'),
+					$db->qn('c.email_to'),
+					$db->qn('c.alias'),
+					$db->qn('c.access'),
+					$db->qn('c.language'),
+					$db->qn('c.publish_up'),
+					$db->qn('c.publish_down'),
+				))
+				->from($db->qn('#__contact_details', 'c'))
+				->where($db->qn('c.id') . ' = ' . $contactId)
+				->where($db->qn('c.published') . ' = 1');
+			$db->setQuery($query);
+			$row = $db->loadObject();
+			if (!$row) {
+				return '';
+			}
+
+			// Category must be published too — com_contact checks this and
+			// raises 404 when the category is unpublished/archived.
+			if ((int) $row->catid > 0) {
+				$catQ = $db->getQuery(true)
+					->select(array($db->qn('published'), $db->qn('access'), $db->qn('language')))
+					->from($db->qn('#__categories'))
+					->where($db->qn('id') . ' = ' . (int) $row->catid)
+					->where($db->qn('extension') . ' = ' . $db->q('com_contact'));
+				$db->setQuery($catQ);
+				$cat = $db->loadObject();
+				if ($cat) {
+					if ((int) $cat->published !== 1) {
+						return '';
+					}
+					// Respect category access / language the same as the contact.
+					if ((int) $cat->access !== 0) {
+						try {
+							$user = Factory::getUser();
+							if (!in_array((int) $cat->access, $user->getAuthorisedViewLevels(), true)) {
+								return '';
+							}
+						} catch (\Throwable $e) { /* ignore */ }
+					}
+				}
+			}
+
+			// Contact access level — must be viewable by the current user
+			// or the frontend will 404 for guests.
+			if ((int) $row->access !== 0) {
+				try {
+					$user = Factory::getUser();
+					if (!in_array((int) $row->access, $user->getAuthorisedViewLevels(), true)) {
+						return '';
+					}
+				} catch (\Throwable $e) { /* ignore — best effort */ }
+			}
+
+			// Publish window — com_contact honours publish_up/down.
+			$now = Factory::getDate()->toSql();
+			if (!empty($row->publish_up) && $row->publish_up !== '0000-00-00 00:00:00' && $row->publish_up > $now) {
+				return '';
+			}
+			if (!empty($row->publish_down) && $row->publish_down !== '0000-00-00 00:00:00' && $row->publish_down < $now) {
+				return '';
+			}
+
+			// SEF-compatible routing.
+			// For SEF to produce a pretty URL like /contacts/officers/president
+			// Joomla needs a menu Itemid for com_contact to use as routing
+			// context. We mirror what ContactHelperRoute does but ensure we
+			// never fall back to home Itemid 101 (com_content) which caused
+			// the bad /component/contact/contact/president?catid=8&Itemid=101.
+			$catid = (int) $row->catid;
+			$lang  = isset($row->language) ? (string) $row->language : '';
+
+			// Try Joomla's own helper first — it already handles SEF,
+			// modern vs legacy, and ID-in-URL. It returns a non-SEF route
+			// like index.php?option=com_contact&view=contact&id=2&catid=8&Itemid=XX
+			// with the correct alias/Itemid when a suitable menu exists.
+			$helperRoute = null;
+			try {
+				$j3h = JPATH_SITE . '/components/com_contact/helpers/route.php';
+				if (is_file($j3h)) { require_once $j3h; }
+				if (class_exists('ContactHelperRoute', false)) {
+					$helperRoute = ContactHelperRoute::getContactRoute($contactId, $catid, $lang);
+				} elseif (class_exists('\\Joomla\\Component\\Contact\\Site\\Helper\\RouteHelper')) {
+					$helperRoute = \Joomla\Component\Contact\Site\Helper\RouteHelper::getContactRoute($contactId, $catid ?: null, $lang ?: null);
+				}
+			} catch (\Throwable $e) { $helperRoute = null; }
+
+			if (is_string($helperRoute) && $helperRoute !== '') {
+				// If helper injected home 101, ignore it — it is not a
+				// com_contact menu and will generate the bad component URL.
+				if (strpos($helperRoute, 'Itemid=101') === false) {
+					try { return Route::_($helperRoute); } catch (\Throwable $e) { /* fallback below */ }
+				}
+			}
+
+			// Manual fallback: find a real com_contact menu item. Order:
+			// 1) exact contact, 2) its category, 3) any com_contact menu.
+			$menuId = 0;
+			$q = $db->getQuery(true)
 				->select($db->qn('id'))
 				->from($db->qn('#__menu'))
 				->where($db->qn('link') . ' = ' . $db->q('index.php?option=com_contact&view=contact&id=' . $contactId))
 				->where($db->qn('type') . ' = ' . $db->q('component'))
 				->where($db->qn('published') . ' = 1');
-			$db->setQuery($query);
+			$db->setQuery($q);
 			$menuId = (int) $db->loadResult();
-			if ($menuId > 0) {
-				return Route::_('index.php?Itemid=' . $menuId) . '#display-form';
+
+			if ($menuId === 0 && $catid > 0) {
+				$q = $db->getQuery(true)
+					->select($db->qn('id'))
+					->from($db->qn('#__menu'))
+					->where($db->qn('link') . ' = ' . $db->q('index.php?option=com_contact&view=category&id=' . $catid))
+					->where($db->qn('type') . ' = ' . $db->q('component'))
+					->where($db->qn('published') . ' = 1');
+				$db->setQuery($q);
+				$menuId = (int) $db->loadResult();
 			}
+			if ($menuId === 0) {
+				$q = $db->getQuery(true)
+					->select($db->qn('id'))
+					->from($db->qn('#__menu'))
+					->where($db->qn('link') . ' LIKE ' . $db->q('%option=com_contact%'))
+					->where($db->qn('type') . ' = ' . $db->q('component'))
+					->where($db->qn('published') . ' = 1')
+					->order($db->qn('id') . ' ASC');
+				$db->setQuery($q, 0, 1);
+				$menuId = (int) $db->loadResult();
+				// Defensively reject home 101 if it somehow is com_contact.
+				if ($menuId === 101) { $menuId = 0; }
+			}
+			if ($menuId > 0) {
+				$raw = 'index.php?option=com_contact&view=contact&id=' . $contactId;
+				if ($catid > 0) { $raw .= '&catid=' . $catid; }
+				$raw .= '&Itemid=' . $menuId;
+				return Route::_($raw);
+			}
+
+			// No com_contact menu at all — return a raw non-SEF URL that
+			// is guaranteed to load the contact form regardless of SEF or
+			// modern/legacy/ID settings (your working example
+			// index.php?option=com_contact&view=contact&id=7&catid=11).
+			// This is the safe fallback; create a hidden com_contact Category
+			// menu item to get pretty SEF URLs instead of this.
+			if ($catid > 0) {
+				return 'index.php?option=com_contact&view=contact&id=' . $contactId . '&catid=' . $catid;
+			}
+			return 'index.php?option=com_contact&view=contact&id=' . $contactId;
 		} catch (\Throwable $e) {
-			// Fall through to the raw component route below.
+			// Fall through — return empty so the caller uses its own
+			// email/phone fallback.
 		}
 
-		return Route::_('index.php?option=com_contact&view=contact&id=' . $contactId . '#display-form');
+		return '';
 	}
 
 	/**
@@ -617,38 +763,36 @@ class ClubleaddirHelper
 			$vacantContactId = (int) $vacantContactId;
 			if ($vacantContactId > 0) {
 				$url   = self::contactRoute($vacantContactId);
-				$name  = self::contactName($vacantContactId);
-				$label = $name !== '' ? $name : Text::_('COM_CLUBLEADDIR_VACANCY_INQUIRE');
 			} else {
 				$vacancyEmail = trim($vacancyDefaultEmail);
 				if ($vacancyEmail !== '') {
 					$url   = 'mailto:' . $vacancyEmail;
-					$label = Text::_('COM_CLUBLEADDIR_VACANCY_INQUIRE');
 				} else {
 					// No enquiry target configured. Still render the button
 					// (never silently hide it); point it at the site contacts.
 					self::logVacancyMisconfig();
 					$url   = Route::_('index.php?option=com_contact&view=featured');
-					$label = Text::_('COM_CLUBLEADDIR_VACANCY_INQUIRE');
 				}
 			}
 			return '<div class="clubleadership-card-contact">'
 				. '<a href="' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . '" class="clubleadership-contact-link clubleaddir-vacancy-link">'
 				. '<span class="icon-mail" aria-hidden="true"></span>'
-				. '<span class="clubleadership-contact-text">' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</span></a>'
+				. '<span class="clubleadership-contact-text">' . htmlspecialchars(Text::_('COM_CLUBLEADDIR_VACANCY_INQUIRE'), ENT_QUOTES, 'UTF-8') . '</span></a>'
 				. '</div>';
 		}
 
 		// 2. Linked Joomla Contact — the single, focused way to reach the person.
 		if ($contactId > 0) {
 			$url   = self::contactRoute($contactId);
-			$name  = self::contactName($contactId);
-			$label = $name !== '' ? $name : Text::_('COM_CLUBLEADDIR_CONTACT_LINK');
-			return '<div class="clubleadership-card-contact">'
-				. '<a href="' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . '" class="clubleadership-contact-link">'
-				. '<span class="icon-envelope" aria-hidden="true"></span>'
-				. '<span class="clubleadership-contact-text">' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</span></a>'
-				. '</div>';
+			if ($url !== '') {
+				$label = Text::_('COM_CLUBLEADDIR_CONTACT_LINK');
+				return '<div class="clubleadership-card-contact">'
+					. '<a href="' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . '" class="clubleadership-contact-link">'
+					. '<span class="icon-envelope" aria-hidden="true"></span>'
+					. '<span class="clubleadership-contact-text">' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</span></a>'
+					. '</div>';
+			}
+			// Contact was linked but doesn't exist or is unpublished — fall through to email/phone.
 		}
 
 		// 3. Plain email / phone.
@@ -744,25 +888,43 @@ class ClubleaddirHelper
 	public static function vacancyBannerHtml($contactId, $defaultEmail = '')
 	{
 		$contactId = (int) $contactId;
+		$cfg       = self::getGlobalConfig();
 
 		if ($contactId > 0) {
 			$url = self::contactRoute($contactId);
-			$url = htmlspecialchars($url, ENT_QUOTES, 'UTF-8');
-		} elseif ($defaultEmail !== '') {
+			if ($url !== '') {
+				$url = htmlspecialchars($url, ENT_QUOTES, 'UTF-8');
+			}
+		}
+
+		if (empty($url) && $defaultEmail !== '') {
 			$url = 'mailto:' . htmlspecialchars($defaultEmail, ENT_QUOTES, 'UTF-8');
-		} else {
+		}
+
+		if (empty($url)) {
 			self::logVacancyMisconfig();
 			$url = htmlspecialchars(Route::_('index.php?option=com_contact&view=featured'), ENT_QUOTES, 'UTF-8');
 		}
 
-		$cta = '<a class="clubleaddir-vacancy-banner-cta" href="' . $url . '">' . htmlspecialchars(Text::_('COM_CLUBLEADDIR_VACANCIES_CTA'), ENT_QUOTES, 'UTF-8') . '</a>';
+		$title   = trim((string) $cfg->get('vacancy_banner_title', Text::_('COM_CLUBLEADDIR_VACANCIES_TITLE')));
+		$body    = trim((string) $cfg->get('vacancy_banner_text', Text::_('COM_CLUBLEADDIR_VACANCIES_BODY')));
+		$summary = trim((string) $cfg->get('vacancy_banner_summary', ''));
+
+		$cta = '<a class="clubleaddir-vacancy-banner-cta" href="' . $url . '">' . htmlspecialchars(Text::_('COM_CLUBLEADDIR_VACANCIES_INQUIRE'), ENT_QUOTES, 'UTF-8') . '</a>';
+
+		$summaryHtml = '';
+		if ($summary !== '') {
+			$summaryHtml = '<p class="clubleaddir-vacancy-banner-summary">' . htmlspecialchars($summary, ENT_QUOTES, 'UTF-8') . '</p>';
+		}
 
 		return '<div class="clubleaddir-vacancy-banner" role="status">'
-			. '<div class="clubleaddir-vacancy-banner-icon" aria-hidden="true">&#128101;</div>'
+			. '<div class="clubleaddir-vacancy-banner-icon" aria-hidden="true"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M5 20c0-4 3-7 7-7s7 3 7 7"/><path d="M16 3l4 4m0-4l-4 4"/></svg></div>'
 			. '<div class="clubleaddir-vacancy-banner-body">'
-				. '<h3 class="clubleaddir-vacancy-banner-title">' . htmlspecialchars(Text::_('COM_CLUBLEADDIR_VACANCIES_TITLE'), ENT_QUOTES, 'UTF-8') . '</h3>'
-				. '<p class="clubleaddir-vacancy-banner-text">' . htmlspecialchars(Text::_('COM_CLUBLEADDIR_VACANCIES_BODY'), ENT_QUOTES, 'UTF-8') . ' ' . $cta . '</p>'
+				. '<h3 class="clubleaddir-vacancy-banner-title">' . htmlspecialchars($title, ENT_QUOTES, 'UTF-8') . '</h3>'
+				. '<p class="clubleaddir-vacancy-banner-text">' . htmlspecialchars($body, ENT_QUOTES, 'UTF-8') . '</p>'
+				. $summaryHtml
 			. '</div>'
+			. '<div class="clubleaddir-vacancy-banner-actions">' . $cta . '</div>'
 			. '</div>';
 	}
 }

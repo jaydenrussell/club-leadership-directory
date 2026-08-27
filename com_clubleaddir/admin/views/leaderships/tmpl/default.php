@@ -8,18 +8,23 @@
 
 defined('_JEXEC') or die;
 
+use Joomla\CMS\Factory;
 use Joomla\CMS\HTML\HTMLHelper;
 use Joomla\CMS\Language\Text;
 use Joomla\CMS\Router\Route;
 
-// NOTE: do NOT call HTMLHelper::_('behavior.core') — the JHtmlBehavior helper
-// was removed in Joomla 3.10 and calling it fatals the admin view.
+HTMLHelper::_('behavior.core');
+HTMLHelper::_('sortablelist.sortable', 'clubleaddirList', 'adminForm', 'asc', 'index.php?option=com_clubleaddir&task=leadership.saveorderAjax&tmpl=component');
 
 $typeFilter        = $this->filters['type'];
 $publishedFilter   = $this->filters['published'];
 $statusFilter      = $this->filters['status'];
 $termFilter        = $this->filters['term'];
 $search            = $this->filters['search'];
+
+$listOrder = $this->escape($this->listOrder);
+$listDirn  = $this->escape($this->listDirn);
+$saveOrder = ($listOrder === 'ordering');
 ?>
 
 <div class="clubleaddir-backend-note alert alert-info" style="margin: 10px 0 18px;">
@@ -68,123 +73,171 @@ $search            = $this->filters['search'];
         </div>
     </div>
 
-    <div class="clubleaddir-table-wrap">
     <table class="table table-striped" id="clubleaddirList">
         <thead>
             <tr>
-                <th width="1%" class="center"><?php echo HTMLHelper::_('grid.checkall'); ?></th>
-                <th width="6%" class="center nowrap"><?php echo Text::_('COM_CLUBLEADDIR_HEADING_ORDERING'); ?></th>
-                <th width="6%" class="center nowrap"><?php echo Text::_('COM_CLUBLEADDIR_HEADING_PHOTO'); ?></th>
-                <th class="clble-col-name"><?php echo Text::_('COM_CLUBLEADDIR_HEADING_NAME'); ?></th>
-                <th class="clble-col-role"><?php echo Text::_('COM_CLUBLEADDIR_HEADING_ROLE'); ?></th>
-                <th class="clble-col-type"><?php echo Text::_('COM_CLUBLEADDIR_HEADING_TYPE'); ?></th>
-                <th class="clble-col-term"><?php echo Text::_('COM_CLUBLEADDIR_HEADING_TERM'); ?></th>
-                <th width="8%" class="center nowrap"><?php echo Text::_('JSTATUS'); ?></th>
+                <th width="1%" class="nowrap center hidden-phone">
+                    <?php echo HTMLHelper::_('grid.sort', '<span class="icon-menu-2"></span>', 'ordering', $listDirn, $listOrder, null, 'asc', 'JGRID_HEADING_ORDERING'); ?>
+                </th>
+                <th width="1%" class="center hidden-phone">
+                    <?php echo HTMLHelper::_('grid.checkall'); ?>
+                </th>
+                <th width="1%" class="nowrap center">
+                    <?php echo HTMLHelper::_('grid.sort', 'JSTATUS', 'published', $listDirn, $listOrder); ?>
+                </th>
+                <th>
+                    <?php echo HTMLHelper::_('grid.sort', 'JGLOBAL_TITLE', 'name', $listDirn, $listOrder); ?>
+                </th>
+                <th width="14%" class="nowrap hidden-phone">
+                    <?php echo HTMLHelper::_('grid.sort', 'COM_CLUBLEADDIR_HEADING_ROLE', 'role', $listDirn, $listOrder); ?>
+                </th>
+                <th width="15%" class="nowrap">
+                    <?php echo Text::_('COM_CLUBLEADDIR_HEADING_CONTACT'); ?>
+                </th>
+                <th width="10%" class="nowrap hidden-phone">
+                    <?php echo HTMLHelper::_('grid.sort', 'JGRID_HEADING_ACCESS', 'type', $listDirn, $listOrder); ?>
+                </th>
+                <th width="10%" class="nowrap hidden-phone">
+                    <?php echo HTMLHelper::_('grid.sort', 'COM_CLUBLEADDIR_HEADING_TERM', 'term', $listDirn, $listOrder); ?>
+                </th>
+                <th width="1%" class="nowrap center hidden-phone">
+                    <?php echo HTMLHelper::_('grid.sort', 'JGRID_HEADING_ID', 'id', $listDirn, $listOrder); ?>
+                </th>
             </tr>
         </thead>
         <tbody>
             <?php if (empty($this->items)): ?>
-                <tr><td colspan="7" class="center"><?php echo Text::_('COM_CLUBLEADDIR_NO_ITEMS_FOUND'); ?></td></tr>
+                <tr><td colspan="9" class="center"><?php echo Text::_('COM_CLUBLEADDIR_NO_ITEMS_FOUND'); ?></td></tr>
             <?php else: ?>
                 <?php foreach ($this->items as $i => $item): ?>
-                <tr class="row<?php echo $i % 2; ?>">
-                    <td class="center"><?php echo HTMLHelper::_('grid.id', $i, $item->id); ?></td>
-                    <td class="center nowrap">
-                        <input type="text" name="order[]" size="4" value="<?php echo (int) $item->ordering; ?>" class="input-mini center" style="text-align:center;">
+                    <?php
+                    $canChange = true;
+                    $ordering = ($listOrder === 'ordering');
+                    $displayName = $item->name ?: ($item->role ?: Text::_('COM_CLUBLEADDIR_VACANT'));
+                    $roleAlias   = $item->role ? ' (Alias: ' . $item->role . ')' : '';
+                    // Category line mimics com_contact "Category: Officers" — map type label.
+                    $catLabel = $item->type_label;
+                    if (!empty($item->league_name)) {
+                        $catLabel .= ' &middot; ' . $item->league_name;
+                    }
+                    ?>
+                <tr class="row<?php echo $i % 2; ?>" sortable-group-id="1">
+                    <td class="order nowrap center hidden-phone">
+                        <?php if ($canChange) : ?>
+                            <span class="sortable-handler<?php echo $ordering ? '' : ' inactive'; ?>">
+                                <span class="icon-menu" aria-hidden="true"></span>
+                            </span>
+                        <?php else : ?>
+                            <span class="sortable-handler inactive"><span class="icon-menu" aria-hidden="true"></span></span>
+                        <?php endif; ?>
+                        <input type="text" style="display:none" name="order[]" size="5" value="<?php echo (int) $item->ordering; ?>" class="width-20 text-area-order" />
+                    </td>
+                    <td class="center hidden-phone">
+                        <?php echo HTMLHelper::_('grid.id', $i, $item->id); ?>
                     </td>
                     <td class="center">
-                        <?php if (!empty($item->photo)): ?>
-                            <img src="<?php echo $this->escape(ClubleaddirHelper::photoUrl($item->photo)); ?>" alt="<?php echo $this->escape($item->name); ?>" class="clble-avatar-sm">
-                        <?php else: ?>
-                            <span class="clble-avatar-sm clble-avatar-empty"><span class="icon-user"></span></span>
-                        <?php endif; ?>
+                        <?php echo HTMLHelper::_('jgrid.published', $item->published, $i, 'leadership.', $canChange); ?>
                     </td>
-                    <td class="clble-col-name">
-                        <a href="<?php echo Route::_('index.php?option=com_clubleaddir&view=leadership&id=' . $item->id); ?>">
-                            <?php echo $this->escape($item->name ?: ($item->role ?: Text::_('COM_CLUBLEADDIR_VACANT'))); ?>
+                    <td class="has-context">
+                        <div class="pull-left" style="margin-right:8px;">
+                            <?php if (!empty($item->photo)): ?>
+                                <img src="<?php echo $this->escape(ClubleaddirHelper::photoUrl($item->photo)); ?>" alt="" style="width:32px;height:32px;border-radius:50%;object-fit:cover;background:#eee;">
+                            <?php else: ?>
+                                <span style="display:inline-block;width:32px;height:32px;line-height:32px;text-align:center;border-radius:50%;background:#e9e9e9;color:#bbb;"><span class="icon-user" style="font-size:16px;"></span></span>
+                            <?php endif; ?>
+                        </div>
+                        <a href="<?php echo Route::_('index.php?option=com_clubleaddir&view=leadership&id=' . (int) $item->id); ?>">
+                            <?php echo $this->escape($displayName); ?>
                         </a>
+                        <span class="small" style="color:#777;"><?php echo $this->escape($roleAlias); ?></span>
                         <?php if (!empty($item->vacant)): ?>
-                            <span class="badge" style="margin-left:6px;background:#b8963e;color:#fff;"><?php echo Text::_('COM_CLUBLEADDIR_VACANT'); ?></span>
+                            <span class="badge" style="margin-left:6px;background:#b8963e;color:#fff;vertical-align:middle;"><?php echo Text::_('COM_CLUBLEADDIR_VACANT'); ?></span>
                         <?php endif; ?>
                         <?php if (($item->status ?? 'active') === 'archived'): ?>
-                            <span class="badge badge-inverse" style="margin-left:6px;"><?php echo Text::_('COM_CLUBLEADDIR_STATUS_ARCHIVED'); ?></span>
+                            <span class="badge badge-inverse" style="margin-left:6px;vertical-align:middle;"><?php echo Text::_('COM_CLUBLEADDIR_STATUS_ARCHIVED'); ?></span>
                         <?php endif; ?>
+                        <div class="small" style="color:#777;">
+                            <?php echo Text::_('JCATEGORY'); ?>: <?php echo $catLabel; ?>
+                        </div>
                     </td>
-                    <td class="clble-col-role"><?php echo $this->escape($item->role ?: '—'); ?></td>
-                    <td class="clble-col-type">
-                        <span class="badge <?php echo $item->type_class; ?>"><?php echo $item->type_label; ?></span>
-                        <?php if (!empty($item->league_name)): ?>
-                            <div class="muted" style="font-size:11px;"><?php echo $this->escape($item->league_name); ?></div>
-                        <?php endif; ?>
+                    <td class="small hidden-phone">
+                        <?php
+                        if (($item->type ?? '') === 'director_league' && !empty($item->league_name)) {
+                            echo $this->escape(ClubleaddirHelper::leagueNameLabel($item->league_name));
+                        } else {
+                            echo $this->escape($item->role ?? '');
+                            if (empty($item->role)) { echo '<span style="color:#999;">&mdash;</span>'; }
+                        }
+                        ?>
                     </td>
-                    <td class="clble-col-term nowrap">
+                    <td class="small">
+                        <?php
+                        // Mimics "Linked User" in com_contact — shows who the contact resolves to.
+                        $linked = '';
+                        if (!empty($item->contact_id)) {
+                            $cName = ClubleaddirHelper::contactName((int) $item->contact_id);
+                            $linked = $cName ?: ('ID ' . (int) $item->contact_id);
+                            echo $this->escape($linked);
+                            if (!empty($item->email)) {
+                                echo '<br><span class="small" style="color:#777;">' . $this->escape($item->email) . '</span>';
+                            }
+                        } elseif (!empty($item->email)) {
+                            echo $this->escape($item->email);
+                            if (!empty($item->phone)) {
+                                echo '<br><span class="small" style="color:#777;">' . $this->escape($item->phone) . '</span>';
+                            }
+                        } elseif (!empty($item->phone)) {
+                            echo $this->escape($item->phone);
+                        } else {
+                            echo '<span style="color:#999;">&mdash;</span>';
+                        }
+                        ?>
+                    </td>
+                    <td class="small hidden-phone">
+                        <?php echo $this->escape($item->type_label); ?>
+                    </td>
+                    <td class="small hidden-phone">
                         <?php
                         if ($item->type === 'staff') {
                             $sy = (int) ($item->start_year ?? 0);
                             $ey = (int) ($item->end_year ?? 0);
                             if ($sy > 0) {
-                                echo $this->escape($sy . ' – ' . ($ey > 0 ? $ey : 'Current'));
+                                echo $this->escape($sy . ' - ' . ($ey > 0 ? $ey : 'Current'));
                             } else {
-                                echo '—';
+                                echo '<span style="color:#999;">&mdash;</span>';
                             }
                         } else {
-                            echo $this->escape($item->term ?: '—');
+                            echo $item->term ? $this->escape($item->term) : '<span style="color:#999;">&mdash;</span>';
                         }
                         ?>
                     </td>
-                    <td class="center"><?php echo HTMLHelper::_('jgrid.published', $item->published, $i, 'leadership.', true); ?></td>
+                    <td class="center hidden-phone">
+                        <?php echo (int) $item->id; ?>
+                    </td>
                 </tr>
                 <?php endforeach; ?>
             <?php endif; ?>
         </tbody>
     </table>
-    </div>
 
     <input type="hidden" name="task" value="">
     <input type="hidden" name="boxchecked" value="0">
+    <input type="hidden" name="filter_order" value="<?php echo $listOrder; ?>">
+    <input type="hidden" name="filter_order_Dir" value="<?php echo $listDirn; ?>">
     <?php echo HTMLHelper::_('form.token'); ?>
 </form>
 
 <style>
 #clubleaddirList th, #clubleaddirList td { vertical-align: middle; }
-#clubleaddirList .clble-col-name { min-width: 180px; }
-#clubleaddirList .clble-col-role { min-width: 160px; }
-#clubleaddirList .clble-col-type { min-width: 150px; }
-#clubleaddirList .clble-col-term { min-width: 110px; }
-.clble-avatar-sm {
-    width: 36px; height: 36px;
-    border-radius: 50%;
-    object-fit: cover;
-    display: inline-block;
-    background: #eee;
-    vertical-align: middle;
-}
-.clble-avatar-empty {
-    width: 36px; height: 36px;
-    border-radius: 50%;
-    background: #e9e9e9;
-    color: #bbb;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-    vertical-align: middle;
-}
-
-/* ---- Mobile / responsive (Bootstrap 2 breakpoint at 767px) ---- */
+#clubleaddirList td.order { text-align: center; }
+#clubleaddirList .sortable-handler { cursor: move; color: #999; }
+#clubleaddirList .sortable-handler.inactive { opacity: 0.3; cursor: default; }
+#clubleaddirList .sortable-handler:hover:not(.inactive) { color: #333; }
 @media (max-width: 767px) {
-    /* Stack the filter bar and let dropdowns fill width. */
     #clubleaddirFilters .span8,
-    #clubleaddirFilters .span4 {
-        width: 100% !important;
-        margin-left: 0 !important;
-        float: none !important;
-        text-align: left !important;
-    }
+    #clubleaddirFilters .span4 { width: 100% !important; margin-left: 0 !important; float: none !important; text-align: left !important; }
     #clubleaddirFilters select { width: 100% !important; max-width: 100%; box-sizing: border-box; margin-bottom: 6px; }
     #clubleaddirFilters .input-append { width: 100%; }
     #clubleaddirFilters .input-xlarge { width: 100%; box-sizing: border-box; }
-    /* Keep the table readable: scroll horizontally instead of crushing columns. */
-    .clubleaddir-table-wrap { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
 }
 </style>

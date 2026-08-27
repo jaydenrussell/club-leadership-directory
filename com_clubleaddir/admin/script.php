@@ -84,8 +84,10 @@ class com_clubleaddirInstallerScript
 		$dir = JPATH_ROOT . '/media/com_clubleaddir/data';
 
 		if (!is_dir($dir)) {
-			@mkdir($dir, 0755, true);
+			@mkdir($dir, 0700, true);
 		}
+		// Harden existing installs that were created 0755 (world-readable on shared cPanel)
+		if (is_dir($dir)) { @chmod($dir, 0700); }
 
 		// Apache: deny direct web access to the data file, using syntax that
 		// works on both Apache 2.2 and 2.4.

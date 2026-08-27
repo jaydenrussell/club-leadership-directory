@@ -1,0 +1,14 @@
+{
+    "name": "jaydenrussell/club-leadership-directory",
+    "description": "Club Leadership Directory — Joomla 3 package",
+    "type": "joomla-package",
+    "require": {
+        "php": ">=7.4"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.6"
+    },
+    "autoload": {
+        "files": ["com_clubleaddir/admin/store/Store.php"]
+    }
+}

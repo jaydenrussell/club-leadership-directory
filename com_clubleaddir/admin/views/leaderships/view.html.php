@@ -54,6 +54,9 @@ class ClubleaddirViewLeaderships extends HtmlView
             'search'    => $model ? $model->getFilterValue('search') : '',
         );
 
+        $this->listOrder = Factory::getApplication()->input->get('filter_order', 'ordering');
+        $this->listDirn  = Factory::getApplication()->input->get('filter_order_Dir', 'asc');
+
         ClubleaddirHelper::addSubmenu('leaderships');
         $this->addToolbar();
         $this->checkVacancyConfig();
@@ -102,10 +105,12 @@ class ClubleaddirViewLeaderships extends HtmlView
             ToolbarHelper::publish('leadership.publish', 'JTOOLBAR_PUBLISH', true);
             ToolbarHelper::unpublish('leadership.publish', 'JTOOLBAR_UNPUBLISH', true);
             ToolbarHelper::trash('leadership.trash', 'JTOOLBAR_TRASH');
-            ToolbarHelper::custom('leadership.saveorder', 'icon-menu', '', 'COM_CLUBLEADDIR_TOOLBAR_SAVE_ORDER', false);
         }
         if ($canDo->get('core.delete')) {
             ToolbarHelper::deleteList('JGLOBAL_CONFIRM_DELETE', 'leadership.delete', 'JTOOLBAR_DELETE');
+            if ((string) $this->filters['published'] === '-2') {
+                ToolbarHelper::deleteList('JGLOBAL_CONFIRM_DELETE', 'leadership.emptyTrash', 'JTOOLBAR_EMPTY_TRASH');
+            }
         }
         if ($canDo->get('core.admin')) {
             ToolbarHelper::preferences('com_clubleaddir');

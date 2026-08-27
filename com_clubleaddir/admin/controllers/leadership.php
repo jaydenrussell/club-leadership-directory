@@ -84,8 +84,14 @@ class ClubleaddirControllerLeadership extends BaseController
 
     /**
      * Shared POST+token+authorisation guard for state-changing batch actions.
+     * @deprecated use guardEditState()/guardDelete() — kept for BC.
      */
     private function guardState()
+    {
+        return $this->guardEditState();
+    }
+
+    private function guardEditState()
     {
         if (strtoupper($this->input->getMethod()) !== 'POST') {
             $this->setRedirect('index.php?option=com_clubleaddir&view=leaderships', Text::_('JINVALID_TOKEN'), 'error');
@@ -95,20 +101,37 @@ class ClubleaddirControllerLeadership extends BaseController
             $this->setRedirect('index.php?option=com_clubleaddir&view=leaderships', Text::_('JINVALID_TOKEN'), 'error');
             return false;
         }
-
         $user = Factory::getUser();
-        if (!$user->authorise('core.edit.state', 'com_clubleaddir') && !$user->authorise('core.delete', 'com_clubleaddir')) {
+        if (!$user->authorise('core.edit.state', 'com_clubleaddir')) {
             Factory::getApplication()->enqueueMessage(Text::_('JERROR_ALERTNOAUTHOR'), 'error');
             $this->setRedirect('index.php?option=com_clubleaddir&view=leaderships');
             return false;
         }
+        return true;
+    }
 
+    private function guardDelete()
+    {
+        if (strtoupper($this->input->getMethod()) !== 'POST') {
+            $this->setRedirect('index.php?option=com_clubleaddir&view=leaderships', Text::_('JINVALID_TOKEN'), 'error');
+            return false;
+        }
+        if (!Session::checkToken()) {
+            $this->setRedirect('index.php?option=com_clubleaddir&view=leaderships', Text::_('JINVALID_TOKEN'), 'error');
+            return false;
+        }
+        $user = Factory::getUser();
+        if (!$user->authorise('core.delete', 'com_clubleaddir')) {
+            Factory::getApplication()->enqueueMessage(Text::_('JERROR_ALERTNOAUTHOR'), 'error');
+            $this->setRedirect('index.php?option=com_clubleaddir&view=leaderships');
+            return false;
+        }
         return true;
     }
 
     public function delete()
     {
-        if (!$this->guardState()) {
+        if (!$this->guardDelete()) {
             return false;
         }
 
@@ -138,7 +161,7 @@ class ClubleaddirControllerLeadership extends BaseController
      */
     public function trash()
     {
-        if (!$this->guardState()) {
+        if (!$this->guardEditState()) {
             return false;
         }
 
@@ -161,14 +184,61 @@ class ClubleaddirControllerLeadership extends BaseController
         $this->setRedirect('index.php?option=com_clubleaddir&view=leaderships');
     }
 
+    public function emptyTrash()
+    {
+        if (!$this->guardDelete()) {
+            return false;
+        }
+        $model = $this->getModel('Leadership', 'ClubleaddirModel');
+        $ids   = array_map('intval', (array) $this->input->post->get('cid', array(), 'array'));
+        $ids   = array_filter($ids, function ($id) { return $id > 0; });
+        // If no selection, empty all trashed (published = -2)
+        if (empty($ids)) {
+            try {
+                $store = \ClubleaddirStore::getInstance();
+                $trashed = $store->getAll(['published' => -2]);
+                foreach ($trashed as $row) { $ids[] = (int) $row->id; }
+            } catch (\Throwable $e) { }
+        }
+        if (empty($ids)) {
+            Factory::getApplication()->enqueueMessage(Text::_('JERROR_NO_ITEMS_SELECTED'), 'error');
+            $this->setRedirect('index.php?option=com_clubleaddir&view=leaderships');
+            return false;
+        }
+        if ($model->delete($ids)) {
+            $this->setMessage(Text::_('COM_CLUBLEADDIR_ITEMS_DELETED'));
+        } else {
+            $this->setMessage(Text::_('COM_CLUBLEADDIR_ERROR_DELETING'), 'error');
+        }
+        $this->setRedirect('index.php?option=com_clubleaddir&view=leaderships');
+    }
+
     public function publish()
     {
-        if (!$this->guardState()) {
+        // jgrid.published toggle uses GET with token; toolbar Publish uses POST.
+        // Accept either, but still require token and core.edit.state.
+        $isGet = strtoupper($this->input->getMethod()) === 'GET';
+        $hasToken = $isGet ? Session::checkToken('get') : Session::checkToken();
+        if (!$hasToken) {
+            // Fall back to POST token check for toolbar
+            if (!Session::checkToken()) {
+                $this->setRedirect('index.php?option=com_clubleaddir&view=leaderships', Text::_('JINVALID_TOKEN'), 'error');
+                return false;
+            }
+        }
+        $user = Factory::getUser();
+        if (!$user->authorise('core.edit.state', 'com_clubleaddir')) {
+            Factory::getApplication()->enqueueMessage(Text::_('JERROR_ALERTNOAUTHOR'), 'error');
+            $this->setRedirect('index.php?option=com_clubleaddir&view=leaderships');
             return false;
         }
 
         $model = $this->getModel('Leadership', 'ClubleaddirModel');
-        $ids   = array_map('intval', (array) $this->input->post->get('cid', array(), 'array'));
+        // jgrid passes cid via GET, toolbar via POST — accept both
+        $ids = array_map('intval', (array) $this->input->get('cid', array(), 'array'));
+        if (empty(array_filter($ids))) {
+            $ids = array_map('intval', (array) $this->input->post->get('cid', array(), 'array'));
+        }
         $ids   = array_filter($ids, function ($id) { return $id > 0; });
         // From the toolbar the publish/unpublish buttons pass state via the
         // 'state' request var; 1 = publish, 0 = unpublish. The jgrid toggle in
@@ -240,6 +310,47 @@ class ClubleaddirControllerLeadership extends BaseController
         }
 
         $this->setRedirect('index.php?option=com_clubleaddir&view=leaderships');
+    }
+
+    /**
+     * AJAX endpoint for drag-to-reorder (sortablelist.sortable).
+     * The JS posts cid[] + order[]; we persist and return "1" so the
+     * spinner clears and the order survives a refresh.
+     */
+    public function saveorderAjax()
+    {
+        // Drag reordering is only allowed for users who can change state.
+        $user = Factory::getUser();
+        if (!$user->authorise('core.edit.state', 'com_clubleaddir')) {
+            echo '0';
+            Factory::getApplication()->close();
+        }
+
+        // Joomla's sortablelist posts with Session token in the URL
+        // (…&tmpl=component) so checkToken('get') also passes.
+        if (!Session::checkToken('get') && !Session::checkToken('post')) {
+            echo '0';
+            Factory::getApplication()->close();
+        }
+
+        $pks   = array_map('intval', (array) $this->input->get('cid', array(), 'array'));
+        // order[] can arrive as array or as order[] form field.
+        $order = array_map('intval', (array) $this->input->get('order', array(), 'array'));
+        if (empty($order)) {
+            $order = array_map('intval', (array) $this->input->post->get('order', array(), 'array'));
+        }
+        if (empty($pks)) {
+            $pks = array_map('intval', (array) $this->input->post->get('cid', array(), 'array'));
+        }
+
+        $model = $this->getModel('Leadership', 'ClubleaddirModel');
+        $ok = false;
+        if (!empty($pks) && !empty($order)) {
+            $ok = $model->saveOrder($pks, $order);
+        }
+
+        echo $ok ? '1' : '0';
+        Factory::getApplication()->close();
     }
 
     /**
