@@ -148,9 +148,4 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
     {
         return ClubleaddirHelper::getTermOptions();
     }
-
-    public function getBackendName()
-    {
-        return ClubleaddirStore::backendName();
-    }
 }

@@ -22,7 +22,6 @@ class ClubleaddirViewLeaderships extends HtmlView
     protected $publishedOptions;
     protected $statusOptions;
     protected $termOptions;
-    protected $backendName;
     protected $filters = array();
 
     public function display($tpl = null)
@@ -36,16 +35,12 @@ class ClubleaddirViewLeaderships extends HtmlView
             $this->publishedOptions = array();
             $this->statusOptions    = array();
             $this->termOptions      = array();
-            $this->backendName      = '';
-            $this->health          = null;
         } else {
             $this->items            = $model->getItems();
             $this->typeOptions      = $model->getTypeOptions();
             $this->publishedOptions = $model->getPublishedOptions();
             $this->statusOptions    = $model->getStatusOptions();
             $this->termOptions      = $model->getTermOptions();
-            $this->backendName      = $model->getBackendName();
-            $this->health          = \ClubleaddirStore::health();
         }
 
         $this->filters = array(
@@ -62,10 +57,6 @@ class ClubleaddirViewLeaderships extends HtmlView
         ClubleaddirHelper::addSubmenu('leaderships');
         $this->addToolbar();
         $this->checkVacancyConfig();
-
-        if (\ClubleaddirStore::hasSqliteFallback()) {
-            Factory::getApplication()->enqueueMessage(Text::_('COM_CLUBLEADDIR_SQLITE_FALLBACK_WARNING'), 'warning');
-        }
 
         parent::display($tpl);
     }

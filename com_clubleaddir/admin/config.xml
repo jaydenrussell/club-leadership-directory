@@ -249,4 +249,19 @@
 			<option value="0">JNO</option>
 		</field>
 	</fieldset>
+
+	<fieldset
+		name="system"
+		label="COM_CLUBLEADDIR_CONFIG_SYSTEM_LABEL"
+	>
+		<field
+			name="backend"
+			type="text"
+			label="COM_CLUBLEADDIR_CONFIG_BACKEND_LABEL"
+			description="COM_CLUBLEADDIR_CONFIG_BACKEND_DESC"
+			default="JSON"
+			readonly="true"
+			filter="raw"
+		/>
+	</fieldset>
 </config>
