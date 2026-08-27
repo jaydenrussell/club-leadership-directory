@@ -238,9 +238,9 @@ class ClubleaddirControllerLeadership extends BaseController
         $ids = array_map('intval', (array) $this->input->post->get('cid', array(), 'array'));
         $ids = array_filter($ids, function ($id) { return $id > 0; });
 
-        $state = $this->input->getInt('state', null);
+        $state = $this->input->post->getInt('state', null);
         if ($state === null) {
-            $task  = (string) $this->input->getCmd('task');
+            $task  = (string) $this->input->post->getCmd('task');
             $state = (strpos($task, 'unpublish') !== false) ? 0 : 1;
         }
 

@@ -37,6 +37,7 @@ class ClubleaddirViewLeaderships extends HtmlView
             $this->statusOptions    = array();
             $this->termOptions      = array();
             $this->backendName      = '';
+            $this->health          = null;
         } else {
             $this->items            = $model->getItems();
             $this->typeOptions      = $model->getTypeOptions();
@@ -44,6 +45,7 @@ class ClubleaddirViewLeaderships extends HtmlView
             $this->statusOptions    = $model->getStatusOptions();
             $this->termOptions      = $model->getTermOptions();
             $this->backendName      = $model->getBackendName();
+            $this->health          = \ClubleaddirStore::health();
         }
 
         $this->filters = array(
@@ -60,6 +62,10 @@ class ClubleaddirViewLeaderships extends HtmlView
         ClubleaddirHelper::addSubmenu('leaderships');
         $this->addToolbar();
         $this->checkVacancyConfig();
+
+        if (\ClubleaddirStore::$sqliteFallback) {
+            Factory::getApplication()->enqueueMessage(Text::_('COM_CLUBLEADDIR_SQLITE_FALLBACK_WARNING'), 'warning');
+        }
 
         parent::display($tpl);
     }
@@ -88,7 +94,7 @@ class ClubleaddirViewLeaderships extends HtmlView
             $app = Factory::getApplication();
             $app->enqueueMessage(Text::_('COM_CLUBLEADDIR_VACANCY_CONFIG_WARNING'), 'warning');
         } catch (\Throwable $e) {
-            // Never fatal: config warning is advisory only.
+            error_log('Clubleaddir vacancy config check failed: ' . $e->getMessage());
         }
     }
 

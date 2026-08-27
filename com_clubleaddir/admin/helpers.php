@@ -184,7 +184,7 @@ class ClubleaddirHelper
 				}
 			}
 		} catch (\Throwable $e) {
-			// Store unavailable — return just the "all" option.
+			error_log('Clubleaddir getTypeOptions failed: ' . $e->getMessage());
 		}
 		return $options;
 	}
@@ -532,6 +532,7 @@ class ClubleaddirHelper
 
 			return $db->loadObject();
 		} catch (\Throwable $e) {
+			error_log('Clubleaddir contactRoute failed: ' . $e->getMessage());
 			return null;
 		}
 	}
@@ -712,8 +713,7 @@ class ClubleaddirHelper
 			}
 			return 'index.php?option=com_contact&view=contact&id=' . $contactId;
 		} catch (\Throwable $e) {
-			// Fall through — return empty so the caller uses its own
-			// email/phone fallback.
+			error_log('Clubleaddir photoUrl failed: ' . $e->getMessage());
 		}
 
 		return '';

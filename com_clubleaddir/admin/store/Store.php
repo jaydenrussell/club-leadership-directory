@@ -428,12 +428,36 @@ class ClubleaddirStoreJson extends ClubleaddirStoreBackend
         $this->file = $filePath;
         $dir = dirname($this->file);
         if (!is_dir($dir)) {
-            if (!mkdir($dir, 0755, true) && !is_dir($dir)) {
+            if (!mkdir($dir, 0700, true) && !is_dir($dir)) {
                 throw new RuntimeException('Cannot create data directory: ' . $dir);
             }
         }
+        // Harden existing installs that were created with looser permissions.
+        if (is_dir($dir)) {
+            @chmod($dir, 0700);
+            $ht = $dir . '/.htaccess';
+            if (!is_file($ht)) {
+                @file_put_contents($ht,
+                    "<Files *>\n"
+                    . "    Require all denied\n"
+                    . "</Files>\n"
+                    . "# Apache 2.2 fallback\n"
+                    . "<IfModule !mod_authz_core.c>\n"
+                    . "    Deny from all\n"
+                    . "</IfModule>\n"
+                );
+            }
+            $idx = $dir . '/index.html';
+            if (!is_file($idx)) {
+                @file_put_contents($idx, '');
+            }
+        }
         if (is_file($this->file)) {
-            $raw    = file_get_contents($this->file);
+            $raw = @file_get_contents($this->file);
+            if ($raw === false) {
+                error_log('Clubleaddir JSON unreadable: ' . $this->file);
+                $raw = '';
+            }
             $dec    = null;
             $broken = false;
 
@@ -452,7 +476,9 @@ class ClubleaddirStoreJson extends ClubleaddirStoreBackend
             // Quarantine an unreadable file so its contents are never silently
             // lost; the store then starts fresh.
             if ($broken && !empty($raw)) {
-                rename($this->file, $this->file . '.corrupt-' . date('Ymd-His'));
+                $quarantine = $this->file . '.corrupt-' . date('Ymd-His');
+                error_log('Clubleaddir JSON quarantined: ' . $this->file . ' -> ' . $quarantine);
+                rename($this->file, $quarantine);
             }
         }
         if (!isset($this->data['records']) || !is_array($this->data['records'])) {
@@ -874,6 +900,7 @@ class ClubleaddirStoreJson extends ClubleaddirStoreBackend
 class ClubleaddirStore
 {
     private static $instance = null;
+    private static $sqliteFallback = false;
 
     /**
      * Singleton accessor.
@@ -890,6 +917,7 @@ class ClubleaddirStore
                     self::$instance = new ClubleaddirStoreSqlite($dataDir . '/clubleaddir.db');
                     return self::$instance;
                 } catch (\Throwable $e) {
+                    self::$sqliteFallback = true;
                     error_log('Clubleaddir SQLite unavailable, falling back to JSON: ' . $e->getMessage());
                     // Fall through to JSON on any SQLite failure.
                 }
@@ -914,5 +942,49 @@ class ClubleaddirStore
             error_log('Clubleaddir backendName() failed: ' . $e->getMessage());
             return 'unknown';
         }
+    }
+
+    /**
+     * Health status for admin display.
+     *
+     * @return object {backend: string, lastWrite: string|null, warnings: array}
+     */
+    public static function health()
+    {
+        $warnings = array();
+        if (self::$sqliteFallback) {
+            $warnings[] = 'sqlite_fallback_to_json';
+        }
+        try {
+            $backend = self::getInstance();
+            $name = $backend->getBackendName();
+        } catch (\Throwable $e) {
+            $name = 'unknown';
+            $warnings[] = 'store_init_failed';
+        }
+
+        $lastWrite = null;
+        try {
+            $dataDir = JPATH_ROOT . '/media/com_clubleaddir/data';
+            if ($name === 'SQLite') {
+                $dbPath = $dataDir . '/clubleaddir.db';
+                if (is_file($dbPath)) {
+                    $lastWrite = date('Y-m-d H:i:s', filemtime($dbPath));
+                }
+            } else {
+                $jsonPath = $dataDir . '/clubleaddir.json';
+                if (is_file($jsonPath)) {
+                    $lastWrite = date('Y-m-d H:i:s', filemtime($jsonPath));
+                }
+            }
+        } catch (\Throwable $e) {
+            $warnings[] = 'last_write_check_failed';
+        }
+
+        return (object) array(
+            'backend'    => $name,
+            'lastWrite'  => $lastWrite,
+            'warnings'   => $warnings,
+        );
     }
 }

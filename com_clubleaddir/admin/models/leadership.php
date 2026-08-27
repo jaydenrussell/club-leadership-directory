@@ -2,6 +2,7 @@
 defined('_JEXEC') or die;
 use Joomla\CMS\Factory;
 use Joomla\CMS\Language\Text;
+use Joomla\CMS\Log\Log;
 use Joomla\CMS\MVC\Model\BaseDatabaseModel;
 require_once __DIR__ . '/../store/Store.php';
 class ClubleaddirModelLeadership extends BaseDatabaseModel
@@ -138,12 +139,17 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
         if($this->store===null) return false;
         $user = Factory::getUser();
         $ok = true;
-        foreach($pks as $i => $pk) {
-            $ord = isset($order[$i]) ? (int)$order[$i] : 0;
-            $ord = max(0, min(9999, $ord));
-            if(!$this->store->setOrdering((int)$pk, $ord)) {
-                $ok = false;
+        try {
+            foreach($pks as $i => $pk) {
+                $ord = isset($order[$i]) ? (int)$order[$i] : 0;
+                $ord = max(0, min(9999, $ord));
+                if(!$this->store->setOrdering((int)$pk, $ord)) {
+                    $ok = false;
+                }
             }
+        } catch (\Throwable $e) {
+            $ok = false;
+            Log::add('Clubleaddir saveOrder failed: ' . $e->getMessage(), Log::WARNING, 'com_clubleaddir');
         }
         if ($ok) {
             $this->logAudit('saveOrder', 0, array('pks' => $pks, 'order' => $order));
@@ -155,7 +161,7 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
             $user = Factory::getUser();
             $logDir = JPATH_ROOT . '/logs/com_clubleaddir';
             if (!is_dir($logDir) && !mkdir($logDir, 0700, true) && !is_dir($logDir)) {
-                error_log('Clubleaddir audit log: cannot create log dir: ' . $logDir);
+                Log::add('Clubleaddir audit log: cannot create log dir: ' . $logDir, Log::WARNING, 'com_clubleaddir');
                 return;
             }
             $date = Factory::getDate()->toSql();
@@ -169,10 +175,10 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
             );
             $file = $logDir . '/audit.log';
             if (file_put_contents($file, $entry, FILE_APPEND | LOCK_EX) === false) {
-                error_log('Clubleaddir audit log: write failed to: ' . $file);
+                Log::add('Clubleaddir audit log: write failed to: ' . $file, Log::WARNING, 'com_clubleaddir');
             }
         } catch (\Throwable $e) {
-            error_log('Clubleaddir audit log exception: ' . $e->getMessage());
+            Log::add('Clubleaddir audit log exception: ' . $e->getMessage(), Log::WARNING, 'com_clubleaddir');
         }
     }
     public function setError($msg){ Factory::getApplication()->enqueueMessage($msg,'error'); }

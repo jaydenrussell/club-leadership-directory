@@ -31,6 +31,31 @@ $saveOrder = ($listOrder === 'ordering');
     <?php echo Text::sprintf('COM_CLUBLEADDIR_BACKEND_NOTE', $this->escape($this->backendName)); ?>
 </div>
 
+<?php if (!empty($this->health)): ?>
+<?php
+    $health = $this->health;
+    $healthClass = 'alert-info';
+    if (!empty($health->warnings)) {
+        $healthClass = 'alert-warning';
+    }
+?>
+<div class="alert <?php echo $healthClass; ?>" style="margin: 0 0 18px;">
+    <strong><?php echo Text::_('COM_CLUBLEADDIR_HEALTH_STATUS'); ?>:</strong>
+    <?php echo Text::sprintf('COM_CLUBLEADDIR_HEALTH_BACKEND', $this->escape($health->backend)); ?>
+    <?php if ($health->lastWrite): ?>
+    | <?php echo Text::sprintf('COM_CLUBLEADDIR_HEALTH_LAST_WRITE', $this->escape($health->lastWrite)); ?>
+    <?php endif; ?>
+    <?php if (!empty($health->warnings)): ?>
+    <br><strong><?php echo Text::_('COM_CLUBLEADDIR_HEALTH_WARNINGS'); ?>:</strong>
+    <ul style="margin: 4px 0 0 20px; padding: 0;">
+        <?php foreach ($health->warnings as $warning): ?>
+        <li><?php echo $this->escape($warning); ?></li>
+        <?php endforeach; ?>
+    </ul>
+    <?php endif; ?>
+</div>
+<?php endif; ?>
+
 <form action="<?php echo Route::_('index.php?option=com_clubleaddir'); ?>" method="post" name="adminForm" id="adminForm">
 
     <div class="row-fluid" id="clubleaddirFilters" style="margin-bottom: 14px;">
