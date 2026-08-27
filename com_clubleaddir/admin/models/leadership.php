@@ -154,7 +154,8 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
         try {
             $user = Factory::getUser();
             $logDir = JPATH_ROOT . '/logs/com_clubleaddir';
-            if (!is_dir($logDir) && !@mkdir($logDir, 0700, true) && !is_dir($logDir)) {
+            if (!is_dir($logDir) && !mkdir($logDir, 0700, true) && !is_dir($logDir)) {
+                error_log('Clubleaddir audit log: cannot create log dir: ' . $logDir);
                 return;
             }
             $date = Factory::getDate()->toSql();
@@ -167,9 +168,11 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
                 json_encode($data, JSON_UNESCAPED_SLASHES)
             );
             $file = $logDir . '/audit.log';
-            @file_put_contents($file, $entry, FILE_APPEND | LOCK_EX);
+            if (file_put_contents($file, $entry, FILE_APPEND | LOCK_EX) === false) {
+                error_log('Clubleaddir audit log: write failed to: ' . $file);
+            }
         } catch (\Throwable $e) {
-            // Audit logging must never break the main flow.
+            error_log('Clubleaddir audit log exception: ' . $e->getMessage());
         }
     }
     public function setError($msg){ Factory::getApplication()->enqueueMessage($msg,'error'); }

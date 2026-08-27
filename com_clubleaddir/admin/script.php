@@ -123,11 +123,11 @@ class com_clubleaddirInstallerScript
 		$dir = JPATH_ROOT . '/images/clubleaddir/photos';
 
 		if (!is_dir($dir)) {
-			mkdir($dir, 0750, true);
+			mkdir($dir, 0755, true);
 		}
 
 		if (is_dir($dir)) {
-			chmod($dir, 0750);
+			chmod($dir, 0755);
 			$ht = $dir . '/.htaccess';
 			if (!is_file($ht)) {
 				file_put_contents($ht,
@@ -176,7 +176,7 @@ class com_clubleaddirInstallerScript
 		// ...and its orphaned manifest file, if any.
 		$zombiePkgManifest = JPATH_ADMINISTRATOR . '/manifests/packages/pkg_pkg_clubleaddir.xml';
 		if (is_file($zombiePkgManifest)) {
-			@unlink($zombiePkgManifest);
+			unlink($zombiePkgManifest);
 		}
 
 		// 2. Re-enable our own extension rows. A broken 2.0.x upgrade could leave
@@ -225,7 +225,7 @@ class com_clubleaddirInstallerScript
 			JPATH_ADMINISTRATOR . '/cache/_clble_update.log',
 		) as $logFile) {
 			if (is_file($logFile)) {
-				@unlink($logFile);
+				unlink($logFile);
 			}
 		}
 
@@ -326,7 +326,7 @@ class com_clubleaddirInstallerScript
 
 		// Drop the parent folder too when nothing else lives in it.
 		if (is_dir(JPATH_ROOT . '/images/clubleaddir')) {
-			@$this->deleteIfEmpty(JPATH_ROOT . '/images/clubleaddir');
+			$this->deleteIfEmpty(JPATH_ROOT . '/images/clubleaddir');
 		}
 	}
 
@@ -373,11 +373,11 @@ class com_clubleaddirInstallerScript
 			if (is_dir($path)) {
 				$this->deleteRecursive($path);
 			} else {
-				@unlink($path);
+				unlink($path);
 			}
 		}
 
-		@rmdir($dir);
+		rmdir($dir);
 	}
 
 	private function deleteIfEmpty($dir)
@@ -389,7 +389,7 @@ class com_clubleaddirInstallerScript
 		$entries = array_diff(scandir($dir), array('.', '..'));
 
 		if (empty($entries)) {
-			@rmdir($dir);
+			rmdir($dir);
 		}
 	}
 }

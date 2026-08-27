@@ -23,6 +23,7 @@ class ClubleaddirViewLeaderships extends HtmlView
 		try {
 			$this->groups = ClubleaddirHelper::getGroupedRoster();
 		} catch (\Throwable $e) {
+			error_log('Clubleaddir frontend getGroupedRoster failed: ' . $e->getMessage());
 			$this->groups = array(
 				'officers'         => array(),
 				'directors'        => array(),

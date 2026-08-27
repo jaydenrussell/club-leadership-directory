@@ -104,9 +104,10 @@ class ClubleaddirStoreSqlite extends ClubleaddirStoreBackend
         } catch (\Throwable $e) {
             // Quarantine the bad file (best-effort) and start over cleanly.
             $this->pdo = null;
+            error_log('Clubleaddir SQLite quarantine: ' . $e->getMessage() . ' — file: ' . $dbPath);
 
             if (is_file($dbPath)) {
-                @rename($dbPath, $dbPath . '.corrupt-' . date('Ymd-His'));
+                rename($dbPath, $dbPath . '.corrupt-' . date('Ymd-His'));
             }
 
             $this->connect($dbPath, $options);
@@ -128,6 +129,7 @@ class ClubleaddirStoreSqlite extends ClubleaddirStoreBackend
                 $this->pdo->exec('PRAGMA journal_mode = DELETE');
             }
         } catch (\Throwable $e) {
+            error_log('Clubleaddir WAL fallback to DELETE: ' . $e->getMessage());
             $this->pdo->exec('PRAGMA journal_mode = DELETE');
         }
 
@@ -458,6 +460,29 @@ class ClubleaddirStoreJson extends ClubleaddirStoreBackend
         }
     }
 
+    private function reload()
+    {
+        if (!is_file($this->file)) {
+            $this->data = array('records' => array());
+            return;
+        }
+        $raw = file_get_contents($this->file);
+        if ($raw === false) {
+            $this->data = array('records' => array());
+            return;
+        }
+        try {
+            $dec = json_decode($raw, true, 512, JSON_THROW_ON_ERROR);
+            if (is_array($dec) && isset($dec['records']) && is_array($dec['records'])) {
+                $this->data = $dec;
+            } else {
+                $this->data = array('records' => array());
+            }
+        } catch (\JsonException $e) {
+            $this->data = array('records' => array());
+        }
+    }
+
     public function getBackendName()
     {
         return 'JSON';
@@ -585,17 +610,17 @@ class ClubleaddirStoreJson extends ClubleaddirStoreBackend
             }
         }
 
-        $id = $this->nextId();
-        $filtered['id'] = $id;
-        if (!isset($filtered['status'])) {
-            $filtered['status'] = 'active';
-        }
-        if (!isset($filtered['published'])) {
-            $filtered['published'] = 1;
-        }
-
         $lock = fopen($this->file, 'c');
         if ($lock && flock($lock, LOCK_EX)) {
+            $this->reload();
+            $id = $this->nextId();
+            $filtered['id'] = $id;
+            if (!isset($filtered['status'])) {
+                $filtered['status'] = 'active';
+            }
+            if (!isset($filtered['published'])) {
+                $filtered['published'] = 1;
+            }
             $this->data['records'][] = $filtered;
             $ok = $this->save();
             flock($lock, LOCK_UN);
@@ -621,7 +646,15 @@ class ClubleaddirStoreJson extends ClubleaddirStoreBackend
         }
 
         $lock = fopen($this->file, 'c');
-        if ($lock && flock($lock, LOCK_EX)) {
+        if (!$lock || !flock($lock, LOCK_EX)) {
+            if ($lock) {
+                fclose($lock);
+            }
+            return false;
+        }
+
+        try {
+            $this->reload();
             foreach ($this->data['records'] as &$r) {
                 if ((int) $r['id'] === (int) $id) {
                     foreach ($filtered as $k => $v) {
@@ -636,16 +669,26 @@ class ClubleaddirStoreJson extends ClubleaddirStoreBackend
             unset($r);
             flock($lock, LOCK_UN);
             fclose($lock);
-        } elseif ($lock) {
+            return false;
+        } catch (\Throwable $e) {
+            flock($lock, LOCK_UN);
             fclose($lock);
+            throw $e;
         }
-        return false;
     }
 
     public function delete($id)
     {
         $lock = fopen($this->file, 'c');
-        if ($lock && flock($lock, LOCK_EX)) {
+        if (!$lock || !flock($lock, LOCK_EX)) {
+            if ($lock) {
+                fclose($lock);
+            }
+            return false;
+        }
+
+        try {
+            $this->reload();
             foreach ($this->data['records'] as $i => $r) {
                 if ((int) $r['id'] === (int) $id) {
                     unset($this->data['records'][$i]);
@@ -658,10 +701,12 @@ class ClubleaddirStoreJson extends ClubleaddirStoreBackend
             }
             flock($lock, LOCK_UN);
             fclose($lock);
-        } elseif ($lock) {
+            return false;
+        } catch (\Throwable $e) {
+            flock($lock, LOCK_UN);
             fclose($lock);
+            throw $e;
         }
-        return false;
     }
 
     public function setPublished($id, $published)
@@ -671,37 +716,56 @@ class ClubleaddirStoreJson extends ClubleaddirStoreBackend
 
     public function reorderSingle($id, $direction)
     {
-        $row = $this->getById($id);
-        if (!$row) {
+        $lock = fopen($this->file, 'c');
+        if (!$lock || !flock($lock, LOCK_EX)) {
+            if ($lock) {
+                fclose($lock);
+            }
             return false;
         }
 
-        $neighbors = array_filter($this->data['records'], function ($r) use ($row, $direction) {
-            if ($r['type'] !== $row->type) {
+        try {
+            $this->reload();
+
+            $row = null;
+            foreach ($this->data['records'] as $r) {
+                if ((int) $r['id'] === (int) $id) {
+                    $row = $r;
+                    break;
+                }
+            }
+            if (!$row) {
+                flock($lock, LOCK_UN);
+                fclose($lock);
                 return false;
             }
-            if ($direction < 0) {
-                return (int) $r['ordering'] < (int) $row->ordering;
+
+            $neighbors = array_filter($this->data['records'], function ($r) use ($row, $direction) {
+                if ($r['type'] !== $row['type']) {
+                    return false;
+                }
+                if ($direction < 0) {
+                    return (int) $r['ordering'] < (int) $row['ordering'];
+                }
+                return (int) $r['ordering'] > (int) $row['ordering'];
+            });
+
+            if (empty($neighbors)) {
+                flock($lock, LOCK_UN);
+                fclose($lock);
+                return true;
             }
-            return (int) $r['ordering'] > (int) $row->ordering;
-        });
 
-        if (empty($neighbors)) {
-            return true;
-        }
+            usort($neighbors, function ($a, $b) use ($direction) {
+                return $direction < 0
+                    ? (int) $b['ordering'] <=> (int) $a['ordering']
+                    : (int) $a['ordering'] <=> (int) $b['ordering'];
+            });
 
-        usort($neighbors, function ($a, $b) use ($direction) {
-            return $direction < 0
-                ? (int) $b['ordering'] <=> (int) $a['ordering']
-                : (int) $a['ordering'] <=> (int) $b['ordering'];
-        });
+            $neighbor = reset($neighbors);
+            $tmp = (int) $row['ordering'];
+            $newOrd = (int) $neighbor['ordering'];
 
-        $neighbor = reset($neighbors);
-        $tmp = (int) $row->ordering;
-        $newOrd = (int) $neighbor['ordering'];
-
-        $lock = fopen($this->file, 'c');
-        if ($lock && flock($lock, LOCK_EX)) {
             foreach ($this->data['records'] as &$r) {
                 if ((int) $r['id'] === (int) $id) {
                     $r['ordering'] = $newOrd;
@@ -710,22 +774,30 @@ class ClubleaddirStoreJson extends ClubleaddirStoreBackend
                 }
             }
             unset($r);
+
             $ok = $this->save();
             flock($lock, LOCK_UN);
             fclose($lock);
             return $ok;
-        }
-
-        if ($lock) {
+        } catch (\Throwable $e) {
+            flock($lock, LOCK_UN);
             fclose($lock);
+            throw $e;
         }
-        return false;
     }
 
     public function setOrdering($id, $ordering)
     {
         $lock = fopen($this->file, 'c');
-        if ($lock && flock($lock, LOCK_EX)) {
+        if (!$lock || !flock($lock, LOCK_EX)) {
+            if ($lock) {
+                fclose($lock);
+            }
+            return false;
+        }
+
+        try {
+            $this->reload();
             foreach ($this->data['records'] as &$r) {
                 if ((int) $r['id'] === (int) $id) {
                     $r['ordering'] = (int) $ordering;
@@ -738,32 +810,43 @@ class ClubleaddirStoreJson extends ClubleaddirStoreBackend
             unset($r);
             flock($lock, LOCK_UN);
             fclose($lock);
-        } elseif ($lock) {
+            return false;
+        } catch (\Throwable $e) {
+            flock($lock, LOCK_UN);
             fclose($lock);
+            throw $e;
         }
-        return false;
     }
 
     public function reorderAll($type = null)
     {
-        $rows = $this->data['records'];
-        if ($type !== null) {
-            $rows = array_filter($rows, function ($r) use ($type) {
-                return $r['type'] === $type;
-            });
+        $lock = fopen($this->file, 'c');
+        if (!$lock || !flock($lock, LOCK_EX)) {
+            if ($lock) {
+                fclose($lock);
+            }
+            return false;
         }
 
-        usort($rows, function ($a, $b) {
-            $oa = (int) ($a['ordering'] ?? 0);
-            $ob = (int) ($b['ordering'] ?? 0);
-            if ($oa !== $ob) {
-                return $oa <=> $ob;
-            }
-            return strcmp($a['name'] ?? '', $b['name'] ?? '');
-        });
+        try {
+            $this->reload();
 
-        $lock = fopen($this->file, 'c');
-        if ($lock && flock($lock, LOCK_EX)) {
+            $rows = $this->data['records'];
+            if ($type !== null) {
+                $rows = array_filter($rows, function ($r) use ($type) {
+                    return $r['type'] === $type;
+                });
+            }
+
+            usort($rows, function ($a, $b) {
+                $oa = (int) ($a['ordering'] ?? 0);
+                $ob = (int) ($b['ordering'] ?? 0);
+                if ($oa !== $ob) {
+                    return $oa <=> $ob;
+                }
+                return strcmp($a['name'] ?? '', $b['name'] ?? '');
+            });
+
             foreach ($rows as $i => $r) {
                 foreach ($this->data['records'] as &$rec) {
                     if ((int) $rec['id'] === (int) $r['id']) {
@@ -777,12 +860,11 @@ class ClubleaddirStoreJson extends ClubleaddirStoreBackend
             flock($lock, LOCK_UN);
             fclose($lock);
             return $ok;
-        }
-
-        if ($lock) {
+        } catch (\Throwable $e) {
+            flock($lock, LOCK_UN);
             fclose($lock);
+            throw $e;
         }
-        return false;
     }
 }
 
@@ -808,6 +890,7 @@ class ClubleaddirStore
                     self::$instance = new ClubleaddirStoreSqlite($dataDir . '/clubleaddir.db');
                     return self::$instance;
                 } catch (\Throwable $e) {
+                    error_log('Clubleaddir SQLite unavailable, falling back to JSON: ' . $e->getMessage());
                     // Fall through to JSON on any SQLite failure.
                 }
             }
@@ -828,6 +911,7 @@ class ClubleaddirStore
         try {
             return self::getInstance()->getBackendName();
         } catch (\Throwable $e) {
+            error_log('Clubleaddir backendName() failed: ' . $e->getMessage());
             return 'unknown';
         }
     }
