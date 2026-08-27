@@ -41,7 +41,7 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
             'published' => $app->input->get('filter_published', '', 'string'),
             'status'    => $app->input->get('filter_status', '', 'string'),
             'term'      => $app->input->get('filter_term', '', 'string'),
-            'search'    => $app->input->get('filter_search', '', 'string'),
+            'search'    => mb_substr($app->input->get('filter_search', '', 'string'), 0, 255),
         );
 
         $items = $this->store->getAll($filters);

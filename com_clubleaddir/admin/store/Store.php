@@ -88,7 +88,9 @@ class ClubleaddirStoreSqlite extends ClubleaddirStoreBackend
     {
         $dir = dirname($dbPath);
         if (!is_dir($dir)) {
-            @mkdir($dir, 0755, true);
+            if (!mkdir($dir, 0755, true) && !is_dir($dir)) {
+                throw new RuntimeException('Cannot create data directory: ' . $dir);
+            }
         }
 
         $options = array(
@@ -101,7 +103,7 @@ class ClubleaddirStoreSqlite extends ClubleaddirStoreBackend
             $this->connect($dbPath, $options);
         } catch (\Throwable $e) {
             // Quarantine the bad file (best-effort) and start over cleanly.
-            @$this->pdo = null;
+            $this->pdo = null;
 
             if (is_file($dbPath)) {
                 @rename($dbPath, $dbPath . '.corrupt-' . date('Ymd-His'));
@@ -116,7 +118,18 @@ class ClubleaddirStoreSqlite extends ClubleaddirStoreBackend
         $this->pdo = new PDO('sqlite:' . $dbPath, null, null, $options);
         // H-3: handle concurrent admin saves (two tabs saving at once)
         $this->pdo->exec('PRAGMA busy_timeout = 5000');
-        $this->pdo->exec('PRAGMA journal_mode = WAL');
+
+        // WAL requires robust file locking; fall back to DELETE on hosts/filesystems
+        // where locking is unreliable (NFS, some shared hosting).
+        try {
+            $this->pdo->exec('PRAGMA journal_mode = WAL');
+            $mode = $this->pdo->query('PRAGMA journal_mode')->fetchColumn();
+            if ($mode !== 'wal') {
+                $this->pdo->exec('PRAGMA journal_mode = DELETE');
+            }
+        } catch (\Throwable $e) {
+            $this->pdo->exec('PRAGMA journal_mode = DELETE');
+        }
 
         $this->pdo->exec(
             'CREATE TABLE IF NOT EXISTS records (' .
@@ -413,7 +426,9 @@ class ClubleaddirStoreJson extends ClubleaddirStoreBackend
         $this->file = $filePath;
         $dir = dirname($this->file);
         if (!is_dir($dir)) {
-            @mkdir($dir, 0755, true);
+            if (!mkdir($dir, 0755, true) && !is_dir($dir)) {
+                throw new RuntimeException('Cannot create data directory: ' . $dir);
+            }
         }
         if (is_file($this->file)) {
             $raw    = file_get_contents($this->file);
@@ -435,7 +450,7 @@ class ClubleaddirStoreJson extends ClubleaddirStoreBackend
             // Quarantine an unreadable file so its contents are never silently
             // lost; the store then starts fresh.
             if ($broken && !empty($raw)) {
-                @rename($this->file, $this->file . '.corrupt-' . date('Ymd-His'));
+                rename($this->file, $this->file . '.corrupt-' . date('Ymd-His'));
             }
         }
         if (!isset($this->data['records']) || !is_array($this->data['records'])) {
@@ -450,14 +465,24 @@ class ClubleaddirStoreJson extends ClubleaddirStoreBackend
 
     private function save()
     {
-        return file_put_contents($this->file, json_encode($this->data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES), LOCK_EX) !== false;
+        $lock = fopen($this->file, 'c');
+        if ($lock && flock($lock, LOCK_EX)) {
+            $ok = file_put_contents($this->file, json_encode($this->data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES), LOCK_EX) !== false;
+            flock($lock, LOCK_UN);
+            fclose($lock);
+            return $ok;
+        }
+        if ($lock) {
+            fclose($lock);
+        }
+        return false;
     }
 
     private function nextId()
     {
         $max = 0;
         foreach ($this->data['records'] as $r) {
-            if ((int) $r['id'] > $max) {
+            if ((int) ($r['id'] ?? 0) > $max) {
                 $max = (int) $r['id'];
             }
         }
@@ -551,42 +576,90 @@ class ClubleaddirStoreJson extends ClubleaddirStoreBackend
 
     public function insert(array $data)
     {
+        $allowed = array('name', 'type', 'role', 'league_name', 'term', 'start_year', 'end_year', 'bio', 'photo', 'photo_full',
+            'email', 'phone', 'contact_id', 'vacant', 'ordering', 'published', 'status', 'created', 'modified', 'created_by', 'modified_by');
+        $filtered = array();
+        foreach ($allowed as $c) {
+            if (array_key_exists($c, $data)) {
+                $filtered[$c] = $data[$c];
+            }
+        }
+
         $id = $this->nextId();
-        $data['id'] = $id;
-        if (!isset($data['status'])) {
-            $data['status'] = 'active';
+        $filtered['id'] = $id;
+        if (!isset($filtered['status'])) {
+            $filtered['status'] = 'active';
         }
-        if (!isset($data['published'])) {
-            $data['published'] = 1;
+        if (!isset($filtered['published'])) {
+            $filtered['published'] = 1;
         }
-        $this->data['records'][] = $data;
-        $this->save();
-        return $id;
+
+        $lock = fopen($this->file, 'c');
+        if ($lock && flock($lock, LOCK_EX)) {
+            $this->data['records'][] = $filtered;
+            $ok = $this->save();
+            flock($lock, LOCK_UN);
+            fclose($lock);
+            return $ok ? $id : false;
+        }
+
+        if ($lock) {
+            fclose($lock);
+        }
+        return false;
     }
 
     public function update($id, array $data)
     {
-        foreach ($this->data['records'] as &$r) {
-            if ((int) $r['id'] === (int) $id) {
-                foreach ($data as $k => $v) {
-                    $r[$k] = $v;
-                }
-                $this->save();
-                return true;
+        $allowed = array('name', 'type', 'role', 'league_name', 'term', 'start_year', 'end_year', 'bio', 'photo', 'photo_full',
+            'email', 'phone', 'contact_id', 'vacant', 'ordering', 'published', 'status', 'modified', 'modified_by');
+        $filtered = array();
+        foreach ($allowed as $c) {
+            if (array_key_exists($c, $data)) {
+                $filtered[$c] = $data[$c];
             }
+        }
+
+        $lock = fopen($this->file, 'c');
+        if ($lock && flock($lock, LOCK_EX)) {
+            foreach ($this->data['records'] as &$r) {
+                if ((int) $r['id'] === (int) $id) {
+                    foreach ($filtered as $k => $v) {
+                        $r[$k] = $v;
+                    }
+                    $ok = $this->save();
+                    flock($lock, LOCK_UN);
+                    fclose($lock);
+                    return $ok;
+                }
+            }
+            unset($r);
+            flock($lock, LOCK_UN);
+            fclose($lock);
+        } elseif ($lock) {
+            fclose($lock);
         }
         return false;
     }
 
     public function delete($id)
     {
-        foreach ($this->data['records'] as $i => $r) {
-            if ((int) $r['id'] === (int) $id) {
-                unset($this->data['records'][$i]);
-                $this->data['records'] = array_values($this->data['records']);
-                $this->save();
-                return true;
+        $lock = fopen($this->file, 'c');
+        if ($lock && flock($lock, LOCK_EX)) {
+            foreach ($this->data['records'] as $i => $r) {
+                if ((int) $r['id'] === (int) $id) {
+                    unset($this->data['records'][$i]);
+                    $this->data['records'] = array_values($this->data['records']);
+                    $ok = $this->save();
+                    flock($lock, LOCK_UN);
+                    fclose($lock);
+                    return $ok;
+                }
             }
+            flock($lock, LOCK_UN);
+            fclose($lock);
+        } elseif ($lock) {
+            fclose($lock);
         }
         return false;
     }
@@ -625,20 +698,48 @@ class ClubleaddirStoreJson extends ClubleaddirStoreBackend
 
         $neighbor = reset($neighbors);
         $tmp = (int) $row->ordering;
-        $this->update($id, array('ordering' => (int) $neighbor['ordering']));
-        $this->update($neighbor['id'], array('ordering' => $tmp));
+        $newOrd = (int) $neighbor['ordering'];
 
-        return true;
+        $lock = fopen($this->file, 'c');
+        if ($lock && flock($lock, LOCK_EX)) {
+            foreach ($this->data['records'] as &$r) {
+                if ((int) $r['id'] === (int) $id) {
+                    $r['ordering'] = $newOrd;
+                } elseif ((int) $r['id'] === (int) $neighbor['id']) {
+                    $r['ordering'] = $tmp;
+                }
+            }
+            unset($r);
+            $ok = $this->save();
+            flock($lock, LOCK_UN);
+            fclose($lock);
+            return $ok;
+        }
+
+        if ($lock) {
+            fclose($lock);
+        }
+        return false;
     }
 
     public function setOrdering($id, $ordering)
     {
-        foreach ($this->data['records'] as &$r) {
-            if ((int) $r['id'] === (int) $id) {
-                $r['ordering'] = (int) $ordering;
-                $this->save();
-                return true;
+        $lock = fopen($this->file, 'c');
+        if ($lock && flock($lock, LOCK_EX)) {
+            foreach ($this->data['records'] as &$r) {
+                if ((int) $r['id'] === (int) $id) {
+                    $r['ordering'] = (int) $ordering;
+                    $ok = $this->save();
+                    flock($lock, LOCK_UN);
+                    fclose($lock);
+                    return $ok;
+                }
             }
+            unset($r);
+            flock($lock, LOCK_UN);
+            fclose($lock);
+        } elseif ($lock) {
+            fclose($lock);
         }
         return false;
     }
@@ -661,11 +762,27 @@ class ClubleaddirStoreJson extends ClubleaddirStoreBackend
             return strcmp($a['name'] ?? '', $b['name'] ?? '');
         });
 
-        foreach ($rows as $i => $r) {
-            $this->setOrdering($r['id'], $i + 1);
+        $lock = fopen($this->file, 'c');
+        if ($lock && flock($lock, LOCK_EX)) {
+            foreach ($rows as $i => $r) {
+                foreach ($this->data['records'] as &$rec) {
+                    if ((int) $rec['id'] === (int) $r['id']) {
+                        $rec['ordering'] = $i + 1;
+                        break;
+                    }
+                }
+                unset($rec);
+            }
+            $ok = $this->save();
+            flock($lock, LOCK_UN);
+            fclose($lock);
+            return $ok;
         }
 
-        return true;
+        if ($lock) {
+            fclose($lock);
+        }
+        return false;
     }
 }
 

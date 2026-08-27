@@ -84,16 +84,16 @@ class com_clubleaddirInstallerScript
 		$dir = JPATH_ROOT . '/media/com_clubleaddir/data';
 
 		if (!is_dir($dir)) {
-			@mkdir($dir, 0700, true);
+			mkdir($dir, 0700, true);
 		}
 		// Harden existing installs that were created 0755 (world-readable on shared cPanel)
-		if (is_dir($dir)) { @chmod($dir, 0700); }
+		if (is_dir($dir)) { chmod($dir, 0700); }
 
 		// Apache: deny direct web access to the data file, using syntax that
 		// works on both Apache 2.2 and 2.4.
 		$ht = $dir . '/.htaccess';
 		if (is_dir($dir) && !is_file($ht)) {
-			@file_put_contents($ht,
+			file_put_contents($ht,
 				"<Files *>\n"
 				. "    Require all denied\n"
 				. "</Files>\n"
@@ -107,7 +107,7 @@ class com_clubleaddirInstallerScript
 		// Any other server: empty index to prevent directory listing.
 		$idx = $dir . '/index.html';
 		if (is_dir($dir) && !is_file($idx)) {
-			@file_put_contents($idx, '');
+			file_put_contents($idx, '');
 		}
 
 		$this->initUploadDir();
@@ -123,13 +123,14 @@ class com_clubleaddirInstallerScript
 		$dir = JPATH_ROOT . '/images/clubleaddir/photos';
 
 		if (!is_dir($dir)) {
-			@mkdir($dir, 0755, true);
+			mkdir($dir, 0750, true);
 		}
 
 		if (is_dir($dir)) {
+			chmod($dir, 0750);
 			$ht = $dir . '/.htaccess';
 			if (!is_file($ht)) {
-				@file_put_contents($ht,
+				file_put_contents($ht,
 					"<IfModule mod_php.c>\n"
 					. "    php_flag engine off\n"
 					. "</IfModule>\n"
@@ -145,7 +146,7 @@ class com_clubleaddirInstallerScript
 
 			$idx = $dir . '/index.html';
 			if (!is_file($idx)) {
-				@file_put_contents($idx, '');
+				file_put_contents($idx, '');
 			}
 		}
 	}

@@ -198,7 +198,9 @@ class ClubleaddirControllerLeadership extends BaseController
                 $store = \ClubleaddirStore::getInstance();
                 $trashed = $store->getAll(['published' => -2]);
                 foreach ($trashed as $row) { $ids[] = (int) $row->id; }
-            } catch (\Throwable $e) { }
+            } catch (\Throwable $e) {
+                Factory::getApplication()->enqueueMessage(Text::_('COM_CLUBLEADDIR_ERROR_LOADING_DATA'), 'warning');
+            }
         }
         if (empty($ids)) {
             Factory::getApplication()->enqueueMessage(Text::_('JERROR_NO_ITEMS_SELECTED'), 'error');
@@ -215,17 +217,16 @@ class ClubleaddirControllerLeadership extends BaseController
 
     public function publish()
     {
-        // jgrid.published toggle uses GET with token; toolbar Publish uses POST.
-        // Accept either, but still require token and core.edit.state.
-        $isGet = strtoupper($this->input->getMethod()) === 'GET';
-        $hasToken = $isGet ? Session::checkToken('get') : Session::checkToken();
-        if (!$hasToken) {
-            // Fall back to POST token check for toolbar
-            if (!Session::checkToken()) {
-                $this->setRedirect('index.php?option=com_clubleaddir&view=leaderships', Text::_('JINVALID_TOKEN'), 'error');
-                return false;
-            }
+        if (!$this->isPost()) {
+            $this->setRedirect('index.php?option=com_clubleaddir&view=leaderships', Text::_('JINVALID_TOKEN'), 'error');
+            return false;
         }
+
+        if (!Session::checkToken()) {
+            $this->setRedirect('index.php?option=com_clubleaddir&view=leaderships', Text::_('JINVALID_TOKEN'), 'error');
+            return false;
+        }
+
         $user = Factory::getUser();
         if (!$user->authorise('core.edit.state', 'com_clubleaddir')) {
             Factory::getApplication()->enqueueMessage(Text::_('JERROR_ALERTNOAUTHOR'), 'error');
@@ -234,16 +235,9 @@ class ClubleaddirControllerLeadership extends BaseController
         }
 
         $model = $this->getModel('Leadership', 'ClubleaddirModel');
-        // jgrid passes cid via GET, toolbar via POST — accept both
-        $ids = array_map('intval', (array) $this->input->get('cid', array(), 'array'));
-        if (empty(array_filter($ids))) {
-            $ids = array_map('intval', (array) $this->input->post->get('cid', array(), 'array'));
-        }
-        $ids   = array_filter($ids, function ($id) { return $id > 0; });
-        // From the toolbar the publish/unpublish buttons pass state via the
-        // 'state' request var; 1 = publish, 0 = unpublish. The jgrid toggle in
-        // the list passes it through 'task' (leadership.publish instead of
-        // leadership.unpublish), so derive from the task when absent.
+        $ids = array_map('intval', (array) $this->input->post->get('cid', array(), 'array'));
+        $ids = array_filter($ids, function ($id) { return $id > 0; });
+
         $state = $this->input->getInt('state', null);
         if ($state === null) {
             $task  = (string) $this->input->getCmd('task');
@@ -319,34 +313,37 @@ class ClubleaddirControllerLeadership extends BaseController
      */
     public function saveorderAjax()
     {
-        // Drag reordering is only allowed for users who can change state.
         $user = Factory::getUser();
         if (!$user->authorise('core.edit.state', 'com_clubleaddir')) {
             echo '0';
             Factory::getApplication()->close();
         }
 
-        // Joomla's sortablelist posts with Session token in the URL
-        // (…&tmpl=component) so checkToken('get') also passes.
-        if (!Session::checkToken('get') && !Session::checkToken('post')) {
+        if (!Session::checkToken('post')) {
             echo '0';
             Factory::getApplication()->close();
         }
 
-        $pks   = array_map('intval', (array) $this->input->get('cid', array(), 'array'));
-        // order[] can arrive as array or as order[] form field.
-        $order = array_map('intval', (array) $this->input->get('order', array(), 'array'));
-        if (empty($order)) {
-            $order = array_map('intval', (array) $this->input->post->get('order', array(), 'array'));
-        }
-        if (empty($pks)) {
-            $pks = array_map('intval', (array) $this->input->post->get('cid', array(), 'array'));
+        $pks   = array_map('intval', (array) $this->input->post->get('cid', array(), 'array'));
+        $order = array_map('intval', (array) $this->input->post->get('order', array(), 'array'));
+        $pks   = array_filter($pks, function ($id) { return $id > 0; });
+
+        if (empty($pks) || empty($order)) {
+            echo '0';
+            Factory::getApplication()->close();
         }
 
         $model = $this->getModel('Leadership', 'ClubleaddirModel');
+        foreach ($pks as $pk) {
+            if (!$user->authorise('core.edit', 'com_clubleaddir.leadership.' . (int) $pk)) {
+                echo '0';
+                Factory::getApplication()->close();
+            }
+        }
+
         $ok = false;
-        if (!empty($pks) && !empty($order)) {
-            $ok = $model->saveOrder($pks, $order);
+        if ($model->saveOrder($pks, $order)) {
+            $ok = true;
         }
 
         echo $ok ? '1' : '0';

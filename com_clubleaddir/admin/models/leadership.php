@@ -46,7 +46,8 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
         if(!empty($data['id'])){
             $existing=$this->store->getById((int)$data['id']); if($existing){ $record['created']=$existing->created; $record['created_by']=$existing->created_by; }
             $result=(bool)$this->store->update((int)$data['id'],$record);
-        }else{ $record['created']=$date; $record['created_by']=$userId; $result=(bool)$this->store->insert($record); }
+            if($result) $this->logAudit('update', (int)$data['id'], array('id' => (int)$data['id']));
+        }else{ $record['created']=$date; $record['created_by']=$userId; $result=(bool)$this->store->insert($record); if($result) $this->logAudit('insert', (int)$record['id'] ?? 0, array('record' => $record)); }
         if($result && $this->store!==null) $this->store->reorderAll($record['type']??null);
         return $result;
     }
@@ -71,22 +72,22 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
         if(($fileInfo['size']??0) > $maxSize){ $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_PHOTO_TOO_LARGE')); return false; }
         if(!is_file($fileInfo['tmp_name'])){ $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_PHOTO_UPLOAD_FAILED')); return false; }
         // Dimension check BEFORE loading into RAM — cheap-host OOM guard
-        $dims=@getimagesize($fileInfo['tmp_name']); if($dims && ($dims[0]>4000 || $dims[1]>4000)){ $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_PHOTO_DIMENSIONS')); return false; }
+        $dims=getimagesize($fileInfo['tmp_name']); if($dims && ($dims[0]>4000 || $dims[1]>4000)){ $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_PHOTO_DIMENSIONS')); return false; }
         if($dims && ($dims[0]*$dims[1] > 16000000)){ $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_PHOTO_DIMENSIONS')); return false; } // 16 MP cap
-        $mime=null; if(class_exists('finfo')){ try{$f=new \finfo(FILEINFO_MIME_TYPE); $mime=$f->file($fileInfo['tmp_name']);}catch(\Throwable $e){} }
+        $mime=null; if(class_exists('finfo')){ try{$f=new \finfo(FILEINFO_MIME_TYPE); $mime=$f->file($fileInfo['tmp_name']);}catch(\Throwable $e){ $mime=null; } }
         if(!$mime) $mime=mime_content_type($fileInfo['tmp_name']);
         if(!in_array($mime,$allowedMimes,true)){ $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_PHOTO_INVALID_TYPE')); return false; }
         $ext='jpg'; switch($mime){ case 'image/png': $ext='png'; break; case 'image/gif': $ext='gif'; break; case 'image/webp': $ext='webp'; break; }
-        $destDir=JPATH_ROOT.'/images/clubleaddir/photos'; if(!is_dir($destDir) && !@mkdir($destDir,0700,true) && !is_dir($destDir)){ $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_PHOTO_UPLOAD_FAILED')); return false; }
+        $destDir=JPATH_ROOT.'/images/clubleaddir/photos'; if(!is_dir($destDir) && !mkdir($destDir,0700,true) && !is_dir($destDir)){ $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_PHOTO_UPLOAD_FAILED')); return false; }
         try{ $base='photo_'.time().'_'.bin2hex(random_bytes(4)); }catch(\Throwable $e){ $base='photo_'.time().'_'.bin2hex(openssl_random_pseudo_bytes(4)); }
         $orig=$base.'.'.$ext; $square=$base.'_sq.'.$ext; $origPath=$destDir.'/'.$orig; $squarePath=$destDir.'/'.$square;
-        if(!@move_uploaded_file($fileInfo['tmp_name'],$origPath)){ $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_PHOTO_UPLOAD_FAILED')); return false; }
-        @chmod($origPath,0600); $this->makeSquareCrop($origPath,$squarePath,400); if(is_file($squarePath)) @chmod($squarePath,0600);
+        if(!move_uploaded_file($fileInfo['tmp_name'],$origPath)){ $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_PHOTO_UPLOAD_FAILED')); return false; }
+        chmod($origPath,0600); $this->makeSquareCrop($origPath,$squarePath,400); if(is_file($squarePath)) chmod($squarePath,0600);
         return ['/images/clubleaddir/photos/'.$orig,'/images/clubleaddir/photos/'.$square];
     }
     protected function makeSquareCrop($src,$dest,$size=400){
         if(!function_exists('imagecreatefromstring')) return false;
-        $img=@imagecreatefromstring(@file_get_contents($src)); if($img===false) return false;
+        $img=imagecreatefromstring(file_get_contents($src)); if($img===false) return false;
         $sw=imagesx($img); $sh=imagesy($img); if(!$sw||!$sh){ imagedestroy($img); return false; }
         $side=min($sw,$sh); $srcX=(int)(($sw-$side)/2); $srcY=(int)(($sh-$side)*0.38); if($srcY<0) $srcY=0;
         $out=imagecreatetruecolor($size,$size); if(!$out){ imagedestroy($img); return false; }
@@ -99,15 +100,77 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
         else $ok=imagejpeg($out,$dest,90);
         imagedestroy($img); imagedestroy($out); return (bool)$ok;
     }
-    public function delete(array $pks){ $ok=true; foreach($pks as $pk) if(!$this->store->delete((int)$pk)) $ok=false; return $ok; }
-    public function publish(array $pks,$state=1){ $ok=true; foreach($pks as $pk) if(!$this->store->setPublished((int)$pk,(int)$state)) $ok=false; return $ok; }
-    public function trash(array $pks){ return $this->publish($pks,-2); }
-    public function reorderSingle($id,$dir){ return $this->store->reorderSingle((int)$id,(int)$dir); }
-    public function saveOrder(array $pks,array $order){
+    public function delete(array $pks){
+        $user = Factory::getUser();
+        $ok = true;
+        foreach($pks as $pk) {
+            $id = (int)$pk;
+            if(!$this->store->delete($id)) {
+                $ok = false;
+            } else {
+                $this->logAudit('delete', $id, array('id' => $id));
+            }
+        }
+        return $ok;
+    }
+    public function publish(array $pks, $state=1){
+        $user = Factory::getUser();
+        $ok = true;
+        foreach($pks as $pk) {
+            $id = (int)$pk;
+            if(!$this->store->setPublished($id, (int)$state)) {
+                $ok = false;
+            } else {
+                $this->logAudit('publish', $id, array('id' => $id, 'state' => (int)$state));
+            }
+        }
+        return $ok;
+    }
+    public function trash(array $pks){ return $this->publish($pks, -2); }
+    public function reorderSingle($id, $dir){
+        $result = $this->store->reorderSingle((int)$id, (int)$dir);
+        if ($result) {
+            $this->logAudit('reorder', (int)$id, array('id' => (int)$id, 'direction' => (int)$dir));
+        }
+        return $result;
+    }
+    public function saveOrder(array $pks, array $order){
         if($this->store===null) return false;
-        // Clamp ordering to prevent N=999999 UPDATE storm from tampered POST
-        foreach($pks as $i=>$pk){ $ord=isset($order[$i])?(int)$order[$i]:0; $ord=max(0,min(9999,$ord)); $this->store->setOrdering((int)$pk,$ord); }
-        return true;
+        $user = Factory::getUser();
+        $ok = true;
+        foreach($pks as $i => $pk) {
+            $ord = isset($order[$i]) ? (int)$order[$i] : 0;
+            $ord = max(0, min(9999, $ord));
+            if(!$this->store->setOrdering((int)$pk, $ord)) {
+                $ok = false;
+            }
+        }
+        if ($ok) {
+            $this->logAudit('saveOrder', 0, array('pks' => $pks, 'order' => $order));
+        }
+        return $ok;
+    }
+    private function logAudit($action, $id, array $data) {
+        try {
+            $user = Factory::getUser();
+            $logDir = JPATH_ROOT . '/logs/com_clubleaddir';
+            if (!is_dir($logDir) && !@mkdir($logDir, 0700, true) && !is_dir($logDir)) {
+                return;
+            }
+            $date = Factory::getDate()->toSql();
+            $entry = sprintf(
+                "[%s] user=%d action=%s id=%d data=%s\n",
+                $date,
+                (int) $user->id,
+                $action,
+                (int) $id,
+                json_encode($data, JSON_UNESCAPED_SLASHES)
+            );
+            $file = $logDir . '/audit.log';
+            @file_put_contents($file, $entry, FILE_APPEND | LOCK_EX);
+        } catch (\Throwable $e) {
+            // Audit logging must never break the main flow.
+        }
     }
     public function setError($msg){ Factory::getApplication()->enqueueMessage($msg,'error'); }
 }
