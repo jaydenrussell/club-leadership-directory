@@ -327,10 +327,8 @@ class ClubleaddirHelper
 		$isVacant  = !empty($person->vacant);
 		$circular  = empty($options['circular']) ? false : true;
 
-		// Photo box only appears when this section's photo toggle is ON. Officers
-		// always get a photo slot (real photo or initials); a vacant post shows
-		// the club logo; directors/staff only show a box when they have a photo.
-		$showPhotoBox = $showPhoto && ($hasPhoto || $isOfficer || $isVacant);
+		// Photo box only for officers/directors with photos — vacant cards are compact text-only with shaded background (no logo image).
+		$showPhotoBox = $showPhoto && ($hasPhoto || $isOfficer);
 
 		// Vacant positions always display "Vacant" as the name (role goes underneath in metaHtml). Backend still stores the real name (e.g. Bar) for admin access.
 		$displayName = $isVacant ? Text::_('COM_CLUBLEADDIR_VACANT') : (string) ($person->name ?? '');

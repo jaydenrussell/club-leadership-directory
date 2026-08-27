@@ -97,8 +97,25 @@
 	transform: translateY(-2px);
 }
 .clubleaddir .clubleaddir-card--officer { }
-.clubleaddir .clubleaddir-card--director,
-.clubleaddir .clubleaddir-card--staff {
+.clubleaddir .clubleaddir-card--vacant {
+	background: linear-gradient(135deg, #fdf6e3 0%, #ffffff 100%);
+	border: 1px solid #e8d9a8;
+	border-left: 4px solid #b8963e;
+}
+.clubleaddir .clubleaddir-card--vacant .clubleadership-card-name {
+	background: #b8963e;
+	color: #fff !important;
+	padding: 0.25rem 0.9rem;
+	border-radius: 50px;
+	display: inline-block;
+	font-size: 0.95rem;
+	margin: 0.5rem 0 0.2rem;
+	font-weight: 700;
+	letter-spacing: 0.02em;
+}
+.clubleaddir .clubleaddir-card--vacant .clubleadership-card-vacant { display: none; }
+.clubleaddir .clubleadership-card--director,
+.clubleaddir .clubleadership-card--staff {
 	display: flex;
 	flex-direction: column;
 	min-height: 110px;
