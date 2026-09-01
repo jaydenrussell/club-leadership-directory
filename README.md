@@ -3,12 +3,11 @@
 A Joomla 3 component + module that publishes your club's leadership roster
 (officers, directors, league-appointed roles, staff) on the front end.
 
-**Why "standalone"?** The data is stored in its own **SQLite file** under
-`media/com_clubleaddir/data/` — completely separate from the Joomla / Community
-Builder MySQL database. There is no shared table and no CB dependency, so the
-extension can never take down the site database or leak into CB. If the server
-lacks the `pdo_sqlite` PHP extension, it automatically falls back to a **JSON**
-file with identical behaviour. A corrupted store is quarantined (renamed with a
+**Why "standalone"?** The data is stored in a plain **JSON file** under
+`administrator/components/com_clubleaddir/data/` — completely outside the web
+root and separate from the Joomla / Community Builder MySQL database. There is
+no shared table and no CB dependency, so the extension can never take down the
+site database or leak into CB. A corrupted store is quarantined (renamed with a
 timestamp suffix) and a fresh one is created — the public page never 500s.
 
 ---
@@ -34,8 +33,8 @@ timestamp suffix) and a fresh one is created — the public page never 500s.
 - **Vacancy handling** — vacant roles render a Vacant card; enquiries go to one
   global target (a Joomla Contact or a default email). A banner can be shown
   when any role is vacant.
-- **Isolated, injection-proof data store** — prepared statements (SQLite) or a
-  plain file (JSON). No user input ever reaches a query string.
+- **Isolated, injection-proof data store** — plain JSON file with `flock()`
+   locking. No user input ever reaches a query string.
 - **Safe uploads** — photos are validated by real MIME type (`finfo`), capped at
   2 MB, stored under a random name in `images/clubleaddir/photos/` (`.htaccess`
   locked down).
@@ -46,8 +45,8 @@ timestamp suffix) and a fresh one is created — the public page never 500s.
 |---|---|
 | Joomla | 3.x (tested against 3.10.x) |
 | PHP | 7.4+ recommended |
-| Storage | `pdo_sqlite` (preferred) — **or** any PHP install for the JSON fallback |
-| Web server | Apache (data + upload folders get generated `.htaccess` files). On nginx/LiteSpeed add your own `deny` rule — see *Security* below. |
+| Storage | JSON file (no database extension required) |
+| Web server | Any (data directory is outside the web root; upload folder gets `.htaccess` for Apache). |
 
 ## Install (one file, one click)
 
@@ -65,7 +64,7 @@ The extension ships as a **single package**: **`pkg_clubleaddir.zip`**.
 
 ## Uninstall behaviour
 
-1. The roster is exported to `images/clubleaddir-backup-YYYYMMDD-HHMM.json`
+1. The roster is exported to `logs/com_clubleaddir/backup-YYYYMMDD-HHMM.json`
    first (a message shows where).
 2. All code, media, data files, upload folders, own menu items, hidden-menu
    artifacts, logs and orphan manifests are removed.
@@ -96,21 +95,17 @@ pwsh -NoProfile -File scripts/build.ps1
 
 ## Security notes
 
-- **No SQL injection surface.** Roster reads/writes go through parameterized
-  SQLite statements; the JSON fallback has no query language at all.
+- **No SQL injection surface.** Roster reads/writes go through a plain JSON
+   file with exclusive file locking.
 - The installer never manipulates `#__update_sites` or hand-inserts extension
   rows — Joomla's own installer handles everything.
 - **Output is escaped**; phone numbers are stripped before being placed in a
   `tel:` link.
 - **CSRF** protected on every write (POST + token).
 - **ACL** gates delete / publish / reorder.
-- **Data file exposure:** the installer writes `Deny from all` `.htaccess`
-  files into the data and photo folders. On **nginx or LiteSpeed** add your own
-  rule, e.g.:
-
-  ```nginx
-  location ~* /media/com_clubleaddir/data/ { deny all; }
-  ```
+- **Data file exposure:** the data directory lives outside the web root
+  (`administrator/components/com_clubleaddir/data/`), so it is never reachable
+  via HTTP. The photo upload folder gets a `.htaccess` lock-down for Apache.
 
 ## License
 

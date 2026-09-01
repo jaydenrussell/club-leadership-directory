@@ -188,6 +188,15 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
                 json_encode($data, JSON_UNESCAPED_SLASHES)
             );
             $file = $logDir . '/audit.log';
+            if (is_file($file) && filesize($file) > 10485760) {
+                for ($i = 5; $i >= 1; $i--) {
+                    $src = $file . ($i === 1 ? '' : '.' . ($i - 1));
+                    $dst = $file . '.' . $i;
+                    if (is_file($src)) {
+                        rename($src, $dst);
+                    }
+                }
+            }
             if (file_put_contents($file, $entry, FILE_APPEND | LOCK_EX) === false) {
                 Log::add('Clubleaddir audit log: write failed to: ' . $file, Log::WARNING, 'com_clubleaddir');
             }

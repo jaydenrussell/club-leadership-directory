@@ -4,12 +4,12 @@
  *
  * This component intentionally does NOT use the Joomla MySQL database.
  * Records are kept in a plain JSON file at:
- *   JPATH_ROOT . '/media/com_clubleaddir/data/clubleaddir.json'
+ *   JPATH_ADMINISTRATOR . '/components/com_clubleaddir/data/clubleaddir.json'
  *
- * The data lives OUTSIDE the Joomla/CB MySQL instance, so a bug or
- * compromise here can never affect Joomla core, Community Builder, or any other
- * table. There is no SQL injection surface: the JSON backend performs no
- * query language at all.
+ * The data lives OUTSIDE the Joomla/CB MySQL instance AND outside the web root,
+ * so a bug or compromise here can never affect Joomla core, Community Builder,
+ * or any other table. There is no SQL injection surface: the JSON backend
+ * performs no query language at all. The file is not reachable via HTTP.
  *
  * @package     Joomla.Administrator
  * @subpackage  com_clubleaddir
@@ -40,12 +40,12 @@ class ClubleaddirStoreJson
             }
         }
         if (is_dir($dir)) {
-            if (!@chmod($dir, 0700)) {
+            if (!chmod($dir, 0700)) {
                 Log::add('Clubleaddir Store: cannot chmod data directory to 0700: ' . $dir, Log::WARNING, 'com_clubleaddir');
             }
             $ht = $dir . '/.htaccess';
             if (!is_file($ht)) {
-                if (@file_put_contents($ht,
+                if (file_put_contents($ht,
                     "<Files *>\n"
                     . "    Require all denied\n"
                     . "</Files>\n"
@@ -59,13 +59,13 @@ class ClubleaddirStoreJson
             }
             $idx = $dir . '/index.html';
             if (!is_file($idx)) {
-                if (@file_put_contents($idx, '') === false) {
+                if (file_put_contents($idx, '') === false) {
                     Log::add('Clubleaddir Store: cannot write index.html: ' . $idx, Log::WARNING, 'com_clubleaddir');
                 }
             }
             $wc = $dir . '/web.config';
             if (!is_file($wc)) {
-                if (@file_put_contents($wc,
+                if (file_put_contents($wc,
                     "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
                     . "<configuration>\n"
                     . "    <system.webServer>\n"
@@ -99,7 +99,15 @@ class ClubleaddirStoreJson
             }
 
             if (is_array($dec) && isset($dec['records']) && is_array($dec['records'])) {
-                $this->data = $dec;
+                foreach ($dec['records'] as $r) {
+                    if (!is_array($r) || !isset($r['id']) || !is_int($r['id'])) {
+                        $broken = true;
+                        break;
+                    }
+                }
+                if (!$broken) {
+                    $this->data = $dec;
+                }
             } else {
                 $broken = true;
             }
@@ -117,8 +125,17 @@ class ClubleaddirStoreJson
                 try {
                     $dec = json_decode($bak, true, 512, JSON_THROW_ON_ERROR);
                     if (is_array($dec) && isset($dec['records']) && is_array($dec['records'])) {
-                        $this->data = $dec;
-                        $this->save();
+                        $valid = true;
+                        foreach ($dec['records'] as $r) {
+                            if (!is_array($r) || !isset($r['id']) || !is_int($r['id'])) {
+                                $valid = false;
+                                break;
+                            }
+                        }
+                        if ($valid) {
+                            $this->data = $dec;
+                            $this->save();
+                        }
                     }
                 } catch (\JsonException $e) {
                     // .bak is also corrupt; leave data empty.
@@ -547,8 +564,20 @@ class ClubleaddirStore
     public static function getInstance()
     {
         if (self::$instance === null) {
-            $dataDir = JPATH_ROOT . '/media/com_clubleaddir/data';
-            self::$instance = new ClubleaddirStoreJson($dataDir . '/clubleaddir.json');
+            $dataDir = JPATH_ADMINISTRATOR . '/components/com_clubleaddir/data';
+            $newPath = $dataDir . '/clubleaddir.json';
+            $oldPath = JPATH_ROOT . '/media/com_clubleaddir/data/clubleaddir.json';
+
+            if (!is_file($newPath) && is_file($oldPath)) {
+                if (!is_dir($dataDir) && mkdir($dataDir, 0700, true) && is_dir($dataDir)) {
+                    if (!chmod($dataDir, 0700)) {
+                        Log::add('Clubleaddir Store: cannot chmod migrated data directory to 0700: ' . $dataDir, Log::WARNING, 'com_clubleaddir');
+                    }
+                    copy($oldPath, $newPath);
+                }
+            }
+
+            self::$instance = new ClubleaddirStoreJson($newPath);
         }
 
         return self::$instance;

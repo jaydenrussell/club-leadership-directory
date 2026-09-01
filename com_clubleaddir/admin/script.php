@@ -77,61 +77,19 @@ class com_clubleaddirInstallerScript
 	}
 
 	/**
-	 * Create the isolated data directory under /media/com_clubleaddir/data
-	 * and lock it down so the JSON file can never be fetched over HTTP.
+	 * Create the isolated data directory under /administrator/components/com_clubleaddir/data
+	 * (outside the web root) so the JSON file can never be fetched over HTTP.
 	 */
 	private function initDataDir()
 	{
-		$dir = JPATH_ROOT . '/media/com_clubleaddir/data';
+		$dir = JPATH_ADMINISTRATOR . '/components/com_clubleaddir/data';
 
 		if (!is_dir($dir)) {
 			mkdir($dir, 0700, true);
 		}
-		// Harden existing installs that were created 0755 (world-readable on shared cPanel)
-		if (is_dir($dir)) { chmod($dir, 0700); }
-
-		// Apache: deny direct web access to the data file, using syntax that
-		// works on both Apache 2.2 and 2.4.
-		$ht = $dir . '/.htaccess';
-		if (is_dir($dir) && !is_file($ht)) {
-			file_put_contents($ht,
-				"<Files *>\n"
-				. "    Require all denied\n"
-				. "</Files>\n"
-				. "# Apache 2.2 fallback\n"
-				. "<IfModule !mod_authz_core.c>\n"
-				. "    Deny from all\n"
-				. "</IfModule>\n"
-			);
+		if (is_dir($dir)) {
+			chmod($dir, 0700);
 		}
-
-		// Any other server: empty index to prevent directory listing.
-		$idx = $dir . '/index.html';
-		if (is_dir($dir) && !is_file($idx)) {
-			file_put_contents($idx, '');
-		}
-
-		// IIS: block access to the data directory via web.config.
-		$wc = $dir . '/web.config';
-		if (is_dir($dir) && !is_file($wc)) {
-			file_put_contents($wc,
-				"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-				. "<configuration>\n"
-				. "    <system.webServer>\n"
-				. "        <security>\n"
-				. "            <requestFiltering>\n"
-				. "                <hiddenSegments>\n"
-				. "                    <add segment=\"data\" />\n"
-				. "                </hiddenSegments>\n"
-				. "            </requestFiltering>\n"
-				. "        </security>\n"
-				. "    </system.webServer>\n"
-				. "</configuration>\n"
-			);
-		}
-
-		// Nginx: add this to your server block to block access to the data directory.
-		// location ~* ^/media/com_clubleaddir/data/ { deny all; return 404; }
 
 		$this->initUploadDir();
 	}
