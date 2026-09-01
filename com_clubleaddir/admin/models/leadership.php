@@ -44,12 +44,22 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
             $existing=$this->store->getById((int)$data['id']); if($existing){ $record['photo']=$existing->photo; $record['photo_full']=$existing->photo_full; }
         }
         $record['modified']=$date; $record['modified_by']=$userId;
+        $orderingChanged = false;
         if(!empty($data['id'])){
-            $existing=$this->store->getById((int)$data['id']); if($existing){ $record['created']=$existing->created; $record['created_by']=$existing->created_by; }
+            $existing=$this->store->getById((int)$data['id']);
+            if($existing){
+                $record['created']=$existing->created; $record['created_by']=$existing->created_by;
+                $orderingChanged = ((int)($record['ordering'] ?? 0) !== (int)($existing->ordering ?? 0));
+            }
             $result=(bool)$this->store->update((int)$data['id'],$record);
             if($result) $this->logAudit('update', (int)$data['id'], array('id' => (int)$data['id']));
-        }else{ $record['created']=$date; $record['created_by']=$userId; $result=(bool)$this->store->insert($record); if($result) $this->logAudit('insert', (int)$record['id'] ?? 0, array('record' => $record)); }
-        if($result && $this->store!==null) $this->store->reorderAll($record['type']??null);
+        }else{
+            $record['created']=$date; $record['created_by']=$userId;
+            $orderingChanged = ((int)($record['ordering'] ?? 0) === 0);
+            $result=(bool)$this->store->insert($record);
+            if($result) $this->logAudit('insert', (int)$record['id'] ?? 0, array('record' => $record));
+        }
+        if($result && $this->store!==null && $orderingChanged) $this->store->reorderAll($record['type']??null);
         return $result;
     }
     private function validate(array $data){
@@ -147,11 +157,13 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
                 $ord = max(0, min(9999, $ord));
                 if(!$this->store->setOrdering((int)$pk, $ord)) {
                     $ok = false;
+                    $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_SAVING'));
                 }
             }
         } catch (\Throwable $e) {
             $ok = false;
             Log::add('Clubleaddir saveOrder failed: ' . $e->getMessage(), Log::WARNING, 'com_clubleaddir');
+            $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_SAVING'));
         }
         if ($ok) {
             $this->logAudit('saveOrder', 0, array('pks' => $pks, 'order' => $order));

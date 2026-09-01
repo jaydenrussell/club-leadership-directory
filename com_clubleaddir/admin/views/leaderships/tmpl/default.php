@@ -15,6 +15,7 @@ use Joomla\CMS\Router\Route;
 
 HTMLHelper::_('behavior.core');
 HTMLHelper::_('sortablelist.sortable', 'clubleaddirList', 'adminForm', 'asc', 'index.php?option=com_clubleaddir&task=leadership.saveorderAjax&tmpl=component');
+HTMLHelper::stylesheet('com_clubleaddir/admin-list.css', array('relative' => true));
 
 $typeFilter        = $this->filters['type'];
 $publishedFilter   = $this->filters['published'];
@@ -222,18 +223,3 @@ $saveOrder = ($listOrder === 'ordering');
     <input type="hidden" name="filter_order_Dir" value="<?php echo $listDirn; ?>">
     <?php echo HTMLHelper::_('form.token'); ?>
 </form>
-
-<style>
-#clubleaddirList th, #clubleaddirList td { vertical-align: middle; }
-#clubleaddirList td.order { text-align: center; }
-#clubleaddirList .sortable-handler { cursor: move; color: #999; }
-#clubleaddirList .sortable-handler.inactive { opacity: 0.3; cursor: default; }
-#clubleaddirList .sortable-handler:hover:not(.inactive) { color: #333; }
-@media (max-width: 767px) {
-    #clubleaddirFilters .span8,
-    #clubleaddirFilters .span4 { width: 100% !important; margin-left: 0 !important; float: none !important; text-align: left !important; }
-    #clubleaddirFilters select { width: 100% !important; max-width: 100%; box-sizing: border-box; margin-bottom: 6px; }
-    #clubleaddirFilters .input-append { width: 100%; }
-    #clubleaddirFilters .input-xlarge { width: 100%; box-sizing: border-box; }
-}
-</style>

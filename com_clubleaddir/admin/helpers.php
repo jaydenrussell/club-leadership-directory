@@ -850,6 +850,12 @@ class ClubleaddirHelper
 			if (strpos($lower, '//') === 0) {
 				return '/media/com_clubleaddir/images/vacant-person.svg';
 			}
+			if (strpos($custom, '..') !== false) {
+				return '/media/com_clubleaddir/images/vacant-person.svg';
+			}
+			if ($custom[0] !== '/') {
+				return '/media/com_clubleaddir/images/vacant-person.svg';
+			}
 			return self::photoUrl($custom);
 		}
 

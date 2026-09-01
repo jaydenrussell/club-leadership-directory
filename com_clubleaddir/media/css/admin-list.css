@@ -1,0 +1,45 @@
+/**
+ * Club Leadership Directory — administrator list view styles.
+ * Shipped by com_clubleaddir to /media/com_clubleaddir/css/admin-list.css.
+ */
+
+#clubleaddirList th,
+#clubleaddirList td {
+	vertical-align: middle;
+}
+#clubleaddirList td.order {
+	text-align: center;
+}
+#clubleaddirList .sortable-handler {
+	cursor: move;
+	color: #999;
+}
+#clubleaddirList .sortable-handler.inactive {
+	opacity: 0.3;
+	cursor: default;
+}
+#clubleaddirList .sortable-handler:hover:not(.inactive) {
+	color: #333;
+}
+@media (max-width: 767px) {
+	#clubleaddirFilters .span8,
+	#clubleaddirFilters .span4 {
+		width: 100% !important;
+		margin-left: 0 !important;
+		float: none !important;
+		text-align: left !important;
+	}
+	#clubleaddirFilters select {
+		width: 100% !important;
+		max-width: 100%;
+		box-sizing: border-box;
+		margin-bottom: 6px;
+	}
+	#clubleaddirFilters .input-append {
+		width: 100%;
+	}
+	#clubleaddirFilters .input-xlarge {
+		width: 100%;
+		box-sizing: border-box;
+	}
+}

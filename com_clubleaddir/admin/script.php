@@ -330,9 +330,12 @@ class com_clubleaddirInstallerScript
 		}
 
 		$file = 'backup-' . date('Ymd-His') . '.json';
+		$backupPath = $logDir . '/' . $file;
 
-		if (@file_put_contents($logDir . '/' . $file, json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)) !== false) {
+		if (file_put_contents($backupPath, json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)) !== false) {
 			$this->backupPath = 'logs/com_clubleaddir/' . $file;
+		} else {
+			Log::add('Clubleaddir uninstall: cannot write backup to ' . $backupPath, Log::WARNING, 'com_clubleaddir');
 		}
 	}
 

@@ -257,29 +257,6 @@ class ClubleaddirControllerLeadership extends BaseController
         $this->setRedirect('index.php?option=com_clubleaddir&view=leaderships');
     }
 
-    public function reorder()
-    {
-        if (!$this->guardState()) {
-            return false;
-        }
-
-        $model     = $this->getModel('Leadership', 'ClubleaddirModel');
-        $id        = $this->input->getInt('id');
-        $direction = $this->input->getInt('direction', 1);
-
-        if ($id < 1) {
-            Factory::getApplication()->enqueueMessage(Text::_('JERROR_NO_ITEMS_SELECTED'), 'error');
-            $this->setRedirect('index.php?option=com_clubleaddir&view=leaderships');
-            return false;
-        }
-
-        if ($model->reorderSingle($id, $direction)) {
-            $this->setMessage(Text::_('COM_CLUBLEADDIR_ITEM_REORDERED'));
-        }
-
-        $this->setRedirect('index.php?option=com_clubleaddir&view=leaderships');
-    }
-
     public function saveorder()
     {
         if (!$this->guardState()) {

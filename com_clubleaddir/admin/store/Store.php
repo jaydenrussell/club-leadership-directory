@@ -20,6 +20,7 @@
 defined('_JEXEC') or die;
 
 use Joomla\CMS\Factory;
+use Joomla\CMS\Log\Log;
 
 /**
  * JSON file backend.
@@ -39,10 +40,12 @@ class ClubleaddirStoreJson
             }
         }
         if (is_dir($dir)) {
-            @chmod($dir, 0700);
+            if (!@chmod($dir, 0700)) {
+                Log::add('Clubleaddir Store: cannot chmod data directory to 0700: ' . $dir, Log::WARNING, 'com_clubleaddir');
+            }
             $ht = $dir . '/.htaccess';
             if (!is_file($ht)) {
-                @file_put_contents($ht,
+                if (@file_put_contents($ht,
                     "<Files *>\n"
                     . "    Require all denied\n"
                     . "</Files>\n"
@@ -50,15 +53,19 @@ class ClubleaddirStoreJson
                     . "<IfModule !mod_authz_core.c>\n"
                     . "    Deny from all\n"
                     . "</IfModule>\n"
-                );
+                ) === false) {
+                    Log::add('Clubleaddir Store: cannot write .htaccess: ' . $ht, Log::WARNING, 'com_clubleaddir');
+                }
             }
             $idx = $dir . '/index.html';
             if (!is_file($idx)) {
-                @file_put_contents($idx, '');
+                if (@file_put_contents($idx, '') === false) {
+                    Log::add('Clubleaddir Store: cannot write index.html: ' . $idx, Log::WARNING, 'com_clubleaddir');
+                }
             }
             $wc = $dir . '/web.config';
             if (!is_file($wc)) {
-                @file_put_contents($wc,
+                if (@file_put_contents($wc,
                     "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
                     . "<configuration>\n"
                     . "    <system.webServer>\n"
@@ -71,11 +78,13 @@ class ClubleaddirStoreJson
                     . "        </security>\n"
                     . "    </system.webServer>\n"
                     . "</configuration>\n"
-                );
+                ) === false) {
+                    Log::add('Clubleaddir Store: cannot write web.config: ' . $wc, Log::WARNING, 'com_clubleaddir');
+                }
             }
         }
         if (is_file($this->file)) {
-            $raw = @file_get_contents($this->file);
+            $raw = file_get_contents($this->file);
             if ($raw === false) {
                 error_log('Clubleaddir JSON unreadable: ' . $this->file);
                 $raw = '';
@@ -103,7 +112,7 @@ class ClubleaddirStoreJson
         }
 
         if ((!isset($this->data['records']) || empty($this->data['records'])) && is_file($this->file . '.bak')) {
-            $bak = @file_get_contents($this->file . '.bak');
+            $bak = file_get_contents($this->file . '.bak');
             if ($bak !== false) {
                 try {
                     $dec = json_decode($bak, true, 512, JSON_THROW_ON_ERROR);
@@ -149,8 +158,8 @@ class ClubleaddirStoreJson
     {
         $lock = fopen($this->file, 'c');
         if ($lock && flock($lock, LOCK_EX)) {
-            if (is_file($this->file)) {
-                @copy($this->file, $this->file . '.bak');
+            if (is_file($this->file) && !copy($this->file, $this->file . '.bak')) {
+                Log::add('Clubleaddir Store: cannot create backup: ' . ($this->file . '.bak'), Log::WARNING, 'com_clubleaddir');
             }
             $ok = file_put_contents($this->file, json_encode($this->data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES), LOCK_EX) !== false;
             flock($lock, LOCK_UN);

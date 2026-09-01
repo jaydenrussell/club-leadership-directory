@@ -1,0 +1,125 @@
+/**
+ * Club Leadership Directory — administrator edit form styles.
+ * Shipped by com_clubleaddir to /media/com_clubleaddir/css/admin-edit.css.
+ */
+
+.clble-invalid {
+	border-color: #b94a48 !important;
+	box-shadow: 0 0 0 1px #b94a48 !important;
+}
+.clble-disabled {
+	opacity: 0.5;
+	pointer-events: none;
+}
+.clble-disabled .control-label label {
+	color: #999;
+}
+.clble-photo-col {
+	text-align: center;
+}
+.clble-photo-col .thumbnail,
+.clble-photo-col .clble-photo-placeholder {
+	width: 120px;
+	height: 120px;
+	line-height: 120px;
+	text-align: center;
+	color: #bbb;
+	margin: 0 auto 8px;
+	background: #eef0f2;
+	border: 1px solid #e3e7ea;
+	border-radius: 4px;
+}
+.clble-photo-col img.thumbnail {
+	object-fit: cover;
+}
+.clble-contact-picked {
+	font-size: 11px;
+	color: #555;
+	margin-top: 4px;
+}
+.clble-help-note {
+	font-size: 10px;
+	color: #8a6d3b;
+	margin-top: 3px;
+	font-style: italic;
+}
+#bio {
+	resize: vertical;
+	min-height: 120px;
+	width: 100%;
+	max-width: 100%;
+	box-sizing: border-box;
+}
+.clble-edit-section .inputbox,
+.clble-edit-section .controls input[type="text"],
+.clble-edit-section .controls input[type="email"],
+.clble-edit-section .controls input[type="tel"],
+.clble-edit-section .controls select,
+.clble-edit-section .controls textarea {
+	width: 100%;
+	max-width: 100%;
+	box-sizing: border-box;
+}
+.clble-edit-section .controls .input-append {
+	width: 100%;
+}
+.clble-edit-section .controls .input-append input#contact_id {
+	width: 90px !important;
+	flex: 0 0 90px;
+}
+.clble-edit-section #name,
+.clble-edit-section #type,
+.clble-edit-section #role,
+.clble-edit-section #role_select,
+.clble-edit-section #role_text,
+.clble-edit-section #term,
+.clble-edit-section #league_name {
+	min-width: 0;
+}
+.clble-edit-section .controls textarea#bio {
+	min-height: 140px;
+}
+
+.clble-edit-section {
+	background: #f8f9fa;
+	border: 1px solid #dee2e6;
+	border-radius: 4px;
+	padding: 16px 14px;
+	margin-bottom: 16px;
+}
+.clble-edit-section legend {
+	font-size: 14px;
+	font-weight: 600;
+	color: #333;
+	padding: 0 8px;
+	width: auto;
+	border: none;
+	margin-bottom: 10px;
+	float: none;
+}
+.clble-edit-section .control-label label {
+	font-weight: 600;
+	color: #444;
+	font-size: 12px;
+}
+.clble-edit-section .help-block {
+	font-size: 11px;
+	color: #888;
+	margin-top: 2px;
+}
+.clble-section-divider {
+	border: none;
+	border-top: 1px solid #dee2e6;
+	margin: 14px 0;
+}
+@media (max-width: 767px) {
+	.clble-edit-grid .row-fluid {
+		flex-direction: column !important;
+	}
+	.clble-edit-grid .span2,
+	.clble-edit-grid .span3,
+	.clble-edit-grid .span4 {
+		flex: 0 0 100% !important;
+		max-width: 100% !important;
+	}
+}
