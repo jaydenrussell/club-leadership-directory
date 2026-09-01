@@ -28,6 +28,8 @@ class ClubleaddirViewLeadership extends HtmlView
 
         $this->addToolbar();
 
+        Text::script('COM_CLUBLEADDIR_ERROR_REQUIRED_FIELDS');
+
         parent::display($tpl);
     }
 

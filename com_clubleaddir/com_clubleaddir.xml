@@ -6,7 +6,7 @@
     <authorEmail>noreply@simcoecurlingclub.ca</authorEmail>
     <copyright>Copyright (C) 2026 Jayden Russell</copyright>
     <license>GNU General Public License version 2 or later</license>
-    <version>3.26.1</version>
+    <version>3.26.2</version>
     <description>COM_CLUBLEADDIR_DESC</description>
     <scriptfile>script.php</scriptfile>
 
@@ -46,6 +46,7 @@
 
     <media folder="media" destination="com_clubleaddir">
         <folder>css</folder>
+        <folder>js</folder>
         <folder>images</folder>
     </media>
 </extension>
