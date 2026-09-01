@@ -230,7 +230,12 @@ class com_clubleaddirInstallerScript
 				->where($db->quoteName('menutype') . ' = ' . $db->quote('hiddenmenu'));
 			$db->setQuery($query);
 
+			// Joomla 3/4 compatibility for table instantiation
+		if (class_exists('JTable')) {
 			$menuTable = JTable::getInstance('Menu', 'JTable');
+		} elseif (class_exists('\Joomla\CMS\Table\Table')) {
+			$menuTable = \Joomla\CMS\Table\Table::getInstance('Menu');
+		}
 
 			foreach ((array) $db->loadColumn() as $itemId) {
 				if ($menuTable && $menuTable->load((int) $itemId)) {
@@ -328,7 +333,12 @@ class com_clubleaddirInstallerScript
 				->where($db->quoteName('link') . ' LIKE ' . $db->quote('index.php?option=com_clubleaddir%'));
 			$db->setQuery($query);
 
+			// Joomla 3/4 compatibility for table instantiation
+		if (class_exists('JTable')) {
 			$menuTable = JTable::getInstance('Menu', 'JTable');
+		} elseif (class_exists('\Joomla\CMS\Table\Table')) {
+			$menuTable = \Joomla\CMS\Table\Table::getInstance('Menu');
+		}
 
 			foreach ((array) $db->loadColumn() as $itemId) {
 				if ($menuTable && $menuTable->load((int) $itemId)) {

@@ -8,6 +8,7 @@
 
 defined('_JEXEC') or die;
 
+use Joomla\CMS\Factory;
 use Joomla\CMS\MVC\View\HtmlView;
 
 require_once JPATH_ADMINISTRATOR . '/components/com_clubleaddir/helpers.php';
@@ -38,7 +39,7 @@ class ClubleaddirViewLeaderships extends HtmlView
 
 		// Menu-item params drive only the standard "Page Display" behaviour
 		// (page heading, page class suffix). Behaviour never comes from here.
-		$app         = JFactory::getApplication();
+		$app         = Factory::getApplication();
 		$active      = $app->getMenu()->getActive();
 		$this->params = $active ? clone $active->params : new \JRegistry;
 

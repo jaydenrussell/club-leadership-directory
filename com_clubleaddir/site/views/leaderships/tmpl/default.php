@@ -8,16 +8,18 @@
 
 defined('_JEXEC') or die;
 
+use Joomla\CMS\HTML\HTMLHelper;
 use Joomla\CMS\Language\Text;
+use Joomla\CMS\Factory;
 
-JHtml::stylesheet('com_clubleaddir/site.css', array('relative' => true));
+HTMLHelper::stylesheet('com_clubleaddir/site.css', array('relative' => true));
 
 require_once JPATH_ADMINISTRATOR . '/components/com_clubleaddir/helpers.php';
 
 $opts   = $this->displayOptions;
 $groups = $this->groups;
 
-$showContact       = !$opts['requireLogin'] || !JFactory::getUser()->guest;
+$showContact       = !$opts['requireLogin'] || !Factory::getUser()->guest;
 $contactHiddenText = $opts['contactHiddenText'] !== ''
 	? $opts['contactHiddenText']
 	: Text::_('MOD_CLUBLEADDIR_LOGIN_TO_VIEW');
@@ -42,7 +44,7 @@ if ($showPageHead) {
 		?: $this->params->get('page_title', '')));
 
 	if ($pageHeading === '') {
-		$active = JFactory::getApplication()->getMenu()->getActive();
+		$active = Factory::getApplication()->getMenu()->getActive();
 		$pageHeading = $active ? (string) $active->title : '';
 	}
 }

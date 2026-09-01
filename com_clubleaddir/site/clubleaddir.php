@@ -10,7 +10,9 @@
 
 defined('_JEXEC') or die;
 
-$input = JFactory::getApplication()->input;
+use Joomla\CMS\Factory;
+
+$input = Factory::getApplication()->input;
 
 if (!$input->getCmd('view')) {
 	$input->set('view', 'leaderships');
