@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <extensionset name="Club Leadership Directory" description="Club Leadership Directory Joomla 3 package updates">
     <extension name="Club Leadership Directory"
-              description="Joomla 3 package: component (standalone SQLite/JSON store) + module."
+              description="Joomla 3 package: component (standalone JSON store) + module."
                element="pkg_clubleaddir"
                type="package"
                client="site"
-               version="3.26.2"
-              detailsurl="https://jaydenrussell.github.io/club-leadership-directory/update-full.xml" />
+                version="3.27.1"
+              detailsurl="https://raw.githubusercontent.com/jaydenrussell/club-leadership-directory/main/update-full.xml" />
 </extensionset>
