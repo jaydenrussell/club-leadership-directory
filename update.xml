@@ -5,6 +5,6 @@
                element="pkg_clubleaddir"
                type="package"
                client="site"
-                 version="3.27.8"
+                 version="3.27.9"
                detailsurl="https://raw.githubusercontent.com/jaydenrussell/club-leadership-directory/master/update-full.xml" />
 </extensionset>
