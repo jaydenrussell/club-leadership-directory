@@ -84,7 +84,16 @@ class ClubleaddirStoreJson
             }
         }
         if (is_file($this->file)) {
-            $raw = file_get_contents($this->file);
+            $lock = fopen($this->file, 'c');
+            if ($lock && flock($lock, LOCK_SH)) {
+                $raw = file_get_contents($this->file);
+                flock($lock, LOCK_UN);
+                fclose($lock);
+            } else {
+                if ($lock) { fclose($lock); }
+                $raw = false;
+            }
+
             if ($raw === false) {
                 error_log('Clubleaddir JSON unreadable: ' . $this->file);
                 $raw = '';
@@ -120,7 +129,15 @@ class ClubleaddirStoreJson
         }
 
         if ((!isset($this->data['records']) || empty($this->data['records'])) && is_file($this->file . '.bak')) {
-            $bak = file_get_contents($this->file . '.bak');
+            $lock = fopen($this->file . '.bak', 'c');
+            if ($lock && flock($lock, LOCK_SH)) {
+                $bak = file_get_contents($this->file . '.bak');
+                flock($lock, LOCK_UN);
+                fclose($lock);
+            } else {
+                if ($lock) { fclose($lock); }
+                $bak = false;
+            }
             if ($bak !== false) {
                 try {
                     $dec = json_decode($bak, true, 512, JSON_THROW_ON_ERROR);
@@ -150,24 +167,35 @@ class ClubleaddirStoreJson
 
     private function reload()
     {
-        if (!is_file($this->file)) {
-            $this->data = array('records' => array());
-            return;
-        }
-        $raw = file_get_contents($this->file);
-        if ($raw === false) {
-            $this->data = array('records' => array());
-            return;
-        }
-        try {
-            $dec = json_decode($raw, true, 512, JSON_THROW_ON_ERROR);
-            if (is_array($dec) && isset($dec['records']) && is_array($dec['records'])) {
-                $this->data = $dec;
-            } else {
+        $lock = fopen($this->file, 'c');
+        if ($lock && flock($lock, LOCK_SH)) {
+            if (!is_file($this->file)) {
+                $this->data = array('records' => array());
+                flock($lock, LOCK_UN);
+                fclose($lock);
+                return;
+            }
+            $raw = file_get_contents($this->file);
+            if ($raw === false) {
+                $this->data = array('records' => array());
+                flock($lock, LOCK_UN);
+                fclose($lock);
+                return;
+            }
+            try {
+                $dec = json_decode($raw, true, 512, JSON_THROW_ON_ERROR);
+                if (is_array($dec) && isset($dec['records']) && is_array($dec['records'])) {
+                    $this->data = $dec;
+                } else {
+                    $this->data = array('records' => array());
+                }
+            } catch (\JsonException $e) {
                 $this->data = array('records' => array());
             }
-        } catch (\JsonException $e) {
-            $this->data = array('records' => array());
+            flock($lock, LOCK_UN);
+            fclose($lock);
+        } elseif ($lock) {
+            fclose($lock);
         }
     }
 
@@ -176,9 +204,12 @@ class ClubleaddirStoreJson
         $lock = fopen($this->file, 'c');
         if ($lock && flock($lock, LOCK_EX)) {
             if (is_file($this->file) && !copy($this->file, $this->file . '.bak')) {
-                Log::add('Clubleaddir Store: cannot create backup: ' . ($this->file . '.bak'), Log::WARNING, 'com_clubleaddir');
+                flock($lock, LOCK_UN);
+                fclose($lock);
+                Log::add('Clubleaddir Store: cannot create backup, aborting save: ' . ($this->file . '.bak'), Log::WARNING, 'com_clubleaddir');
+                return false;
             }
-            $ok = file_put_contents($this->file, json_encode($this->data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES), LOCK_EX) !== false;
+            $ok = file_put_contents($this->file, json_encode($this->data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)) !== false;
             flock($lock, LOCK_UN);
             fclose($lock);
             return $ok;
@@ -533,15 +564,60 @@ class ClubleaddirStoreJson
                 return strcmp($a['name'] ?? '', $b['name'] ?? '');
             });
 
+            $byId = array();
+            foreach ($this->data['records'] as $idx => $rec) {
+                $byId[(int) $rec['id']] = $idx;
+            }
+
             foreach ($rows as $i => $r) {
-                foreach ($this->data['records'] as &$rec) {
-                    if ((int) $rec['id'] === (int) $r['id']) {
-                        $rec['ordering'] = $i + 1;
+                $id = (int) $r['id'];
+                if (isset($byId[$id])) {
+                    $this->data['records'][$byId[$id]]['ordering'] = $i + 1;
+                }
+            }
+
+            $ok = $this->save();
+            flock($lock, LOCK_UN);
+            fclose($lock);
+            return $ok;
+        } catch (\Throwable $e) {
+            flock($lock, LOCK_UN);
+            fclose($lock);
+            throw $e;
+        }
+    }
+
+    /**
+     * Atomically set ordering for a batch of records and normalize.
+     *
+     * Holds ONE exclusive lock for the entire batch so concurrent
+     * requests cannot interleave changes between individual writes.
+     */
+    public function saveOrderAll(array $pks, array $order)
+    {
+        $lock = fopen($this->file, 'c');
+        if (!$lock || !flock($lock, LOCK_EX)) {
+            if ($lock) {
+                fclose($lock);
+            }
+            return false;
+        }
+
+        try {
+            $this->reload();
+
+            foreach ($pks as $i => $pk) {
+                $ord = isset($order[$i]) ? (int) $order[$i] : 0;
+                $ord = max(0, min(9999, $ord));
+                foreach ($this->data['records'] as &$r) {
+                    if ((int) $r['id'] === (int) $pk) {
+                        $r['ordering'] = $ord;
                         break;
                     }
                 }
-                unset($rec);
+                unset($r);
             }
+
             $ok = $this->save();
             flock($lock, LOCK_UN);
             fclose($lock);
@@ -569,11 +645,35 @@ class ClubleaddirStore
             $oldPath = JPATH_ROOT . '/media/com_clubleaddir/data/clubleaddir.json';
 
             if (!is_file($newPath) && is_file($oldPath)) {
-                if (!is_dir($dataDir) && mkdir($dataDir, 0700, true) && is_dir($dataDir)) {
-                    if (!chmod($dataDir, 0700)) {
-                        Log::add('Clubleaddir Store: cannot chmod migrated data directory to 0700: ' . $dataDir, Log::WARNING, 'com_clubleaddir');
+                $lockPath = $dataDir . '/migrate.lock';
+                $lock = fopen($lockPath, 'c');
+                if ($lock && flock($lock, LOCK_EX)) {
+                    if (!is_file($newPath) && is_file($oldPath)) {
+                        if (!is_dir($dataDir) && mkdir($dataDir, 0700, true) && is_dir($dataDir)) {
+                            if (!chmod($dataDir, 0700)) {
+                                Log::add('Clubleaddir Store: cannot chmod migrated data directory to 0700: ' . $dataDir, Log::WARNING, 'com_clubleaddir');
+                            }
+                        }
+                        if (is_dir($dataDir)) {
+                            copy($oldPath, $newPath);
+                            copy($oldPath, $newPath . '.bak');
+                            $bakContent = file_get_contents($newPath . '.bak');
+                            if ($bakContent !== false) {
+                                try {
+                                    $dec = json_decode($bakContent, true, 512, JSON_THROW_ON_ERROR);
+                                    if (!is_array($dec['records'] ?? null)) {
+                                        unlink($newPath . '.bak');
+                                    }
+                                } catch (\JsonException $e) {
+                                    unlink($newPath . '.bak');
+                                }
+                            }
+                        }
                     }
-                    copy($oldPath, $newPath);
+                    flock($lock, LOCK_UN);
+                    fclose($lock);
+                } elseif ($lock) {
+                    fclose($lock);
                 }
             }
 

@@ -25,6 +25,7 @@ EXCLUDE_COMP = {
     "views/leaderships.phtml",
     "views/leaderships.css",
 }
+
 def zip_directory(src_dir, output_file):
     """Create a zip file from a directory — skips dead orphan files (C-2)."""
     is_component = (src_dir.resolve() == COMPONENT_DIR.resolve())
@@ -41,6 +42,28 @@ def zip_directory(src_dir, output_file):
                 if any(p.startswith(".") for p in arcname.parts):
                     continue
                 zipf.write(item, arcname)
+
+# H-1 — single-source update channel: derive version from manifest and rewrite update files
+try:
+    import re
+    comp_xml = REPO_ROOT / "com_clubleaddir" / "com_clubleaddir.xml"
+    m = re.search(r"<version>([^<]+)</version>", comp_xml.read_text(encoding="utf-8"))
+    ver = m.group(1).strip() if m else "0.0.0"
+    # sync module manifest version from component version
+    mod_xml = REPO_ROOT / "mod_clubleaddir" / "mod_clubleaddir.xml"
+    if mod_xml.exists():
+        mod_txt = mod_xml.read_text(encoding="utf-8")
+        mod_txt = re.sub(r"(<version>)([^<]+)(</version>)", f"\\g<1>{ver}\\g<3>", mod_txt, count=1)
+        mod_xml.write_text(mod_txt, encoding="utf-8")
+        print(f"Synced {mod_xml} to v{ver}")
+    # sync package manifest version from component version
+    if PKG_MANIFEST.exists():
+        pkg_txt = PKG_MANIFEST.read_text(encoding="utf-8")
+        pkg_txt = re.sub(r"(<version>)([^<]+)(</version>)", f"\\g<1>{ver}\\g<3>", pkg_txt, count=1)
+        PKG_MANIFEST.write_text(pkg_txt, encoding="utf-8")
+        print(f"Synced {PKG_MANIFEST} to v{ver}")
+except Exception as e:
+    print(f"WARNING: version sync failed: {e}")
 
 # Create component package
 zip_directory(COMPONENT_DIR, COMPONENT_PKG)
@@ -76,8 +99,6 @@ print(f"SHA256: {sha256_hash}")
 
 # H-1 — single-source update channel: derive version from manifest and rewrite update files
 try:
-    import xml.etree.ElementTree as ET
-    import re
     comp_xml = REPO_ROOT / "com_clubleaddir" / "com_clubleaddir.xml"
     m = re.search(r"<version>([^<]+)</version>", comp_xml.read_text(encoding="utf-8"))
     ver = m.group(1).strip() if m else "0.0.0"

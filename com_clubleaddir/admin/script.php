@@ -31,6 +31,15 @@ class com_clubleaddirInstallerScript
 
 	public function preflight($stage, $parent)
 	{
+		// Ensure the media destination folder exists before Joomla's installer
+		// tries to delete it during update. Without this, updating from a
+		// version that did not ship the <media> block triggers:
+		// "JFolder: :delete: Path is not a folder. Path: [ROOT]/media/com_clubleaddir"
+		$mediaDir = JPATH_ROOT . '/media/com_clubleaddir';
+		if (!is_dir($mediaDir)) {
+			@mkdir($mediaDir, 0755, true);
+		}
+
 		return true;
 	}
 
@@ -125,6 +134,16 @@ class com_clubleaddirInstallerScript
 				);
 			}
 
+			$nx = $dir . '/nginx.conf';
+			if (!is_file($nx)) {
+				file_put_contents($nx,
+					"# Nginx: deny execution of script files in the uploads directory\n"
+					. "location ~* ^/images/clubleaddir/photos/.*\\.(php|phtml|phps|cgi|pl|py|asp|aspx|jsp|shtml)$ {\n"
+					. "    deny all;\n"
+					. "}\n"
+				);
+			}
+
 			$idx = $dir . '/index.html';
 			if (!is_file($idx)) {
 				file_put_contents($idx, '');
@@ -160,8 +179,10 @@ class com_clubleaddirInstallerScript
 			unlink($zombiePkgManifest);
 		}
 
-		// 2. Re-enable our own extension rows. A broken 2.0.x upgrade could leave
+		// 2. Re-enable our own extension row. A broken 2.0.x upgrade could leave
 		//    enabled = 0, which made the admin area 404 even though files existed.
+		//    Only the component itself is forced on; admins may have intentionally
+		//    disabled the module or package row.
 		try {
 			$query = $db->getQuery(true)
 				->update($db->quoteName('#__extensions'))
@@ -169,35 +190,51 @@ class com_clubleaddirInstallerScript
 				->where($db->quoteName('type') . ' = ' . $db->quote('component'))
 				->where($db->quoteName('element') . ' = ' . $db->quote('com_clubleaddir'));
 			$db->setQuery($query)->execute();
-
-			$query = $db->getQuery(true)
-				->update($db->quoteName('#__extensions'))
-				->set($db->quoteName('enabled') . ' = 1')
-				->where($db->quoteName('type') . ' = ' . $db->quote('module'))
-				->where($db->quoteName('element') . ' = ' . $db->quote('mod_clubleaddir'));
-			$db->setQuery($query)->execute();
-
-			$query = $db->getQuery(true)
-				->update($db->quoteName('#__extensions'))
-				->set($db->quoteName('enabled') . ' = 1')
-				->where($db->quoteName('type') . ' = ' . $db->quote('package'))
-				->where($db->quoteName('element') . ' = ' . $db->quote('pkg_clubleaddir'));
-			$db->setQuery($query)->execute();
 		} catch (\Throwable $e) {
 			Log::add('Clubleaddir repairLegacy step 2 failed: ' . $e->getMessage(), Log::WARNING, 'com_clubleaddir');
 		}
 
-		// 3. Legacy update-site rows pointing at raw.githubusercontent.com were
-		//    registered by old SQL hacks. Joomla now manages the update site from
-		//    the package <updateservers> declaration alone.
+		// 3. Legacy update-site rows pointing at the old `main` branch on
+		//    raw.githubusercontent.com were registered by earlier SQL hacks.
+		//    Only remove that exact stale entry; the current valid URL uses
+		//    `master` and must be preserved.
 		try {
 			$query = $db->getQuery(true)
 				->delete($db->quoteName('#__update_sites'))
 				->where($db->quoteName('name') . ' = ' . $db->quote('Club Leadership Directory Update'))
-				->where($db->quoteName('location') . ' LIKE ' . $db->quote('%raw.githubusercontent.com%'));
+				->where($db->quoteName('location') . ' = ' . $db->quote(
+					'https://raw.githubusercontent.com/jaydenrussell/club-leadership-directory/main/update-full.xml'
+				));
 			$db->setQuery($query)->execute();
 		} catch (\Throwable $e) {
 			Log::add('Clubleaddir repairLegacy step 3 failed: ' . $e->getMessage(), Log::WARNING, 'com_clubleaddir');
+		}
+
+		// 3b. Force the current update site to the "extension" updater type.
+		//    Joomla 3's CollectionAdapter only parses <extension> collection
+		//    feeds; our update-full.xml is a standard <update> extension feed
+		//    and REQUIRES the "extension" server type, otherwise Joomla finds
+		//    no updates even though the URL and version are correct. Repair any
+		//    row left over with the wrong type and keep it enabled.
+		try {
+			$query = $db->getQuery(true)
+				->select($db->quoteName('update_site_id'))
+				->from($db->quoteName('#__update_sites'))
+				->where($db->quoteName('name') . ' = ' . $db->quote('Club Leadership Directory Update'))
+				->where($db->quoteName('location') . ' LIKE ' . $db->quote('https://raw.githubusercontent.com/jaydenrussell/club-leadership-directory/%'));
+			$db->setQuery($query);
+			$siteIds = (array) $db->loadColumn();
+
+			foreach ($siteIds as $siteId) {
+				$query = $db->getQuery(true)
+					->update($db->quoteName('#__update_sites'))
+					->set($db->quoteName('type') . ' = ' . $db->quote('extension'))
+					->set($db->quoteName('enabled') . ' = 1')
+					->where($db->quoteName('update_site_id') . ' = ' . (int) $siteId);
+				$db->setQuery($query)->execute();
+			}
+		} catch (\Throwable $e) {
+			Log::add('Clubleaddir repairLegacy step 3b failed: ' . $e->getMessage(), Log::WARNING, 'com_clubleaddir');
 		}
 
 		// 4. Stray debug log files written by legacy installers.
@@ -227,17 +264,18 @@ class com_clubleaddirInstallerScript
 			$query = $db->getQuery(true)
 				->select($db->quoteName('id'))
 				->from($db->quoteName('#__menu'))
-				->where($db->quoteName('menutype') . ' = ' . $db->quote('hiddenmenu'));
+				->where($db->quoteName('menutype') . ' = ' . $db->quote('hiddenmenu'))
+				->where($db->quoteName('link') . ' LIKE ' . $db->q('%com_clubleaddir%'));
 			$db->setQuery($query);
 
-			// Joomla 3/4 compatibility for table instantiation
-		if (class_exists('JTable')) {
-			$menuTable = JTable::getInstance('Menu', 'JTable');
-		} elseif (class_exists('\Joomla\CMS\Table\Table')) {
-			$menuTable = \Joomla\CMS\Table\Table::getInstance('Menu');
-		}
-
 			foreach ((array) $db->loadColumn() as $itemId) {
+				$menuTable = null;
+				if (class_exists('JTable')) {
+					$menuTable = JTable::getInstance('Menu', 'JTable');
+				} elseif (class_exists('\Joomla\CMS\Table\Table')) {
+					$menuTable = \Joomla\CMS\Table\Table::getInstance('Menu');
+				}
+
 				if ($menuTable && $menuTable->load((int) $itemId)) {
 					$menuTable->delete((int) $itemId);
 				}
@@ -287,7 +325,7 @@ class com_clubleaddirInstallerScript
 			'records' => $records,
 		);
 
-		$logDir = JPATH_ROOT . '/logs/com_clubleaddir';
+		$logDir = JPATH_ADMINISTRATOR . '/components/com_clubleaddir/logs';
 		if (!is_dir($logDir) && !mkdir($logDir, 0700, true) && !is_dir($logDir)) {
 			return;
 		}
@@ -333,14 +371,14 @@ class com_clubleaddirInstallerScript
 				->where($db->quoteName('link') . ' LIKE ' . $db->quote('index.php?option=com_clubleaddir%'));
 			$db->setQuery($query);
 
-			// Joomla 3/4 compatibility for table instantiation
-		if (class_exists('JTable')) {
-			$menuTable = JTable::getInstance('Menu', 'JTable');
-		} elseif (class_exists('\Joomla\CMS\Table\Table')) {
-			$menuTable = \Joomla\CMS\Table\Table::getInstance('Menu');
-		}
-
 			foreach ((array) $db->loadColumn() as $itemId) {
+				$menuTable = null;
+				if (class_exists('JTable')) {
+					$menuTable = JTable::getInstance('Menu', 'JTable');
+				} elseif (class_exists('\Joomla\CMS\Table\Table')) {
+					$menuTable = \Joomla\CMS\Table\Table::getInstance('Menu');
+				}
+
 				if ($menuTable && $menuTable->load((int) $itemId)) {
 					$menuTable->delete((int) $itemId);
 				}
@@ -368,7 +406,7 @@ class com_clubleaddirInstallerScript
 
 			$path = $dir . '/' . $item;
 
-			if (is_dir($path)) {
+			if (is_dir($path) && !is_link($path)) {
 				$realPath = realpath($path);
 				if ($realPath === false || strpos($realPath, $realDir) !== 0) {
 					continue;
@@ -376,7 +414,7 @@ class com_clubleaddirInstallerScript
 				$this->deleteRecursive($path);
 			} else {
 				$realPath = realpath($path);
-				if ($realPath !== false && strpos($realPath, $realDir) === 0) {
+				if ($realPath !== false && strpos($realPath, $realDir) === 0 && !is_link($path)) {
 					unlink($path);
 				}
 			}

@@ -206,8 +206,7 @@ class ClubleaddirHelper
 		if ($path[0] === '/') {
 			return $path;
 		}
-		// Already a scheme/absolute URL? Only http(s) allowed — reject javascript:, data:, etc.
-		if (preg_match('#^https?://#i', $path) || strpos($path, '//') === 0) {
+		if (preg_match('#^https?://#i', $path)) {
 			return $path;
 		}
 		return '/' . ltrim($path, '/');
@@ -554,6 +553,8 @@ class ClubleaddirHelper
 			return '';
 		}
 
+		$url = '';
+
 		try {
 			$db = Factory::getDbo();
 
@@ -713,7 +714,7 @@ class ClubleaddirHelper
 			}
 			return 'index.php?option=com_contact&view=contact&id=' . $contactId;
 		} catch (\Throwable $e) {
-			error_log('Clubleaddir photoUrl failed: ' . $e->getMessage());
+			error_log('Clubleaddir contactRoute failed: ' . $e->getMessage());
 		}
 
 		return '';
@@ -856,6 +857,10 @@ class ClubleaddirHelper
 			if ($custom[0] !== '/') {
 				return '/media/com_clubleaddir/images/vacant-person.svg';
 			}
+			$real = realpath(JPATH_ROOT . $custom);
+			if ($real === false || strpos($real, realpath(JPATH_ROOT . '/media')) !== 0) {
+				return '/media/com_clubleaddir/images/vacant-person.svg';
+			}
 			return self::photoUrl($custom);
 		}
 
@@ -899,6 +904,7 @@ class ClubleaddirHelper
 	{
 		$contactId = (int) $contactId;
 		$cfg       = self::getGlobalConfig();
+		$url       = '';
 
 		if ($contactId > 0) {
 			$url = self::contactRoute($contactId);

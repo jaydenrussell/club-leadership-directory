@@ -243,6 +243,7 @@ class ClubleaddirControllerLeadership extends BaseController
             $task  = (string) $this->input->post->getCmd('task');
             $state = (strpos($task, 'unpublish') !== false) ? 0 : 1;
         }
+        $state = in_array($state, array(1, 0), true) ? $state : 1;
 
         if (empty($ids)) {
             Factory::getApplication()->enqueueMessage(Text::_('JERROR_NO_ITEMS_SELECTED'), 'error');
@@ -267,10 +268,10 @@ class ClubleaddirControllerLeadership extends BaseController
         $order = array_map('intval', (array) $this->input->post->get('order', array(), 'array'));
         $pks   = array_filter($pks, function ($id) { return $id > 0; });
 
-        if (empty($pks)) {
+        if (empty($pks) || empty($order) || count($pks) !== count($order)) {
             Factory::getApplication()->enqueueMessage(Text::_('JERROR_NO_ITEMS_SELECTED'), 'error');
             $this->setRedirect('index.php?option=com_clubleaddir&view=leaderships');
-            return false;
+            return;
         }
 
         $model = $this->getModel('Leadership', 'ClubleaddirModel');
@@ -305,7 +306,7 @@ class ClubleaddirControllerLeadership extends BaseController
         $order = array_map('intval', (array) $this->input->post->get('order', array(), 'array'));
         $pks   = array_filter($pks, function ($id) { return $id > 0; });
 
-        if (empty($pks) || empty($order)) {
+        if (empty($pks) || empty($order) || count($pks) !== count($order)) {
             echo '0';
             Factory::getApplication()->close();
         }

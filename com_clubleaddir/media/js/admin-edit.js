@@ -3,6 +3,88 @@
  * Shipped by com_clubleaddir to /media/com_clubleaddir/js/admin-edit.js.
  */
 
+(function () {
+	'use strict';
+
+	function onTypeChange() {
+		var el = document.getElementById('type');
+		if (el) {
+			toggleTypeFields(el.value);
+		}
+	}
+
+	function onRoleSelectChange() {
+		var sel = document.getElementById('role_select');
+		var hidden = document.getElementById('role');
+		if (sel && hidden) {
+			hidden.value = sel.value;
+		}
+	}
+
+	function onRoleTextInput() {
+		var text = document.getElementById('role_text');
+		var hidden = document.getElementById('role');
+		if (text && hidden) {
+			hidden.value = text.value;
+		}
+	}
+
+	function onVacantChange() {
+		var el = document.getElementById('vacant');
+		if (el) {
+			toggleVacantFields(el.checked);
+		}
+	}
+
+	function onPhoneInput() {
+		clbleStripPhone(this);
+	}
+
+	function onPhotoChange() {
+		clblePreviewPhoto(this);
+	}
+
+	function init() {
+		var typeEl = document.getElementById('type');
+		if (typeEl) {
+			typeEl.addEventListener('change', onTypeChange);
+			toggleTypeFields(typeEl.value);
+		}
+
+		var roleSelect = document.getElementById('role_select');
+		if (roleSelect) {
+			roleSelect.addEventListener('change', onRoleSelectChange);
+		}
+
+		var roleText = document.getElementById('role_text');
+		if (roleText) {
+			roleText.addEventListener('input', onRoleTextInput);
+		}
+
+		var vacantEl = document.getElementById('vacant');
+		if (vacantEl) {
+			vacantEl.addEventListener('change', onVacantChange);
+			toggleVacantFields(vacantEl.checked);
+		}
+
+		var phoneEl = document.getElementById('phone');
+		if (phoneEl) {
+			phoneEl.addEventListener('input', onPhoneInput);
+		}
+
+		var photoEl = document.getElementById('photo');
+		if (photoEl) {
+			photoEl.addEventListener('change', onPhotoChange);
+		}
+	}
+
+	if (document.readyState === 'loading') {
+		document.addEventListener('DOMContentLoaded', init);
+	} else {
+		init();
+	}
+})();
+
 function toggleTypeFields(type) {
 	var leagueWrap = document.getElementById('league-fields');
 	if (type === 'director_league') {
@@ -128,8 +210,7 @@ function clblePreviewPhoto(input) {
 	}
 	var file = input.files[0];
 	var name = document.createElement('p');
-	name.className = 'help-block';
-	name.style.cssText = 'word-break:break-all;font-size:11px;margin-top:4px;';
+	name.className = 'help-block clble-photo-name';
 	name.textContent = file.name + ' (' + (file.size ? Math.round(file.size / 1024) + ' KB' : '') + ')';
 
 	if (box.querySelector('img')) { box.querySelector('img').remove(); }
@@ -143,8 +224,7 @@ function clblePreviewPhoto(input) {
 			var img = document.createElement('img');
 			img.src = e.target.result;
 			img.alt = '';
-			img.className = 'thumbnail';
-			img.style.cssText = 'max-width:140px;max-height:140px;display:inline-block;vertical-align:middle;';
+			img.className = 'thumbnail clble-photo-img';
 			box.appendChild(img);
 			box.appendChild(name);
 		};
@@ -198,14 +278,3 @@ function jClubleaddirSelectContact(id, name) {
 	else if (window.parent.jModalClose) { window.parent.jModalClose(); }
 	return false;
 }
-
-(function () {
-	var typeEl = document.getElementById('type');
-	if (typeEl) {
-		toggleTypeFields(typeEl.value);
-	}
-	var vacantEl = document.getElementById('vacant');
-	if (vacantEl) {
-		toggleVacantFields(vacantEl.checked);
-	}
-})();

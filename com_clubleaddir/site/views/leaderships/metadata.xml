@@ -2,5 +2,8 @@
 <metadata>
 	<view title="COM_CLUBLEADDIR_LEADERSHIPS_VIEW_DEFAULT_TITLE">
 		<message><![CDATA[COM_CLUBLEADDIR_LEADERSHIPS_VIEW_DEFAULT_DESC]]></message>
+		<options var="layout">
+			<default name="COM_CLUBLEADDIR_LEADERSHIPS_VIEW_DEFAULT_TITLE" msg="COM_CLUBLEADDIR_LEADERSHIPS_VIEW_DEFAULT_DESC" />
+		</options>
 	</view>
 </metadata>

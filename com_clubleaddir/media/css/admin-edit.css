@@ -123,3 +123,39 @@
 		max-width: 100% !important;
 	}
 }
+
+/* Static inline styles extracted from template for cacheability */
+.clble-contact-id-width {
+	width: 100px;
+}
+.clble-btn-margin-left {
+	margin-left: 8px;
+}
+.clble-photo-preview-margin {
+	margin-bottom: 8px;
+}
+.clble-photo-img {
+	max-width: 120px;
+	max-height: 120px;
+	display: inline-block;
+	vertical-align: middle;
+}
+.clble-photo-name {
+	word-break: break-all;
+	font-size: 11px;
+	margin-top: 4px;
+}
+.clble-icon-large {
+	font-size: 40px;
+}
+.clble-table-compact {
+	margin-bottom: 0;
+	font-size: 11px;
+}
+.clble-table-meta {
+	border-top: none;
+	color: #666;
+}
+.clble-table-meta-width {
+	width: 40%;
+}

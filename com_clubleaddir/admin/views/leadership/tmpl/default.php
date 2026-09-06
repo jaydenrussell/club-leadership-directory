@@ -85,7 +85,7 @@ if ($thisMonth >= 6) {
                         <label for="type" class="required"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_TYPE'); ?> <span class="star">*</span></label>
                     </div>
                     <div class="controls">
-                        <select name="jform[type]" id="type" class="inputbox" required onchange="toggleTypeFields(this.value)">
+                        <select name="jform[type]" id="type" class="inputbox" required>
                             <option value="" <?php echo $item->type === '' ? 'selected' : ''; ?>><?php echo Text::_('COM_CLUBLEADDIR_SELECT_TYPE'); ?></option>
                             <option value="officer" <?php echo $item->type === 'officer' ? 'selected' : ''; ?>><?php echo Text::_('COM_CLUBLEADDIR_TYPE_OFFICER'); ?></option>
                             <option value="director" <?php echo $item->type === 'director' ? 'selected' : ''; ?>><?php echo Text::_('COM_CLUBLEADDIR_TYPE_DIRECTOR'); ?></option>
@@ -106,16 +106,16 @@ if ($thisMonth >= 6) {
                         $officerRoleVal = array_key_exists($item->role, $officerRoles) ? $item->role : '';
                         ?>
                         <input type="hidden" name="jform[role]" id="role" value="<?php echo $this->escape($item->role); ?>">
-                        <select id="role_select" class="inputbox" style="display:<?php echo $isOfficer ? 'block' : 'none'; ?>;"
-                                onchange="document.getElementById('role').value = this.value;">
+                        <select id="role_select" class="inputbox"
+                                >
                             <option value=""><?php echo Text::_('COM_CLUBLEADDIR_SELECT_ROLE'); ?></option>
                             <?php foreach ($officerRoles as $val => $label): ?>
                                 <option value="<?php echo $this->escape($val); ?>" <?php echo $officerRoleVal === $val ? 'selected' : ''; ?>><?php echo $label; ?></option>
                             <?php endforeach; ?>
                         </select>
-                        <input type="text" id="role_text" class="inputbox" style="display:<?php echo (!$isOfficer && !$isLeague) ? 'block' : 'none'; ?>;"
+                        <input type="text" id="role_text" class="inputbox"
                                value="<?php echo $this->escape($item->role); ?>" placeholder="<?php echo Text::_('COM_CLUBLEADDIR_FIELD_ROLE_PLACEHOLDER'); ?>"
-                               oninput="document.getElementById('role').value = this.value;">
+                               >
                         <?php if ($isLeague): ?>
                             <p class="clble-help-note"><?php echo Text::_('COM_CLUBLEADDIR_ROLE_DISABLED_FOR_LEAGUE'); ?></p>
                         <?php endif; ?>
@@ -137,7 +137,7 @@ if ($thisMonth >= 6) {
                     </div>
                     <div class="controls">
                         <label class="checkbox" for="vacant">
-                            <input type="checkbox" name="jform[vacant]" id="vacant" value="1" <?php echo $item->vacant ? 'checked' : ''; ?> onchange="toggleVacantFields(this.checked)">
+                            <input type="checkbox" name="jform[vacant]" id="vacant" value="1" <?php echo $item->vacant ? 'checked' : ''; ?>>
                             <?php echo Text::_('COM_CLUBLEADDIR_FIELD_VACANT_DESC'); ?>
                         </label>
                     </div>
@@ -208,7 +208,7 @@ if ($thisMonth >= 6) {
                         <label for="phone"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_PHONE'); ?></label>
                     </div>
                     <div class="controls">
-                        <input type="tel" name="jform[phone]" id="phone" class="inputbox" value="<?php echo $this->escape($item->phone); ?>" placeholder="705-555-0100" maxlength="20" oninput="clbleStripPhone(this)">
+                            <input type="tel" name="jform[phone]" id="phone" class="inputbox" value="<?php echo $this->escape($item->phone); ?>" placeholder="705-555-0100" maxlength="20">
                     </div>
                 </div>
 
@@ -218,7 +218,7 @@ if ($thisMonth >= 6) {
                     </div>
                     <div class="controls">
                         <div class="input-append">
-                            <input type="number" name="jform[contact_id]" id="contact_id" class="inputbox" style="width:100px;"
+                            <input type="number" name="jform[contact_id]" id="contact_id" class="inputbox clble-contact-id-width"
                                    value="<?php echo (int) $item->contact_id; ?>">
                             <?php if ($hasContactComponent): ?>
                             <a class="btn modal" title="<?php echo Text::_('COM_CLUBLEADDIR_FIELD_CONTACT_ID_HELP'); ?>"
@@ -237,7 +237,7 @@ if ($thisMonth >= 6) {
                                 <?php echo Text::_('COM_CLUBLEADDIR_FIELD_CONTACT_ID_HELP'); ?>
                                 <span id="contact_name_display"><?php echo ((int)$item->contact_id ? Text::_('COM_CLUBLEADDIR_CONTACT_ID_SET') : ''); ?></span>
                                 <?php if ((int) $item->contact_id): ?>
-                                    <a class="btn btn-small" style="margin-left:8px;"
+                                    <a class="btn btn-small clble-btn-margin-left"
                                        href="<?php echo Route::_('index.php?option=com_contact&task=contact.edit&id=' . (int) $item->contact_id); ?>" target="_blank">
                                         <span class="icon-link"></span> <?php echo Text::_('COM_CLUBLEADDIR_VIEW_CONTACT'); ?>
                                     </a>
@@ -258,16 +258,16 @@ if ($thisMonth >= 6) {
                 <legend><?php echo Text::_('COM_CLUBLEADDIR_PHOTO'); ?></legend>
                 <div class="control-group">
                     <div class="controls clble-photo-col">
-                        <div id="photo_preview" style="margin-bottom:8px;">
+                        <div id="photo_preview" class="clble-photo-preview-margin">
                             <?php if ($item->photo): ?>
                                 <img src="<?php echo $this->escape(ClubleaddirHelper::photoUrl($item->photo)); ?>" alt="<?php echo $this->escape($item->name); ?>"
-                                     class="thumbnail" style="max-width:120px;max-height:120px;display:inline-block;vertical-align:middle;">
-                                <p class="help-block" style="word-break:break-all;font-size:11px;margin-top:4px;"><?php echo $this->escape(basename($item->photo)); ?></p>
+                                     class="thumbnail clble-photo-img">
+                                <p class="help-block clble-photo-name"><?php echo $this->escape(basename($item->photo)); ?></p>
                             <?php else: ?>
-                                <div class="clble-photo-placeholder"><span class="icon-user" style="font-size:40px;"></span></div>
+                                <div class="clble-photo-placeholder"><span class="icon-user clble-icon-large"></span></div>
                             <?php endif; ?>
                         </div>
-                        <input type="file" name="jform[photo]" id="photo" class="inputbox" accept="image/*" onchange="clblePreviewPhoto(this)">
+                        <input type="file" name="jform[photo]" id="photo" class="inputbox" accept="image/*">
                         <p class="help-block"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_PHOTO_HELP'); ?><?php if ($item->photo): ?> <span class="muted">(<?php echo Text::_('COM_CLUBLEADDIR_FIELD_PHOTO_REPLACE'); ?>)</span><?php endif; ?></p>
                     </div>
                 </div>
@@ -312,19 +312,19 @@ if ($thisMonth >= 6) {
 
                 <?php if ($isEdit): ?>
                 <hr class="clble-section-divider">
-                <table class="table table-condensed" style="margin-bottom:0;font-size:11px;">
+                <table class="table table-condensed clble-table-compact">
                     <tbody>
                         <tr>
-                            <td style="border-top:none;color:#666;width:40%;"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_ID'); ?></td>
-                            <td style="border-top:none;"><?php echo (int) $item->id; ?></td>
+                            <td class="clble-table-meta clble-table-meta-width"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_ID'); ?></td>
+                            <td class="clble-table-meta"><?php echo (int) $item->id; ?></td>
                         </tr>
                         <tr>
-                            <td style="border-top:none;color:#666;"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_CREATED'); ?></td>
-                            <td style="border-top:none;"><?php echo $this->escape($item->created); ?></td>
+                            <td class="clble-table-meta"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_CREATED'); ?></td>
+                            <td class="clble-table-meta"><?php echo $this->escape($item->created); ?></td>
                         </tr>
                         <tr>
-                            <td style="border-top:none;color:#666;"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_MODIFIED'); ?></td>
-                            <td style="border-top:none;"><?php echo $this->escape($item->modified); ?></td>
+                            <td class="clble-table-meta"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_MODIFIED'); ?></td>
+                            <td class="clble-table-meta"><?php echo $this->escape($item->modified); ?></td>
                         </tr>
                     </tbody>
                 </table>
