@@ -102,20 +102,13 @@ try:
     comp_xml = REPO_ROOT / "com_clubleaddir" / "com_clubleaddir.xml"
     m = re.search(r"<version>([^<]+)</version>", comp_xml.read_text(encoding="utf-8"))
     ver = m.group(1).strip() if m else "0.0.0"
-    # update-full.xml
-    full = REPO_ROOT / "update-full.xml"
-    if full.exists():
-        txt = full.read_text(encoding="utf-8")
-        txt = re.sub(r"<version>[^<]+</version>", f"<version>{ver}</version>", txt, count=1)
-        txt = re.sub(r"/v[0-9.]+/pkg_clubleaddir\.zip", f"/v{ver}/pkg_clubleaddir.zip", txt)
-        txt = re.sub(r"<sha256>[^<]+</sha256>", f"<sha256>{sha256_hash}</sha256>", txt)
-        full.write_text(txt, encoding="utf-8")
-        print(f"Updated {full} to v{ver}")
-    # update.xml - only the <extension> version, not the <?xml?> declaration
+    # update.xml — single <update> extension feed rewritten in place
     upd = REPO_ROOT / "update.xml"
     if upd.exists():
         txt = upd.read_text(encoding="utf-8")
-        txt = re.sub(r'(<extension[^>]*\bversion=")[^"]+(")', f'\\g<1>{ver}\\g<2>', txt, count=1)
+        txt = re.sub(r"<version>[^<]+</version>", f"<version>{ver}</version>", txt, count=1)
+        txt = re.sub(r"/v[0-9.]+/pkg_clubleaddir\.zip", f"/v{ver}/pkg_clubleaddir.zip", txt)
+        txt = re.sub(r"<sha256>[^<]+</sha256>", f"<sha256>{sha256_hash}</sha256>", txt)
         upd.write_text(txt, encoding="utf-8")
         print(f"Updated {upd} to v{ver}")
     # remove typo artifact

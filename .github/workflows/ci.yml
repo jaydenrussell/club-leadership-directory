@@ -35,4 +35,4 @@ jobs:
           test -f dist/pkg_clubleaddir.zip
       - name: Verify update channel
         run: |
-          grep -q "$(grep -oP '(?<=<version>)[^<]+' com_clubleaddir/com_clubleaddir.xml | head -1)" update-full.xml
+          grep -q "$(grep -oP '(?<=<version>)[^<]+' com_clubleaddir/com_clubleaddir.xml | head -1)" update.xml

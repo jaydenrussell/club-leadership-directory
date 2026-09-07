@@ -73,14 +73,13 @@ The extension ships as a **single package**: **`pkg_clubleaddir.zip`**.
 
 ## Update server
 
-The package manifest points at the GitHub Pages collection
-(`update.xml` → `update-full.xml`). To cut a release:
+The package manifest points at a single GitHub raw update server
+(`update.xml`, a standard `<update>` extension feed). To cut a release:
 
 - bump `<version>` in all three manifests (`com_clubleaddir.xml`,
   `mod_clubleaddir.xml`, `pkg/pkg_clubleaddir.xml`),
 - run the build, compute the SHA-256 of `dist/pkg_clubleaddir.zip`,
-- set `version`, `downloadurl` and `sha256` in `update-full.xml` (+ version in
-  `update.xml`),
+- set `version`, `downloadurl` and `sha256` in `update.xml`,
 - tag and attach `dist/pkg_clubleaddir.zip` to the matching GitHub release.
 
 ## Build from source

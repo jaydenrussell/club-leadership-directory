@@ -210,13 +210,17 @@ class com_clubleaddirInstallerScript
 			Log::add('Clubleaddir repairLegacy step 3 failed: ' . $e->getMessage(), Log::WARNING, 'com_clubleaddir');
 		}
 
-		// 3b. Force the current update site to the "extension" updater type.
-		//    Joomla 3's CollectionAdapter only parses <extension> collection
-		//    feeds; our update-full.xml is a standard <update> extension feed
-		//    and REQUIRES the "extension" server type, otherwise Joomla finds
-		//    no updates even though the URL and version are correct. Repair any
-		//    row left over with the wrong type and keep it enabled.
+		// 3b. Standardize the update feed. Since v3.28.4 the package manifest
+		//    points at a single update.xml, a standard <update> extension feed
+		//    (the update-full.xml indirection was removed). Joomla 3's
+		//    CollectionAdapter only parses <extension> collection feeds while
+		//    our update.xml is an <update> extension feed, so the row MUST use
+		//    server type "extension". Rewrite the location of legacy rows that
+		//    still point at update-full.xml (any branch), force the extension
+		//    type and re-enable them.
 		try {
+			$updateLocation = 'https://raw.githubusercontent.com/jaydenrussell/club-leadership-directory/master/update.xml';
+
 			$query = $db->getQuery(true)
 				->select($db->quoteName('update_site_id'))
 				->from($db->quoteName('#__update_sites'))
@@ -228,6 +232,7 @@ class com_clubleaddirInstallerScript
 			foreach ($siteIds as $siteId) {
 				$query = $db->getQuery(true)
 					->update($db->quoteName('#__update_sites'))
+					->set($db->quoteName('location') . ' = ' . $db->quote($updateLocation))
 					->set($db->quoteName('type') . ' = ' . $db->quote('extension'))
 					->set($db->quoteName('enabled') . ' = 1')
 					->where($db->quoteName('update_site_id') . ' = ' . (int) $siteId);
