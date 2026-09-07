@@ -70,6 +70,7 @@ class com_clubleaddirInstallerScript
 		$this->removeDataDirs();
 		$this->repairLegacy();
 		$this->removeOwnMenuItems();
+		$this->ensureMediaDirForCoreCleanup($parent);
 
 		if ($this->backupPath !== '') {
 			try {
@@ -346,18 +347,48 @@ class com_clubleaddirInstallerScript
 	}
 
 	/**
-	 * Remove the isolated data directory and the photo upload directory.
+	 * Remove the photo upload directory. The media folder under
+	 * /media/com_clubleaddir is deliberately left for Joomla's own uninstaller;
+	 * deleting it here made the core uninstaller error with
+	 * "JFolder: :delete: Path is not a folder" on its follow-up pass.
 	 */
 	private function removeDataDirs()
 	{
-		$this->deleteRecursive(JPATH_ROOT . '/media/com_clubleaddir');
-
 		$photosDir = JPATH_ROOT . '/images/clubleaddir/photos';
 		$this->deleteRecursive($photosDir);
 
 		// Drop the parent folder too when nothing else lives in it.
 		if (is_dir(JPATH_ROOT . '/images/clubleaddir')) {
 			$this->deleteIfEmpty(JPATH_ROOT . '/images/clubleaddir');
+		}
+	}
+
+	/**
+	 * Joomla's component uninstaller removes /media/com_clubleaddir AFTER this
+	 * script returns (Installer::removeFiles on the <media> element). If that
+	 * folder happens to be missing - e.g. a partially failed install - the
+	 * core's unguarded trailing JFolder::delete() logs "Path is not a folder".
+	 * Recreate it (empty) so the core cleanup succeeds. Only do this when the
+	 * installed manifest actually declares the <media> block; otherwise core
+	 * never touches media and we would leave an empty orphan folder behind.
+	 */
+	private function ensureMediaDirForCoreCleanup($parent)
+	{
+		$dir = JPATH_ROOT . '/media/com_clubleaddir';
+
+		if (is_dir($dir)) {
+			return;
+		}
+
+		try {
+			$manifest = $parent && method_exists($parent, 'getManifest') ? $parent->getManifest() : null;
+			$media    = $manifest ? $manifest->media : null;
+
+			if ($media && (string) $media->attributes()->destination === 'com_clubleaddir' && count($media->children()) > 0) {
+				@mkdir($dir, 0755, true);
+			}
+		} catch (\Throwable $e) {
+			Log::add('Clubleaddir ensureMediaDirForCoreCleanup failed: ' . $e->getMessage(), Log::WARNING, 'com_clubleaddir');
 		}
 	}
 
