@@ -1,10 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-<extensionset name="Club Leadership Directory" description="Club Leadership Directory Joomla 3 package updates">
-    <extension name="Club Leadership Directory"
-              description="Joomla 3 package: component (standalone JSON store) + module."
-               element="pkg_clubleaddir"
-               type="package"
-               client="site"
-                 version="3.28.3"
-               detailsurl="https://raw.githubusercontent.com/jaydenrussell/club-leadership-directory/master/update-full.xml" />
-</extensionset>
+<updates>
+    <update>
+        <name>Club Leadership Directory</name>
+        <description>Joomla 3 package: component (standalone SQLite/JSON store) + module.</description>
+        <element>pkg_clubleaddir</element>
+        <type>package</type>
+        <client>site</client>
+        <version>3.28.4</version>
+        <infourl title="Club Leadership">https://github.com/jaydenrussell/club-leadership-directory</infourl>
+        <downloads>
+            <downloadurl type="full" format="zip">https://github.com/jaydenrussell/club-leadership-directory/releases/download/v3.28.4/pkg_clubleaddir.zip</downloadurl>
+        </downloads>
+        <sha256>e83eace05994f166ef835d6339f7bcf78128be24a1e81dab6e5c445fe5138508</sha256>
+        <maintainer>Jayden Russell</maintainer>
+        <maintainerurl>https://simcoecurlingclub.ca</maintainerurl>
+        <targetplatform name="joomla" version="3.[0-9]+" />
+    </update>
+</updates>
