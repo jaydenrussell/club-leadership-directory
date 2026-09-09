@@ -2,8 +2,8 @@
  * Club Leadership Directory — administrator edit form styles.
  * Shipped by com_clubleaddir to /media/com_clubleaddir/css/admin-edit.css.
  *
- * Native Joomla 3 admin look: Bootstrap 2 form-horizontal fieldsets in the
- * main column, Bootstrap 2 .well boxes in the sidebar.
+ * Compact, centered two-column editor (Bootstrap 2 row-fluid), native
+ * form-horizontal fieldsets with .well side boxes, uniform control heights.
  */
 
 .clble-invalid {
@@ -20,7 +20,19 @@
 	pointer-events: none;
 }
 
-/* ---- Main column: native form-horizontal ---- */
+/* ---- Centered, width-capped shell ---- */
+.clble-form-shell {
+	max-width: 960px;
+	margin: 0 auto;
+}
+.clble-col-left {
+	padding-right: 12px;
+}
+.clble-col-right {
+	padding-left: 12px;
+}
+
+/* ---- Form fieldsets ---- */
 .clble-edit-form fieldset.form-horizontal {
 	border: none;
 	margin: 0 0 24px;
@@ -45,6 +57,8 @@
 	font-weight: 600;
 	color: #444;
 }
+
+/* ---- Uniform control sizing (text inputs match selects) ---- */
 .clble-edit-form .controls > input[type="text"],
 .clble-edit-form .controls > input[type="email"],
 .clble-edit-form .controls > input[type="tel"],
@@ -55,9 +69,38 @@
 	max-width: 100%;
 	box-sizing: border-box;
 }
+.clble-edit-form .controls input[type="text"],
+.clble-edit-form .controls input[type="email"],
+.clble-edit-form .controls input[type="tel"],
+.clble-edit-form .controls input[type="number"],
+.clble-edit-form .controls select {
+	height: 34px;
+	padding-top: 4px;
+	padding-bottom: 4px;
+	box-sizing: border-box;
+	vertical-align: middle;
+}
 .clble-edit-form .controls textarea#bio {
 	resize: vertical;
 	min-height: 140px;
+}
+.clble-edit-form .controls .input-append input[type="number"] {
+	height: 34px;
+	padding-top: 4px;
+	padding-bottom: 4px;
+	box-sizing: border-box;
+	vertical-align: middle;
+}
+.clble-edit-form .controls .input-append .btn {
+	height: 34px;
+	padding-top: 4px;
+	padding-bottom: 4px;
+	box-sizing: border-box;
+	line-height: 20px;
+	vertical-align: middle;
+}
+.clble-edit-form .controls > input#ordering {
+	width: 70px !important;
 }
 .clble-edit-form .controls > input#contact_id,
 .clble-edit-form .controls .input-append input#contact_id {
@@ -70,15 +113,23 @@
 	margin-top: 3px;
 }
 
-/* ---- Sidebar: Bootstrap 2 well boxes ---- */
-.clble-edit-side .well {
+/* ---- Bio toggle ---- */
+.clble-edit-form #bio-wrap {
+	margin-top: 4px;
+}
+.clble-edit-form #bio-wrap .control-group {
+	margin-bottom: 0;
+}
+
+/* ---- Right column: Bootstrap 2 well boxes ---- */
+.clble-col-right .well {
 	padding: 16px;
 }
-.clble-edit-side .well fieldset {
+.clble-col-right .well fieldset {
 	margin: 0;
 	border: none;
 }
-.clble-edit-side .well legend {
+.clble-col-right .well legend {
 	font-size: 13px;
 	font-weight: 600;
 	color: #333;
@@ -88,33 +139,21 @@
 	margin-bottom: 14px;
 	float: none;
 }
-.clble-edit-side .well .control-group {
+.clble-col-right .well .control-group {
 	margin-bottom: 14px;
 }
-.clble-edit-side .well .control-label {
+.clble-col-right .well .control-label {
 	display: block;
 	margin-bottom: 4px;
 	padding-top: 0;
 }
-.clble-edit-side .well .control-label label {
+.clble-col-right .well .control-label label {
 	font-weight: 600;
 	color: #444;
 	font-size: 12px;
 }
-.clble-edit-side .well .controls input[type="text"],
-.clble-edit-side .well .controls input[type="number"],
-.clble-edit-side .well .controls select {
-	max-width: 100%;
-	box-sizing: border-box;
-}
-.clble-edit-side .well .controls #status {
-	width: 100%;
-}
-.clble-edit-side .well .controls #ordering {
-	width: 70px;
-}
 
-/* ---- Photo column (scoped so the sidebar well stays tidy) ---- */
+/* ---- Photo column ---- */
 .clble-photo-col {
 	text-align: center;
 }
@@ -187,4 +226,15 @@
 }
 .clble-table-meta-width {
 	width: 40%;
+}
+
+/* ---- Small screens: stack columns, drop gutters ---- */
+@media (max-width: 767px) {
+	.clble-col-left,
+	.clble-col-right {
+		padding: 0;
+	}
+	.clble-form-shell {
+		max-width: 100%;
+	}
 }

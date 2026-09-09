@@ -33,7 +33,7 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
         $data['published']=in_array((int)($data['published']??1),[1,0,-2],true)?(int)$data['published']:1;
         $data['status']=($data['status']??'active')==='archived'?'archived':'active';
         $data['contact_id']=max(0,(int)($data['contact_id']??0));
-        $record=['name'=>$data['name'],'type'=>$data['type'],'role'=>$data['role']??'','league_name'=>$data['league_name']??'','term'=>$data['term']??'','start_year'=>(int)($data['start_year']??0),'end_year'=>(int)($data['end_year']??0),'bio'=>$data['bio']??'','email'=>$data['email']??'','phone'=>$data['phone']??'','contact_id'=>(int)($data['contact_id']??0),'vacant'=>!empty($data['vacant'])?1:0,'ordering'=>(int)($data['ordering']??0),'published'=>isset($data['published'])?(int)$data['published']:1,'status'=>$data['status']??'active'];
+        $record=['name'=>$data['name'],'type'=>$data['type'],'role'=>$data['role']??'','league_name'=>$data['league_name']??'','term'=>$data['term']??'','bio'=>$data['bio']??'','email'=>$data['email']??'','phone'=>$data['phone']??'','contact_id'=>(int)($data['contact_id']??0),'vacant'=>!empty($data['vacant'])?1:0,'ordering'=>(int)($data['ordering']??0),'published'=>isset($data['published'])?(int)$data['published']:1,'status'=>$data['status']??'active'];
         $app=Factory::getApplication(); $files=$app->input->files->get('jform',[],'array');
         if(!empty($files['photo']['name'])){
             if(($files['photo']['error']??UPLOAD_ERR_NO_FILE)!==UPLOAD_ERR_OK){ $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_PHOTO_UPLOAD_FAILED')); return false; }

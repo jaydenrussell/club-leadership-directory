@@ -36,6 +36,13 @@
 		}
 	}
 
+	function onBioToggle() {
+		var el = document.getElementById('bio_enabled');
+		if (el) {
+			toggleBioFields(el.checked);
+		}
+	}
+
 	function onPhoneInput() {
 		clbleStripPhone(this);
 	}
@@ -65,6 +72,12 @@
 		if (vacantEl) {
 			vacantEl.addEventListener('change', onVacantChange);
 			toggleVacantFields(vacantEl.checked);
+		}
+
+		var bioEl = document.getElementById('bio_enabled');
+		if (bioEl) {
+			bioEl.addEventListener('change', onBioToggle);
+			toggleBioFields(bioEl.checked);
 		}
 
 		var phoneEl = document.getElementById('phone');
@@ -120,10 +133,6 @@ function toggleTypeFields(type) {
 		roleText.value = '';
 		roleSelect.value = '';
 		setRoleDisabled(false);
-	}
-	var staffWrap = document.getElementById('staff-fields');
-	if (staffWrap) {
-		staffWrap.style.display = (type === 'staff') ? 'block' : 'none';
 	}
 	setRoleRequired();
 }
@@ -202,6 +211,17 @@ function toggleVacantFields(isVacant) {
 
 function toggleLeagueFields(type) { toggleTypeFields(type); }
 
+function toggleBioFields(enabled) {
+	var wrap = document.getElementById('bio-wrap');
+	if (wrap) {
+		wrap.style.display = enabled ? 'block' : 'none';
+	}
+	var text = document.getElementById('bio');
+	if (text) {
+		text.disabled = !enabled;
+	}
+}
+
 function clblePreviewPhoto(input) {
 	var box = document.getElementById('photo_preview');
 	if (!box) { return; }
@@ -261,6 +281,11 @@ Joomla.submitbutton = function (task) {
 	var emailEl = document.getElementById('email');
 	if (emailEl && emailEl.value && !clbleValidateEmail(emailEl)) {
 		emailEl.classList.add('clble-invalid'); ok = false;
+	}
+	var bioEnable = document.getElementById('bio_enabled');
+	var bioText = document.getElementById('bio');
+	if (bioText && bioEnable && !bioEnable.checked) {
+		bioText.value = '';
 	}
 	if (!ok) {
 		alert(Joomla.JText._('COM_CLUBLEADDIR_ERROR_REQUIRED_FIELDS'));
