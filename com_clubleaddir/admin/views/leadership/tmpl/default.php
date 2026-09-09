@@ -16,8 +16,8 @@ use Joomla\CMS\Uri\Uri;
 
 HTMLHelper::_('behavior.modal');
 HTMLHelper::_('behavior.core');
-HTMLHelper::stylesheet('com_clubleaddir/admin-edit.css', array('relative' => true));
-HTMLHelper::script('com_clubleaddir/admin-edit.js', array('relative' => true));
+HTMLHelper::stylesheet('com_clubleaddir/admin-edit.css', array('relative' => true, 'version' => 'auto'));
+HTMLHelper::script('com_clubleaddir/admin-edit.js', array('relative' => true, 'version' => 'auto'));
 
 $item   = $this->item;
 $itemDefaults = array(

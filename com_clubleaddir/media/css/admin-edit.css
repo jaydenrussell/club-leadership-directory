@@ -3,7 +3,7 @@
  * Shipped by com_clubleaddir to /media/com_clubleaddir/css/admin-edit.css.
  *
  * Compact, centered two-column editor (Bootstrap 2 row-fluid), native
- * form-horizontal fieldsets with .well side boxes, uniform control heights.
+ * form-horizontal fieldsets with .well side boxes, uniform control sizing.
  */
 
 .clble-invalid {
@@ -35,7 +35,7 @@
 /* ---- Form fieldsets ---- */
 .clble-edit-form fieldset.form-horizontal {
 	border: none;
-	margin: 0 0 24px;
+	margin: 0 0 22px;
 }
 .clble-edit-form fieldset.form-horizontal legend {
 	font-size: 15px;
@@ -43,22 +43,26 @@
 	color: #333;
 	width: 100%;
 	border-bottom: 1px solid #e1e1e1;
-	padding-bottom: 6px;
-	margin-bottom: 16px;
+	padding-bottom: 5px;
+	margin-bottom: 14px;
 	float: none;
 }
 .clble-edit-form fieldset.form-horizontal .control-group {
-	margin-bottom: 16px;
+	margin-bottom: 14px;
 }
 .clble-edit-form fieldset.form-horizontal .control-label {
-	padding-top: 6px;
+	padding-top: 5px;
 }
 .clble-edit-form fieldset.form-horizontal .control-label label {
 	font-weight: 600;
 	color: #444;
 }
 
-/* ---- Uniform control sizing (text inputs match selects) ---- */
+/* ---- Uniform control sizing -----------------------------------------
+ * Every text-like input, number and select renders at the same 28px height
+ * (the native Bootstrap dropdown height). Height is forced so no admin
+ * template rule can shrink inputs below the selects.
+ */
 .clble-edit-form .controls > input[type="text"],
 .clble-edit-form .controls > input[type="email"],
 .clble-edit-form .controls > input[type="tel"],
@@ -69,30 +73,36 @@
 	max-width: 100%;
 	box-sizing: border-box;
 }
-.clble-edit-form .controls input[type="text"],
-.clble-edit-form .controls input[type="email"],
-.clble-edit-form .controls input[type="tel"],
-.clble-edit-form .controls input[type="number"],
-.clble-edit-form .controls select {
-	height: 34px;
+.clble-edit-form input[type="text"],
+.clble-edit-form input[type="email"],
+.clble-edit-form input[type="tel"],
+.clble-edit-form input[type="number"],
+.clble-edit-form select {
+	height: 28px !important;
+	line-height: 20px;
 	padding-top: 4px;
 	padding-bottom: 4px;
+	box-sizing: border-box !important;
+	vertical-align: middle;
+}
+.clble-edit-form input[type="file"] {
+	height: 28px;
 	box-sizing: border-box;
 	vertical-align: middle;
 }
-.clble-edit-form .controls textarea#bio {
+.clble-edit-form textarea#bio {
 	resize: vertical;
-	min-height: 140px;
+	min-height: 120px;
 }
 .clble-edit-form .controls .input-append input[type="number"] {
-	height: 34px;
+	height: 28px !important;
 	padding-top: 4px;
 	padding-bottom: 4px;
-	box-sizing: border-box;
+	box-sizing: border-box !important;
 	vertical-align: middle;
 }
 .clble-edit-form .controls .input-append .btn {
-	height: 34px;
+	height: 28px;
 	padding-top: 4px;
 	padding-bottom: 4px;
 	box-sizing: border-box;
@@ -110,12 +120,13 @@
 .clble-edit-form .controls .help-block {
 	font-size: 11px;
 	color: #888;
-	margin-top: 3px;
+	margin-top: 2px;
+	margin-bottom: 0;
 }
 
 /* ---- Bio toggle ---- */
 .clble-edit-form #bio-wrap {
-	margin-top: 4px;
+	margin-top: 2px;
 }
 .clble-edit-form #bio-wrap .control-group {
 	margin-bottom: 0;
@@ -123,7 +134,7 @@
 
 /* ---- Right column: Bootstrap 2 well boxes ---- */
 .clble-col-right .well {
-	padding: 16px;
+	padding: 12px 14px;
 }
 .clble-col-right .well fieldset {
 	margin: 0;
@@ -135,16 +146,16 @@
 	color: #333;
 	width: 100%;
 	border-bottom: 1px solid #e1e1e1;
-	padding-bottom: 6px;
-	margin-bottom: 14px;
+	padding-bottom: 4px;
+	margin-bottom: 10px;
 	float: none;
 }
 .clble-col-right .well .control-group {
-	margin-bottom: 14px;
+	margin-bottom: 10px;
 }
 .clble-col-right .well .control-label {
 	display: block;
-	margin-bottom: 4px;
+	margin-bottom: 3px;
 	padding-top: 0;
 }
 .clble-col-right .well .control-label label {
@@ -159,12 +170,12 @@
 }
 .clble-photo-col .thumbnail,
 .clble-photo-col .clble-photo-placeholder {
-	width: 120px;
-	height: 120px;
-	line-height: 120px;
+	width: 80px;
+	height: 80px;
+	line-height: 80px;
 	text-align: center;
 	color: #bbb;
-	margin: 0 auto 8px;
+	margin: 0 auto 6px;
 	background: #eef0f2;
 	border: 1px solid #e3e7ea;
 	border-radius: 4px;
@@ -175,30 +186,32 @@
 .clble-photo-col input[type="file"] {
 	margin: 0 auto;
 	display: block;
+	width: 100%;
 }
 .clble-photo-img {
-	max-width: 120px;
-	max-height: 120px;
+	max-width: 80px;
+	max-height: 80px;
 	display: inline-block;
 	vertical-align: middle;
 }
 .clble-photo-preview-margin {
-	margin-bottom: 10px;
+	margin-bottom: 8px;
 }
 .clble-photo-name {
 	word-break: break-all;
-	font-size: 11px;
-	margin-top: 4px;
+	font-size: 10px;
+	margin-top: 2px;
+	margin-bottom: 4px;
 }
 .clble-icon-large {
-	font-size: 40px;
+	font-size: 32px;
 }
 
 /* ---- Contact lookup helpers ---- */
 .clble-contact-picked {
 	font-size: 11px;
 	color: #555;
-	margin-top: 4px;
+	margin-top: 3px;
 }
 .clble-btn-margin-left {
 	margin-left: 8px;
@@ -208,13 +221,13 @@
 .clble-help-note {
 	font-size: 10px;
 	color: #8a6d3b;
-	margin-top: 3px;
+	margin-top: 2px;
 	font-style: italic;
 }
 .clble-section-divider {
 	border: none;
 	border-top: 1px solid #e1e1e1;
-	margin: 14px 0;
+	margin: 10px 0;
 }
 .clble-table-compact {
 	margin-bottom: 0;
