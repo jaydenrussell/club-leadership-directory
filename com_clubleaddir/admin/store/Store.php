@@ -84,7 +84,7 @@ class ClubleaddirStoreJson
             }
         }
         if (is_file($this->file)) {
-            $lock = fopen($this->file, 'c');
+            $lock = fopen($this->file, 'c+');
             if ($lock && flock($lock, LOCK_SH)) {
                 $raw = file_get_contents($this->file);
                 flock($lock, LOCK_UN);
@@ -165,59 +165,98 @@ class ClubleaddirStoreJson
         }
     }
 
-    private function reload()
+    /**
+     * Read the raw on-disk JSON through an already-open (locked) handle.
+     *
+     * Single-open invariant: inside a locked section we MUST NOT re-open the
+     * file. Opening a second descriptor (fopen/file_get_contents/copy) and
+     * flock()ing it against the LOCK_EX already held on the first one hangs
+     * forever: flock() treats each file descriptor independently, so a nested
+     * request blocks on the caller's own lock (observed on Linux AND Windows).
+     * This self-deadlock used to hang every insert/update/delete/reorder, which
+     * presented as "Joomla crashes when saving a record" (PHP timeout -> 500).
+     */
+    private function readRawFromLock($lock)
     {
-        $lock = fopen($this->file, 'c');
-        if ($lock && flock($lock, LOCK_SH)) {
-            if (!is_file($this->file)) {
-                $this->data = array('records' => array());
-                flock($lock, LOCK_UN);
-                fclose($lock);
-                return;
-            }
-            $raw = file_get_contents($this->file);
-            if ($raw === false) {
-                $this->data = array('records' => array());
-                flock($lock, LOCK_UN);
-                fclose($lock);
-                return;
-            }
-            try {
-                $dec = json_decode($raw, true, 512, JSON_THROW_ON_ERROR);
-                if (is_array($dec) && isset($dec['records']) && is_array($dec['records'])) {
-                    $this->data = $dec;
-                } else {
-                    $this->data = array('records' => array());
-                }
-            } catch (\JsonException $e) {
+        rewind($lock);
+        $raw = stream_get_contents($lock);
+        return ($raw === false) ? '' : $raw;
+    }
+
+    /**
+     * Re-read the JSON file into $this->data through the locked handle.
+     * Only call while holding the exclusive lock on $lock.
+     */
+    private function reloadFromLock($lock)
+    {
+        $raw = $this->readRawFromLock($lock);
+        if ($raw === '') {
+            $this->data = array('records' => array());
+            return;
+        }
+        try {
+            $dec = json_decode($raw, true, 512, JSON_THROW_ON_ERROR);
+            if (is_array($dec) && isset($dec['records']) && is_array($dec['records'])) {
+                $this->data = $dec;
+            } else {
                 $this->data = array('records' => array());
             }
-            flock($lock, LOCK_UN);
-            fclose($lock);
-        } elseif ($lock) {
-            fclose($lock);
+        } catch (\JsonException $e) {
+            $this->data = array('records' => array());
         }
     }
 
-    private function save()
+    /**
+     * Flush $this->data to disk through the SAME locked handle the caller
+     * already holds (single-open invariant, see readRawFromLock()). Existing
+     * bytes are backed up to .bak before the file is truncated and rewritten.
+     */
+    private function writeToLock($lock)
     {
-        $lock = fopen($this->file, 'c');
-        if ($lock && flock($lock, LOCK_EX)) {
-            if (is_file($this->file) && !copy($this->file, $this->file . '.bak')) {
-                flock($lock, LOCK_UN);
-                fclose($lock);
-                Log::add('Clubleaddir Store: cannot create backup, aborting save: ' . ($this->file . '.bak'), Log::WARNING, 'com_clubleaddir');
+        $rawBefore = $this->readRawFromLock($lock);
+        if ($rawBefore !== '' && file_put_contents($this->file . '.bak', $rawBefore) === false) {
+            Log::add('Clubleaddir Store: cannot create backup, aborting save: ' . ($this->file . '.bak'), Log::WARNING, 'com_clubleaddir');
+            return false;
+        }
+        $json = json_encode($this->data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+        if ($json === false) {
+            return false;
+        }
+        if (!ftruncate($lock, 0)) {
+            return false;
+        }
+        rewind($lock);
+        $len    = strlen($json);
+        $cursor = 0;
+        while ($cursor < $len) {
+            $n = fwrite($lock, substr($json, $cursor));
+            if ($n === false || $n === 0) {
                 return false;
             }
-            $ok = file_put_contents($this->file, json_encode($this->data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)) !== false;
-            flock($lock, LOCK_UN);
-            fclose($lock);
-            return $ok;
+            $cursor += $n;
         }
-        if ($lock) {
-            fclose($lock);
+        fflush($lock);
+        return true;
+    }
+
+    /**
+     * Standalone atomic save when the caller does NOT already hold the lock
+     * (currently only the constructor's .bak recovery path). Acquires the
+     * exclusive lock once on a single handle and writes through it.
+     */
+    private function save()
+    {
+        $lock = fopen($this->file, 'c+');
+        if (!$lock || !flock($lock, LOCK_EX)) {
+            if ($lock) {
+                fclose($lock);
+            }
+            return false;
         }
-        return false;
+        $ok = $this->writeToLock($lock);
+        flock($lock, LOCK_UN);
+        fclose($lock);
+        return $ok;
     }
 
     private function nextId()
@@ -327,9 +366,9 @@ class ClubleaddirStoreJson
             }
         }
 
-        $lock = fopen($this->file, 'c');
+        $lock = fopen($this->file, 'c+');
         if ($lock && flock($lock, LOCK_EX)) {
-            $this->reload();
+            $this->reloadFromLock($lock);
             $id = $this->nextId();
             $filtered['id'] = $id;
             if (!isset($filtered['status'])) {
@@ -339,7 +378,7 @@ class ClubleaddirStoreJson
                 $filtered['published'] = 1;
             }
             $this->data['records'][] = $filtered;
-            $ok = $this->save();
+            $ok = $this->writeToLock($lock);
             flock($lock, LOCK_UN);
             fclose($lock);
             return $ok ? $id : false;
@@ -362,7 +401,7 @@ class ClubleaddirStoreJson
             }
         }
 
-        $lock = fopen($this->file, 'c');
+        $lock = fopen($this->file, 'c+');
         if (!$lock || !flock($lock, LOCK_EX)) {
             if ($lock) {
                 fclose($lock);
@@ -371,13 +410,13 @@ class ClubleaddirStoreJson
         }
 
         try {
-            $this->reload();
+            $this->reloadFromLock($lock);
             foreach ($this->data['records'] as &$r) {
                 if ((int) $r['id'] === (int) $id) {
                     foreach ($filtered as $k => $v) {
                         $r[$k] = $v;
                     }
-                    $ok = $this->save();
+                    $ok = $this->writeToLock($lock);
                     flock($lock, LOCK_UN);
                     fclose($lock);
                     return $ok;
@@ -396,7 +435,7 @@ class ClubleaddirStoreJson
 
     public function delete($id)
     {
-        $lock = fopen($this->file, 'c');
+        $lock = fopen($this->file, 'c+');
         if (!$lock || !flock($lock, LOCK_EX)) {
             if ($lock) {
                 fclose($lock);
@@ -405,12 +444,12 @@ class ClubleaddirStoreJson
         }
 
         try {
-            $this->reload();
+            $this->reloadFromLock($lock);
             foreach ($this->data['records'] as $i => $r) {
                 if ((int) $r['id'] === (int) $id) {
                     unset($this->data['records'][$i]);
                     $this->data['records'] = array_values($this->data['records']);
-                    $ok = $this->save();
+                    $ok = $this->writeToLock($lock);
                     flock($lock, LOCK_UN);
                     fclose($lock);
                     return $ok;
@@ -433,7 +472,7 @@ class ClubleaddirStoreJson
 
     public function reorderSingle($id, $direction)
     {
-        $lock = fopen($this->file, 'c');
+        $lock = fopen($this->file, 'c+');
         if (!$lock || !flock($lock, LOCK_EX)) {
             if ($lock) {
                 fclose($lock);
@@ -442,7 +481,7 @@ class ClubleaddirStoreJson
         }
 
         try {
-            $this->reload();
+            $this->reloadFromLock($lock);
 
             $row = null;
             foreach ($this->data['records'] as $r) {
@@ -492,7 +531,7 @@ class ClubleaddirStoreJson
             }
             unset($r);
 
-            $ok = $this->save();
+            $ok = $this->writeToLock($lock);
             flock($lock, LOCK_UN);
             fclose($lock);
             return $ok;
@@ -505,7 +544,7 @@ class ClubleaddirStoreJson
 
     public function setOrdering($id, $ordering)
     {
-        $lock = fopen($this->file, 'c');
+        $lock = fopen($this->file, 'c+');
         if (!$lock || !flock($lock, LOCK_EX)) {
             if ($lock) {
                 fclose($lock);
@@ -514,11 +553,11 @@ class ClubleaddirStoreJson
         }
 
         try {
-            $this->reload();
+            $this->reloadFromLock($lock);
             foreach ($this->data['records'] as &$r) {
                 if ((int) $r['id'] === (int) $id) {
                     $r['ordering'] = (int) $ordering;
-                    $ok = $this->save();
+                    $ok = $this->writeToLock($lock);
                     flock($lock, LOCK_UN);
                     fclose($lock);
                     return $ok;
@@ -537,7 +576,7 @@ class ClubleaddirStoreJson
 
     public function reorderAll($type = null)
     {
-        $lock = fopen($this->file, 'c');
+        $lock = fopen($this->file, 'c+');
         if (!$lock || !flock($lock, LOCK_EX)) {
             if ($lock) {
                 fclose($lock);
@@ -546,7 +585,7 @@ class ClubleaddirStoreJson
         }
 
         try {
-            $this->reload();
+            $this->reloadFromLock($lock);
 
             $rows = $this->data['records'];
             if ($type !== null) {
@@ -576,7 +615,7 @@ class ClubleaddirStoreJson
                 }
             }
 
-            $ok = $this->save();
+            $ok = $this->writeToLock($lock);
             flock($lock, LOCK_UN);
             fclose($lock);
             return $ok;
@@ -595,7 +634,7 @@ class ClubleaddirStoreJson
      */
     public function saveOrderAll(array $pks, array $order)
     {
-        $lock = fopen($this->file, 'c');
+        $lock = fopen($this->file, 'c+');
         if (!$lock || !flock($lock, LOCK_EX)) {
             if ($lock) {
                 fclose($lock);
@@ -604,7 +643,7 @@ class ClubleaddirStoreJson
         }
 
         try {
-            $this->reload();
+            $this->reloadFromLock($lock);
 
             foreach ($pks as $i => $pk) {
                 $ord = isset($order[$i]) ? (int) $order[$i] : 0;
@@ -618,7 +657,7 @@ class ClubleaddirStoreJson
                 unset($r);
             }
 
-            $ok = $this->save();
+            $ok = $this->writeToLock($lock);
             flock($lock, LOCK_UN);
             fclose($lock);
             return $ok;

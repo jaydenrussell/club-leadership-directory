@@ -57,7 +57,7 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
             $record['created']=$date; $record['created_by']=$userId;
             $orderingChanged = ((int)($record['ordering'] ?? 0) === 0);
             $result=(bool)$this->store->insert($record);
-            if($result) $this->logAudit('insert', (int)$record['id'] ?? 0, array('record' => $record));
+            if($result) $this->logAudit('insert', (int)($record['id'] ?? 0), array('record' => $record));
         }
         if($result && $this->store!==null && $orderingChanged) $this->store->reorderAll($record['type']??null);
         return $result;
