@@ -428,6 +428,11 @@ class ClubleaddirZip
             if ($localOff < 0 || $localOff >= $fs) {
                 return false;
             }
+            // 32-bit PHP: unpack('V') wraps values >= 2^31 to negative ints;
+            // any negative size is never legitimate and would evade caps.
+            if ($csize < 0 || $usize < 0) {
+                return false;
+            }
 
             $entries[] = array(
                 'name'     => $name,

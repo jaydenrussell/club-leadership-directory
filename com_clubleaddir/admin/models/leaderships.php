@@ -345,9 +345,32 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
         // stays private at 0700 regardless.
         @chmod($photoDir, 0755);
 
+        // Defence-in-depth: the photos directory must never execute scripts
+        // nor be served as active content (imports only ever place images
+        // here, but a planted .svg/.php polyglot must not be run). Apache
+        // installs get an explicit deny ruleset; nginx ignores .htaccess, so
+        // outside Apache the extension whitelist and folder placement are the
+        // boundary. Written only when absent so an intentionally managed
+        // .htaccess is never clobbered.
+        $htPhotos = $photoDir . '/.htaccess';
+        if (!is_file($htPhotos)) {
+            @file_put_contents(
+                $htPhotos,
+                "<FilesMatch \"\\.(php|phps|phtml|php[0-9]|cgi|pl|py|asp|aspx|shtml|sh|csh|jsp|htaccess)$\">\n" .
+                "    Require all denied\n" .
+                "</FilesMatch>\n" .
+                "<FilesMatch \"\\.svg$\">\n" .
+                "    Require all denied\n" .
+                "</FilesMatch>\n"
+            );
+            @chmod($htPhotos, 0444);
+        }
+
         $manifestRaw       = null;
         $manifestTooLarge  = false;
+        $legacyTooLarge    = false;
         $extracted         = array();
+        $referenced        = array();
         $photoCap          = 6291456;
         $ndRows            = null;      // populated only when records.ndjson exists
         $ndCount           = 0;
@@ -359,7 +382,7 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
         // small format header, and photos/ entries are validated and staged.
         // Caps on per-entry and total size are enforced inside
         // ClubleaddirZip::iterate().
-        $zipOk = ClubleaddirZip::iterate($src, function ($name, $tmp, $meta) use (&$manifestRaw, &$manifestTooLarge, &$ndRows, &$ndCount, &$recordsJsonSeen, &$extracted, $photoCap, $stagingPhotos, &$result) {
+        $zipOk = ClubleaddirZip::iterate($src, function ($name, $tmp, $meta) use (&$manifestRaw, &$manifestTooLarge, &$legacyTooLarge, &$ndRows, &$ndCount, &$recordsJsonSeen, &$extracted, $photoCap, $stagingPhotos, &$result) {
             $name = (string) $name;
             if ($name === '' || substr($name, -1) === '/') {
                 return true;
@@ -410,6 +433,7 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
                 // byte budget is a fraction of the cap for the streaming file.
                 if ($meta['usize'] <= 0 || $meta['usize'] > self::LEGACY_MANIFEST_CAP || @filesize($tmp) > self::LEGACY_MANIFEST_CAP) {
                     $manifestTooLarge = true;
+                    $legacyTooLarge   = true;
                     return false;
                 }
                 $raw = @file_get_contents($tmp);
@@ -444,7 +468,11 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
 
         if ($zipOk === false) {
             $this->removeDir($staging);
-            return array('error' => Text::_($manifestTooLarge ? 'COM_CLUBLEADDIR_IMPORT_ERROR_FORMAT' : 'COM_CLUBLEADDIR_IMPORT_ERROR_ZIP'));
+            return array('error' => Text::_(
+                $legacyTooLarge
+                ? 'COM_CLUBLEADDIR_IMPORT_ERROR_LEGACY_TOO_LARGE'
+                : ($manifestTooLarge ? 'COM_CLUBLEADDIR_IMPORT_ERROR_FORMAT' : 'COM_CLUBLEADDIR_IMPORT_ERROR_ZIP')
+            ));
         }
 
         if (!$recordsJsonSeen) {
@@ -498,6 +526,8 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
                 if ($pb === null || !isset($extracted[$pb])) {
                     $n[$k] = '';
                     $this->addWarning($result, Text::sprintf('COM_CLUBLEADDIR_IMPORT_PHOTO_MISSING', $this->escapeQuiet($n['name'])));
+                } else {
+                    $referenced[$pb] = true;
                 }
             }
             $seen[$id] = true;
@@ -506,8 +536,16 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
         }
 
         if ($result['imported'] === 0) {
-            $this->removeDir($staging);
-            return array('error' => Text::_('COM_CLUBLEADDIR_IMPORT_ERROR_FORMAT'));
+            // Restoring an empty backup is a legitimate operation (wipe), so a
+            // zero-record archive is accepted only when it is self-consistent:
+            // nothing was declared AND the manifest count says zero. Anything
+            // that declared records but sanitised to zero, or declared count 0
+            // while carrying records, is malformed and stays rejected.
+            $declared = (isset($manifest['count']) && is_int($manifest['count'])) ? $manifest['count'] : null;
+            if (count($rawRecords) !== 0 || ($declared !== null && $declared !== 0)) {
+                $this->removeDir($staging);
+                return array('error' => Text::_('COM_CLUBLEADDIR_IMPORT_ERROR_FORMAT'));
+            }
         }
 
         // Frozen pre-import copy for manual rollback (mirrors .bak generations).
@@ -524,8 +562,10 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
             return array('error' => Text::_('COM_CLUBLEADDIR_IMPORT_ERROR_SAVE'));
         }
 
-        // Store committed: only now move staged photos into their final home.
-        foreach (array_keys($extracted) as $base) {
+        // Store committed: only now move staged photos into their final home. Only
+        // photos actually referenced by a committed record go; extracted-but-
+        // unreferenced files stay in staging and are discarded with it.
+        foreach (array_keys($referenced) as $base) {
             if ($this->moveOrCopy($stagingPhotos . '/' . $base, $photoDir . '/' . $base)) {
                 @chmod($photoDir . '/' . $base, 0644);
                 $result['photos']++;
@@ -726,7 +766,20 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
         if ($tmpBase && is_dir($tmpBase) && is_writable($tmpBase)) {
             return rtrim($tmpBase, '/\\');
         }
-        return JPATH_ROOT . '/tmp';
+        // Last-resort fallback lands inside the web root: staging here would
+        // otherwise let a backup (which may contain names/emails) be fetched
+        // anonymously while in progress. Apache installs get an explicit deny
+        // rule; refuse-on-create is caught later by the caller's mkdir check.
+        $webFail = JPATH_ROOT . '/tmp';
+        if (!is_dir($webFail)) {
+            @mkdir($webFail, 0700, true);
+        }
+        $htWeb = $webFail . '/.htaccess';
+        if (!is_file($htWeb)) {
+            @file_put_contents($htWeb, "Require all denied\n");
+            @chmod($htWeb, 0444);
+        }
+        return $webFail;
     }
 
     /**
@@ -737,6 +790,12 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
     {
         if (@rename($src, $dst)) {
             return true;
+        }
+        // rename() failed; copy fallback. If $dst already exists as a
+        // symlink, copy() would follow it and write through to an arbitrary
+        // target, so remove whatever occupies the destination first.
+        if (is_link($dst) || is_file($dst)) {
+            @unlink($dst);
         }
         if (@copy($src, $dst)) {
             @unlink($src);
@@ -809,6 +868,13 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
                 json_encode($data, JSON_UNESCAPED_SLASHES)
             );
             $file = $logDir . '/audit.log';
+            // Serialise rotate+append so two concurrent imports cannot
+            // interleave against rotation (losing a generation, or appending
+            // mid-rename and landing in a rotated file).
+            $lock = @fopen($logDir . '/.lock', 'c');
+            if ($lock) {
+                flock($lock, LOCK_EX);
+            }
             if (is_file($file) && filesize($file) > 10485760) {
                 for ($i = 5; $i >= 1; $i--) {
                     $src = $file . ($i === 1 ? '' : '.' . ($i - 1));
@@ -820,6 +886,10 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
             }
             if (file_put_contents($file, $entry, FILE_APPEND | LOCK_EX) === false) {
                 Log::add('Clubleaddir audit log: write failed to: ' . $file, Log::WARNING, 'com_clubleaddir');
+            }
+            if ($lock) {
+                flock($lock, LOCK_UN);
+                fclose($lock);
             }
         } catch (\Throwable $e) {
             Log::add('Clubleaddir audit log exception: ' . $e->getMessage(), Log::WARNING, 'com_clubleaddir');
