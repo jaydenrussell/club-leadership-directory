@@ -286,10 +286,17 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
         }
 
         $photoDir = JPATH_ROOT . '/images/clubleaddir/photos';
-        if ((!is_dir($photoDir) && !mkdir($photoDir, 0700, true) && !is_dir($photoDir)) || !is_writable($photoDir)) {
+        if ((!is_dir($photoDir) && !mkdir($photoDir, 0755, true) && !is_dir($photoDir)) || !is_writable($photoDir)) {
             $this->removeDir($staging);
             return array('error' => Text::_('COM_CLUBLEADDIR_IMPORT_ERROR_PHOTOS_DIR'));
         }
+        // Photos are served statically by the web server (see
+        // ClubleaddirHelper::photoUrl). A locked-down 0700/0600 pair only
+        // works when the web server and PHP share a user; relax to the files
+        // Joomla default so a PHP-FPM user that differs from Apache still
+        // serves the imported thumbnails. Staging ($staging, $stagingPhotos)
+        // stays private at 0700 regardless.
+        @chmod($photoDir, 0755);
 
         $manifestRaw       = null;
         $manifestTooLarge  = false;
@@ -409,8 +416,13 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
         // Store committed: only now move staged photos into their final home.
         foreach (array_keys($extracted) as $base) {
             if ($this->moveOrCopy($stagingPhotos . '/' . $base, $photoDir . '/' . $base)) {
-                @chmod($photoDir . '/' . $base, 0600);
+                @chmod($photoDir . '/' . $base, 0644);
                 $result['photos']++;
+            } else {
+                // Never leave a staged photo to silently vanish: surface it so
+                // an admin can see exactly which file the server could not
+                // finalise (permissions / cross-device fallback failure).
+                $result['warnings'][] = Text::sprintf('COM_CLUBLEADDIR_IMPORT_PHOTO_MOVE', $base);
             }
         }
 
@@ -529,21 +541,11 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
 
     protected function isImageFile($path)
     {
-        $mime = null;
-        if (function_exists('finfo_open')) {
-            $f = finfo_open(FILEINFO_MIME_TYPE);
-            if ($f) {
-                $mime = finfo_file($f, $path);
-                finfo_close($f);
-            }
-        }
-        if (!$mime) {
-            $mime = function_exists('mime_content_type') ? mime_content_type($path) : '';
-        }
-        if (in_array($mime, array('image/jpeg', 'image/png', 'image/gif', 'image/webp'), true)) {
-            return true;
-        }
-        // Minimal hosts without fileinfo: fall back to magic-byte signatures.
+        // Header signatures are decisive: they are unambiguous for real
+        // JPEG/PNG/GIF/WebP regardless of the host's libmagic state. MIME
+        // detection is only a fallback (a stale or missing magic DB on shared
+        // hosts can label a valid image 'application/octet-stream', which
+        // would otherwise silently skip every photo on import).
         $head = '';
         $fh   = @fopen($path, 'rb');
         if ($fh) {
@@ -562,7 +564,20 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
         if (substr($head, 0, 4) === 'RIFF' && substr($head, 8, 4) === 'WEBP') {
             return true; // WebP
         }
-        return false;
+        $mime = null;
+        if (function_exists('finfo_open')) {
+            $f = finfo_open(FILEINFO_MIME_TYPE);
+            if ($f) {
+                $mime = finfo_file($f, $path);
+                finfo_close($f);
+            }
+        }
+        if (!$mime && function_exists('mime_content_type')) {
+            $mime = mime_content_type($path);
+        }
+        // Accepted extensions are already whitelisted to image types, so any
+        // image/* mime from the fallback is sufficient.
+        return is_string($mime) && strpos($mime, 'image/') === 0;
     }
 
     /**

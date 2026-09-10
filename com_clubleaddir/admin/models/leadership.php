@@ -89,14 +89,14 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
         if(!$mime) $mime=mime_content_type($fileInfo['tmp_name']);
         if(!in_array($mime,$allowedMimes,true)){ $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_PHOTO_INVALID_TYPE')); return false; }
         $ext='jpg'; switch($mime){ case 'image/png': $ext='png'; break; case 'image/gif': $ext='gif'; break; case 'image/webp': $ext='webp'; break; }
-        $destDir=JPATH_ROOT.'/images/clubleaddir/photos'; if(!is_dir($destDir) && !mkdir($destDir,0700,true) && !is_dir($destDir)){ $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_PHOTO_UPLOAD_FAILED')); return false; }
+        $destDir=JPATH_ROOT.'/images/clubleaddir/photos'; if(!is_dir($destDir) && !mkdir($destDir,0755,true) && !is_dir($destDir)){ $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_PHOTO_UPLOAD_FAILED')); return false; }
         do {
             try { $base='photo_'.time().'_'.bin2hex(random_bytes(4)); }
             catch (\Throwable $e) { $base='photo_'.time().'_'.bin2hex(openssl_random_pseudo_bytes(4)); }
             $orig=$base.'.'.$ext; $square=$base.'_sq.'.$ext; $origPath=$destDir.'/'.$orig; $squarePath=$destDir.'/'.$square;
         } while (is_file($origPath) || is_file($squarePath));
         if(!move_uploaded_file($fileInfo['tmp_name'],$origPath)){ $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_PHOTO_UPLOAD_FAILED')); return false; }
-        chmod($origPath,0600); $this->makeSquareCrop($origPath,$squarePath,400); if(is_file($squarePath)) chmod($squarePath,0600);
+        chmod($origPath,0644); $this->makeSquareCrop($origPath,$squarePath,400); if(is_file($squarePath)) chmod($squarePath,0644);
         return ['/images/clubleaddir/photos/'.$orig,'/images/clubleaddir/photos/'.$square];
     }
     protected function makeSquareCrop($src,$dest,$size=400){
