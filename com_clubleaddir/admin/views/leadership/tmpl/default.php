@@ -231,6 +231,7 @@ $bioEnabled = !empty($item->bio);
     <fieldset>
         <legend><?php echo Text::_('COM_CLUBLEADDIR_PHOTO'); ?></legend>
         <div class="control-group">
+            <div class="control-label"><label id="jform_photo-lbl" for="jform_photo"><?php echo Text::_('COM_CLUBLEADDIR_PHOTO'); ?></label></div>
             <div class="controls clble-photo-col">
                 <div id="photo_preview">
                     <?php if ($item->photo): ?>
@@ -260,15 +261,14 @@ $bioEnabled = !empty($item->bio);
                      data-preview-container=".field-media-preview"
                      data-preview-width="200"
                      data-preview-height="200">
-                    <div id="imageModal_jform_photo" tabindex="-1" class="modal hide fade" style="width:900px; margin-left:-450px; max-width:none;">
+                    <div id="imageModal_jform_photo" tabindex="-1" class="modal hide fade" aria-hidden="true">
                         <div class="modal-header">
                             <button type="button" class="close novalidate" data-dismiss="modal" aria-label="Close">
                                 <span aria-hidden="true">×</span>
                             </button>
                             <h3>Change Image</h3>
                         </div>
-                        <div class="modal-body" style="height:540px; resize:both; overflow:auto; padding:0;">
-                            <iframe src="" width="100%" height="100%" frameborder="0" scrolling="auto" style="width:100%;height:100%;"></iframe>
+                        <div class="modal-body" style="max-height: initial; overflow-y: initial;">
                         </div>
                     </div>
                     <div class="input-prepend input-append">
