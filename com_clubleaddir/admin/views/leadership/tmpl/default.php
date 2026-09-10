@@ -242,38 +242,25 @@ $bioEnabled = !empty($item->bio);
                                     <?php endif; ?>
                                 </div>
                                 <?php
-                                // Media picker: default folder is images/clubleaddir/photos so admins
-                                // reuse an already-stored photo instead of uploading a duplicate. Renders
-                                // with JForm/Form::getInstance so it works on Joomla 3 and 4/5 alike. If
-                                // the platform cannot render it (no com_media, odd override), fall back
-                                // to the legacy single-file upload input.
-                                $photoPickerHtml = '';
-                                try {
-                                    $formClass = class_exists('Joomla\CMS\Form\Form') ? 'Joomla\CMS\Form\Form' : (class_exists('JForm') ? 'JForm' : '');
-                                    if ($formClass !== '') {
-                                        $pickerForm = $formClass::getInstance(
-                                            'com_clubleaddir.leadership.photo',
-                                            '<form><field name="photo" type="media" directory="clubleaddir/photos" '
-                                            . 'hide_default="0" /></form>',
-                                            array('control' => 'jform')
-                                        );
-                                        $pickerField = $pickerForm->getField('photo');
-                                        if ($pickerField) {
-                                            $pickerField->setValue(ltrim((string) ($item->photo ?? ''), '/'));
-                                            $photoPickerHtml = $pickerField->render();
-                                        }
-                                    }
-                                } catch (\Throwable $e) {
-                                    $photoPickerHtml = '';
-                                }
+                                // Manual media picker for Joomla 3 compatibility.
+                                // Opens the Joomla media manager modal on button click.
+                                $photoValue = ltrim((string) ($item->photo ?? ''), '/');
                                 ?>
-                                <?php if ($photoPickerHtml !== ''): ?>
-                                    <?php echo $photoPickerHtml; ?>
-                                    <p class="help-block"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_PHOTO_PICK_HELP'); ?></p>
-                                <?php else: ?>
-                                    <input type="file" name="jform[photo]" id="photo" class="inputbox" accept="image/*">
-                                    <p class="help-block"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_PHOTO_HELP'); ?><?php if ($item->photo): ?> <span class="muted">(<?php echo Text::_('COM_CLUBLEADDIR_FIELD_PHOTO_REPLACE'); ?>)</span><?php endif; ?></p>
-                                <?php endif; ?>
+                                <div class="input-append">
+                                    <input type="text" name="jform[photo]" id="jform_photo" value="<?php echo $this->escape($photoValue); ?>" class="inputbox" size="35" readonly="readonly" />
+                                    <a href="#"
+                                       class="btn"
+                                       onclick="window.open('index.php?option=com_media&view=media&tmpl=component&asset=com_clubleaddir&author=1&fieldid=jform_photo&folder=clubleaddir/photos', 'Modal', 'width=800,height=450,toolbar=no,status=no,menubar=no,scrollbars=yes'); return false;"
+                                       id="jform_photo-button"
+                                       title="<?php echo Text::_('COM_CLUBLEADDIR_FIELD_PHOTO_PICK_HELP'); ?>">
+                                        <?php echo Text::_('JSELECT'); ?>
+                                    </a>
+                                </div>
+                                <p class="help-block"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_PHOTO_PICK_HELP'); ?></p>
+                                <p class="help-block">
+                                    <span class="label label-info"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_PHOTO_HELP'); ?></span>
+                                    <?php if ($item->photo): ?> <span class="muted">(<?php echo Text::_('COM_CLUBLEADDIR_FIELD_PHOTO_REPLACE'); ?>)</span><?php endif; ?>
+                                </p>
                                 <script>window.clbleJRoot = "<?php echo rtrim(Uri::base(), '/'); ?>";</script>
                             </div>
                         </div>

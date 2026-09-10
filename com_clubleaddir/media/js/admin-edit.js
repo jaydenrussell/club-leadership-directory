@@ -86,6 +86,7 @@
 		}
 
 		var photoEl = document.getElementById('photo');
+		if (!photoEl) { photoEl = document.getElementById('jform_photo'); }
 		if (photoEl) {
 			photoEl.addEventListener('change', onPhotoChange);
 		}
