@@ -329,6 +329,85 @@ class ClubleaddirControllerLeadership extends BaseController
     }
 
     /**
+     * Stream a full backup of the leadership records plus their photos.
+     * Restricted to core.admin (super users) — it can contain private data.
+     */
+    public function export()
+    {
+        if (!$this->guardAdmin()) {
+            return false;
+        }
+
+        $model = $this->getModel('Leaderships', 'ClubleaddirModel');
+        $pack  = $model->exportPack();
+        if ($pack === false || empty($pack['file']) || !is_file($pack['file'])) {
+            $this->setRedirect('index.php?option=com_clubleaddir&view=leaderships', Text::_('COM_CLUBLEADDIR_EXPORT_ERROR'), 'error');
+            return false;
+        }
+
+        @ini_set('zlib.output_compression', '0');
+        $app = Factory::getApplication();
+        $app->setHeader('Content-Type', 'application/zip', true);
+        $app->setHeader('Content-Disposition', 'attachment; filename="' . basename($pack['name']) . '"', true);
+        $app->setHeader('Content-Length', (string) filesize($pack['file']), true);
+        $app->sendHeaders();
+        readfile($pack['file']);
+        @unlink($pack['file']);
+        $app->close();
+    }
+
+    /**
+     * Replace all records with the contents of an uploaded backup zip.
+     */
+    public function import()
+    {
+        if (!$this->guardAdmin()) {
+            return false;
+        }
+
+        $files = (array) $this->input->files->get('import_file', array(), 'raw');
+        $model = $this->getModel('Leaderships', 'ClubleaddirModel');
+        $result = $model->importPack($files);
+
+        if (isset($result['error'])) {
+            $this->setRedirect('index.php?option=com_clubleaddir&view=leaderships', $result['error'], 'error');
+            return false;
+        }
+
+        $app = Factory::getApplication();
+        $app->enqueueMessage(Text::sprintf('COM_CLUBLEADDIR_IMPORT_SUCCESS', (int) $result['imported'], (int) $result['photos']));
+        if ((int) $result['skipped'] > 0) {
+            $app->enqueueMessage(Text::sprintf('COM_CLUBLEADDIR_IMPORT_SKIPPED', (int) $result['skipped']), 'warning');
+        }
+        foreach ($result['warnings'] as $w) {
+            $app->enqueueMessage($w, 'warning');
+        }
+        $this->setRedirect('index.php?option=com_clubleaddir&view=leaderships');
+    }
+
+    /**
+     * Shared POST + token + core.admin guard for import/export.
+     */
+    private function guardAdmin()
+    {
+        if (strtoupper($this->input->getMethod()) !== 'POST') {
+            $this->setRedirect('index.php?option=com_clubleaddir&view=leaderships', Text::_('JINVALID_TOKEN'), 'error');
+            return false;
+        }
+        if (!Session::checkToken()) {
+            $this->setRedirect('index.php?option=com_clubleaddir&view=leaderships', Text::_('JINVALID_TOKEN'), 'error');
+            return false;
+        }
+        $user = Factory::getUser();
+        if (!$user->authorise('core.admin', 'com_clubleaddir')) {
+            Factory::getApplication()->enqueueMessage(Text::_('JERROR_ALERTNOAUTHOR'), 'error');
+            $this->setRedirect('index.php?option=com_clubleaddir&view=leaderships');
+            return false;
+        }
+        return true;
+    }
+
+    /**
      * Cast/whitelist incoming form fields so nothing unexpected reaches the store.
      */
     private function sanitize(array $data)

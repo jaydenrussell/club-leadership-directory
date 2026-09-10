@@ -14,6 +14,7 @@ use Joomla\CMS\Language\Text;
 use Joomla\CMS\Router\Route;
 
 HTMLHelper::_('behavior.core');
+HTMLHelper::_('bootstrap.modal');
 HTMLHelper::_('sortablelist.sortable', 'clubleaddirList', 'adminForm', 'asc', 'index.php?option=com_clubleaddir&task=leadership.saveorderAjax&tmpl=component');
 HTMLHelper::stylesheet('com_clubleaddir/admin-list.css', array('relative' => true));
 
@@ -223,3 +224,26 @@ $saveOrder = ($listOrder === 'ordering');
     <input type="hidden" name="filter_order_Dir" value="<?php echo $listDirn; ?>">
     <?php echo HTMLHelper::_('form.token'); ?>
 </form>
+
+<div class="modal hide fade" id="clubleaddirImportModal">
+    <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+        <h3><?php echo Text::_('COM_CLUBLEADDIR_IMPORT_HEADING'); ?></h3>
+    </div>
+    <div class="modal-body">
+        <form action="<?php echo Route::_('index.php?option=com_clubleaddir'); ?>" method="post" enctype="multipart/form-data" name="clubleaddirImportForm" id="clubleaddirImportForm">
+            <p><?php echo Text::_('COM_CLUBLEADDIR_IMPORT_INTRO'); ?></p>
+            <div class="alert alert-warning"><?php echo Text::_('COM_CLUBLEADDIR_IMPORT_WARN'); ?></div>
+            <input type="file" name="import_file" id="import_file" accept=".zip,application/zip" class="input-xlarge" required>
+            <p class="help-block"><?php echo Text::_('COM_CLUBLEADDIR_IMPORT_HELP'); ?></p>
+            <input type="hidden" name="task" value="leadership.import">
+            <?php echo HTMLHelper::_('form.token'); ?>
+        </form>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn" data-dismiss="modal"><?php echo Text::_('JTOOLBAR_CANCEL'); ?></button>
+        <button type="button" class="btn btn-primary" onclick="document.getElementById('clubleaddirImportForm').submit();">
+            <?php echo Text::_('COM_CLUBLEADDIR_IMPORT_BUTTON'); ?>
+        </button>
+    </div>
+</div>

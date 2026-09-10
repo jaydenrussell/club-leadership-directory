@@ -111,6 +111,9 @@ class ClubleaddirViewLeaderships extends HtmlView
         }
         if ($canDo->get('core.admin')) {
             ToolbarHelper::preferences('com_clubleaddir');
+            ToolbarHelper::custom('leadership.export', 'download', '', 'COM_CLUBLEADDIR_EXPORT', false);
+            $bar = \JToolbar::getInstance('toolbar');
+            $bar->appendButton('Custom', '<button type="button" class="btn btn-small" data-toggle="modal" data-target="#clubleaddirImportModal"><span class="icon-upload"></span> ' . Text::_('COM_CLUBLEADDIR_IMPORT') . '</button>', 'import');
         }
     }
 }

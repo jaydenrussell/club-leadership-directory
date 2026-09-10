@@ -270,6 +270,43 @@ class ClubleaddirStoreJson
         return $max + 1;
     }
 
+    /**
+     * Return the raw stored record arrays (pre-defaults) for export.
+     * The in-memory copy is read directly; safe for an admin export request.
+     */
+    public function getRawRecords()
+    {
+        return $this->data['records'];
+    }
+
+    /**
+     * Replace the entire records set in one locked write (import).
+     * Records must already be sanitised and carry unique positive int ids.
+     */
+    public function importAll(array $records)
+    {
+        $lock = fopen($this->file, 'c+');
+        if (!$lock || !flock($lock, LOCK_EX)) {
+            if ($lock) {
+                fclose($lock);
+            }
+            return false;
+        }
+        try {
+            $this->reloadFromLock($lock);
+            $this->data['records'] = array_values($records);
+            $ok = $this->writeToLock($lock);
+            flock($lock, LOCK_UN);
+            fclose($lock);
+            return $ok;
+        } catch (\Throwable $e) {
+            flock($lock, LOCK_UN);
+            fclose($lock);
+            Log::add('Clubleaddir Store: importAll failed: ' . $e->getMessage(), Log::WARNING, 'com_clubleaddir');
+            return false;
+        }
+    }
+
     public function getAll(array $filters = array())
     {
         $out = array();
