@@ -50,28 +50,18 @@
 function jSelectImage(fieldid, url, dir, ext) {
     var input = document.getElementById(fieldid);
     if (!input) { return; }
-    // com_media view=images returns a root-relative /images/... path; normalize for our store.
     var val = (url || '').replace(/^\/+/, '');
     if (val.indexOf('images/') !== 0) {
         val = 'images/' + val;
     }
     input.value = val;
-    updatePhotoPreview(input);
-    if (typeof jQuery !== 'undefined' && jQuery(input).trigger) {
-        jQuery(input).trigger('change');
-    }
+    updatePhotoPreviewFromInput(input);
 }
 
 function onPhotoSelectClick() {
-    var input = document.getElementById('jform_photo');
-    if (!input) { return; }
     var url = 'index.php?option=com_media&view=images&tmpl=component&asset=com_clubleaddir&author=&fieldid=jform_photo&ismoo=0&folder=clubleaddir/photos';
-    if (typeof jSelectImage === 'function') {
-        if (typeof SqueezeBox !== 'undefined') {
-            SqueezeBox.open(url, {handler: 'iframe', size: {x: 800, y: 450}});
-        } else {
-            window.open(url, 'Modal', 'width=800,height=450,toolbar=no,status=no,menubar=no,scrollbars=yes');
-        }
+    if (typeof SqueezeBox !== 'undefined') {
+        SqueezeBox.open(url, {handler: 'iframe', size: {x: 800, y: 450}});
     } else {
         window.open(url, 'Modal', 'width=800,height=450,toolbar=no,status=no,menubar=no,scrollbars=yes');
     }
@@ -81,30 +71,20 @@ function onPhotoClearClick() {
     var input = document.getElementById('jform_photo');
     if (!input) { return; }
     input.value = '';
-    updatePhotoPreview(input);
-    if (typeof jQuery !== 'undefined' && jQuery(input).trigger) {
-        jQuery(input).trigger('change');
-    }
+    updatePhotoPreviewFromInput(input);
 }
 
-function updatePhotoPreview(input) {
-    var preview = document.querySelector('.field-media-preview');
+function updatePhotoPreviewFromInput(input) {
+    var preview = document.getElementById('photo_preview');
     if (!preview) { return; }
     var val = (input && input.value) ? input.value : '';
-    var wrap = document.querySelector('.input-prepend.input-append');
-    var previewTitle = wrap ? wrap.getAttribute('data-preview-title') || 'Selected image.' : 'Selected image.';
-    var noImage = wrap ? wrap.getAttribute('data-no-image') || 'No image selected.' : 'No image selected.';
     if (val) {
         var src = (typeof window.clbleJRoot !== 'undefined' ? window.clbleJRoot : '')
             + '/' + val.replace(/^media:\/\/local\//, '').replace(/^\//, '');
-        preview.setAttribute('data-content', '<img src="' + src + '" style="max-width:260px;max-height:180px;display:block;" alt="">');
-        preview.setAttribute('data-original-title', previewTitle);
+        preview.innerHTML = '<img src="' + src + '" alt="" class="thumbnail clble-photo-img">'
+            + '<p class="help-block clble-photo-name">' + val.replace(/^.*[\\\/]/, '') + '</p>';
     } else {
-        preview.setAttribute('data-content', noImage);
-        preview.setAttribute('data-original-title', previewTitle);
-    }
-    if (typeof jQuery !== 'undefined' && jQuery(preview).data('bs.popover')) {
-        jQuery(preview).data('bs.popover').setContent();
+        preview.innerHTML = '<div class="clble-photo-placeholder"><span class="icon-user clble-icon-large"></span></div>';
     }
 }
 
@@ -142,12 +122,6 @@ function init() {
         phoneEl.addEventListener('input', onPhoneInput);
     }
 
-    var photoEl = document.getElementById('photo');
-    if (!photoEl) { photoEl = document.getElementById('jform_photo'); }
-    if (photoEl) {
-        photoEl.addEventListener('change', onPhotoChange);
-    }
-
     var selectBtn = document.querySelector('.button-select');
     if (selectBtn) {
         selectBtn.addEventListener('click', onPhotoSelectClick);
@@ -156,12 +130,9 @@ function init() {
     if (clearBtn) {
         clearBtn.addEventListener('click', onPhotoClearClick);
     }
-    var previewEl = document.querySelector('.field-media-preview');
-    if (previewEl && photoEl) {
-        updatePhotoPreview(photoEl);
-        if (typeof jQuery !== 'undefined' && jQuery(previewEl).popover) {
-            jQuery(previewEl).popover({html: true, trigger: 'hover focus'});
-        }
+    var photoInput = document.getElementById('jform_photo');
+    if (photoInput) {
+        updatePhotoPreviewFromInput(photoInput);
     }
 }
 

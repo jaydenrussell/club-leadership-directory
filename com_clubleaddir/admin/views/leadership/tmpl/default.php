@@ -227,43 +227,37 @@ $bioEnabled = !empty($item->bio);
 
             <div class="span6 clble-col-right">
 
-                <div class="well">
-                    <fieldset>
-                        <legend><?php echo Text::_('COM_CLUBLEADDIR_PHOTO'); ?></legend>
-                        <div class="control-group">
-                            <div class="controls clble-photo-col">
-                                <div id="photo_preview">
-                                    <?php if ($item->photo): ?>
-                                        <img src="<?php echo $this->escape(ClubleaddirHelper::photoUrl($item->photo)); ?>" alt="<?php echo $this->escape($item->name); ?>"
-                                             class="thumbnail clble-photo-img">
-                                        <p class="help-block clble-photo-name"><?php echo $this->escape(basename($item->photo)); ?></p>
-                                    <?php else: ?>
-                                        <div class="clble-photo-placeholder"><span class="icon-user clble-icon-large"></span></div>
-                                    <?php endif; ?>
-                                </div>
-<?php
-                                // Manual Joomla 3 media manager picker. Mirrors the native
-                                // media field markup so the modal, preview popover, and
-                                // clear button behave like core fields.
-                                $photoValue = ltrim((string) ($item->photo ?? ''), '/');
-                                $photoPreviewTitle = Text::_('COM_CLUBLEADDIR_FIELD_PHOTO_PREVIEW_TITLE');
-                                $photoNoImage = Text::_('COM_CLUBLEADDIR_FIELD_PHOTO_NO_IMAGE');
-                                ?>
-                                <div class="input-prepend input-append" data-preview-title="<?php echo $this->escape($photoPreviewTitle); ?>" data-no-image="<?php echo $this->escape($photoNoImage); ?>">
-                                    <span rel="popover" class="add-on pop-helper field-media-preview" title="" data-content="<?php echo $this->escape($photoNoImage); ?>" data-original-title="<?php echo $this->escape($photoPreviewTitle); ?>" data-trigger="hover">
-                                        <span class="icon-eye" aria-hidden="true"></span>
-                                    </span>
-                                    <input type="text" name="jform[photo]" id="jform_photo" value="<?php echo $this->escape($photoValue); ?>" readonly="readonly" class="input-small hasTooltip field-media-input" size="40" data-original-title="" title="" aria-invalid="false">
-                                    <button type="button" class="btn button-select"><?php echo Text::_('JSELECT'); ?></button>
-                                    <button type="button" class="btn hasTooltip button-clear" title="" aria-label="Clear" data-original-title="<?php echo Text::_('JTOOLBAR_CLEAR'); ?>">
-                                        <span class="icon-remove" aria-hidden="true"></span>
-                                    </button>
-                                </div>
-                                <p class="help-block">
-                                    <span class="label label-info"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_PHOTO_HELP'); ?></span>
-                                    <?php if ($item->photo): ?> <span class="muted">(<?php echo Text::_('COM_CLUBLEADDIR_FIELD_PHOTO_REPLACE'); ?>)</span><?php endif; ?>
-                                </p>
-                                <script>window.clbleJRoot = "<?php echo rtrim(Uri::base(), '/'); ?>";</script>
+<div class="well">
+    <fieldset>
+        <legend><?php echo Text::_('COM_CLUBLEADDIR_PHOTO'); ?></legend>
+        <div class="control-group">
+            <div class="controls clble-photo-col">
+                <div id="photo_preview">
+                    <?php if ($item->photo): ?>
+                        <img src="<?php echo $this->escape(ClubleaddirHelper::photoUrl($item->photo)); ?>" alt="<?php echo $this->escape($item->name); ?>"
+                             class="thumbnail clble-photo-img">
+                        <p class="help-block clble-photo-name"><?php echo $this->escape(basename($item->photo)); ?></p>
+                    <?php else: ?>
+                        <div class="clble-photo-placeholder"><span class="icon-user clble-icon-large"></span></div>
+                    <?php endif; ?>
+                </div>
+                <?php
+                $photoValue = ltrim((string) ($item->photo ?? ''), '/');
+                ?>
+                <input type="hidden" name="jform[photo]" id="jform_photo" value="<?php echo $this->escape($photoValue); ?>">
+                <div class="clble-photo-actions">
+                    <button type="button" class="btn button-select"><?php echo Text::_('JSELECT'); ?></button>
+                    <button type="button" class="btn button-clear"><?php echo Text::_('JTOOLBAR_CLEAR'); ?></button>
+                </div>
+                <p class="help-block">
+                    <span class="label label-info"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_PHOTO_HELP'); ?></span>
+                    <?php if ($item->photo): ?> <span class="muted">(<?php echo Text::_('COM_CLUBLEADDIR_FIELD_PHOTO_REPLACE'); ?>)</span><?php endif; ?>
+                </p>
+                <script>window.clbleJRoot = "<?php echo rtrim(Uri::base(), '/'); ?>";</script>
+            </div>
+        </div>
+    </fieldset>
+</div>
                             </div>
                         </div>
                     </fieldset>
