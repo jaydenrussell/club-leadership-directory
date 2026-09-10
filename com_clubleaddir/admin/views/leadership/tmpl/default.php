@@ -250,8 +250,8 @@ $bioEnabled = !empty($item->bio);
                      data-basepath="<?php echo $this->escape($basePath); ?>"
                      data-url="<?php echo $this->escape($mediaUrl); ?>"
                      data-modal=".modal"
-                     data-modal-width="100%"
-                     data-modal-height="645px"
+                     data-modal-width="900"
+                     data-modal-height="640"
                      data-input=".field-media-input"
                      data-button-select=".button-select"
                      data-button-clear=".button-clear"
@@ -260,15 +260,15 @@ $bioEnabled = !empty($item->bio);
                      data-preview-container=".field-media-preview"
                      data-preview-width="200"
                      data-preview-height="200">
-                    <div id="imageModal_jform_photo" tabindex="-1" class="modal hide fade">
+                    <div id="imageModal_jform_photo" tabindex="-1" class="modal hide fade" style="width:900px; margin-left:-450px; max-width:none;">
                         <div class="modal-header">
                             <button type="button" class="close novalidate" data-dismiss="modal" aria-label="Close">
                                 <span aria-hidden="true">×</span>
                             </button>
                             <h3>Change Image</h3>
                         </div>
-                        <div class="modal-body">
-                            <iframe src="" width="100%" height="400" frameborder="0"></iframe>
+                        <div class="modal-body" style="height:540px; resize:both; overflow:auto; padding:0;">
+                            <iframe src="" width="100%" height="100%" frameborder="0" scrolling="auto" style="width:100%;height:100%;"></iframe>
                         </div>
                     </div>
                     <div class="input-prepend input-append">

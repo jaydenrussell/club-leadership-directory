@@ -47,30 +47,24 @@
 		clbleStripPhone(this);
 	}
 
-function jSelectImage(fieldid, url, dir, ext) {
+// Native Joomla 3 media manager return handler — must be global so the
+// com_media iframe can call window.parent.jSelectImage(...).
+window.jSelectImage = function (fieldid, url, dir, ext) {
     var input = document.getElementById(fieldid);
     if (!input) { return; }
     input.value = url;
     updatePhotoPreviewFromInput(input);
-    var modal = document.getElementById('imageModal_' + fieldid);
-    if (modal && typeof jQuery !== 'undefined' && jQuery(modal).modal) {
-        jQuery(modal).modal('hide');
+    if (typeof SqueezeBox !== 'undefined') {
+        SqueezeBox.close();
     }
-}
+};
 
 function onPhotoSelectClick() {
-    var wrapper = document.querySelector('.field-media-wrapper');
-    if (!wrapper) { return; }
-    var modal = document.getElementById('imageModal_jform_photo');
-    if (!modal) { return; }
-    var iframe = modal.querySelector('iframe');
-    if (iframe) {
-        iframe.src = wrapper.getAttribute('data-url') || 'index.php?option=com_media&view=images&tmpl=component&asset=com_clubleaddir&author=&fieldid=jform_photo&ismoo=0&folder=clubleaddir/photos';
-    }
-    if (typeof jQuery !== 'undefined' && jQuery(modal).modal) {
-        jQuery(modal).modal('show');
+    var mediaUrl = 'index.php?option=com_media&view=images&tmpl=component&asset=com_clubleaddir&author=&fieldid=jform_photo&ismoo=0&folder=clubleaddir/photos';
+    if (typeof SqueezeBox !== 'undefined') {
+        SqueezeBox.open(mediaUrl, {handler: 'iframe', size: {x: 900, y: 640}});
     } else {
-        window.open(iframe ? iframe.src : '', 'Modal', 'width=800,height=450,toolbar=no,status=no,menubar=no,scrollbars=yes');
+        window.open(mediaUrl, 'Modal', 'width=900,height=640,toolbar=no,status=no,menubar=no,scrollbars=yes');
     }
 }
 
