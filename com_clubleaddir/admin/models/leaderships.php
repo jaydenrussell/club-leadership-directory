@@ -186,6 +186,15 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
 
         $tmpFile = rtrim($this->tmpBase(), '/\\') . '/clubleaddir-export-' . date('Y-m-d-His') . '-' . bin2hex(random_bytes(4)) . '.zip';
 
+        // Clean up even if the process dies mid-stream (OOM / timeout): an
+        // aborted export would otherwise leave club data in world-readable
+        // sys temp. The controller's own handler stays as a second net.
+        register_shutdown_function(function () use ($tmpFile) {
+            if (is_file($tmpFile)) {
+                @unlink($tmpFile);
+            }
+        });
+
         $exportedPhotos = 0;
         $skippedPhotos  = 0;
 
@@ -265,6 +274,11 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
         if (!mkdir($staging, 0700, true) && !is_dir($staging)) {
             return array('error' => Text::_('COM_CLUBLEADDIR_IMPORT_ERROR_STAGING'));
         }
+        // Survives OOM / timeout / die() anywhere in this import: PHP runs
+        // shutdown functions on fatal errors, so staging can never accumulate.
+        register_shutdown_function(function () use ($staging) {
+            $this->removeDir($staging);
+        });
         $stagingPhotos = $staging . '/photos';
         if (!mkdir($stagingPhotos, 0700, true) && !is_dir($stagingPhotos)) {
             $this->removeDir($staging);
@@ -277,19 +291,28 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
             return array('error' => Text::_('COM_CLUBLEADDIR_IMPORT_ERROR_PHOTOS_DIR'));
         }
 
-        $manifestRaw = null;
-        $extracted   = array();
-        $photoCap    = 6291456;
+        $manifestRaw       = null;
+        $manifestTooLarge  = false;
+        $manifestCap       = 16777216;
+        $extracted         = array();
+        $photoCap          = 6291456;
 
         // Single streaming pass: records.json is captured, photos/ entries
         // are validated and staged. Caps on per-entry and total size are
         // enforced inside ClubleaddirZip::iterate().
-        $zipOk = ClubleaddirZip::iterate($src, function ($name, $tmp, $meta) use (&$manifestRaw, &$extracted, $photoCap, $stagingPhotos, &$result) {
+        $zipOk = ClubleaddirZip::iterate($src, function ($name, $tmp, $meta) use (&$manifestRaw, &$manifestTooLarge, $manifestCap, &$extracted, $photoCap, $stagingPhotos, &$result) {
             $name = (string) $name;
             if ($name === '' || substr($name, -1) === '/') {
                 return true;
             }
             if ($name === 'records.json') {
+                // The manifest is the one thing held fully in memory; bound
+                // it tightly so a hostile or oversized entry cannot push a
+                // 128 MiB memory limit into a fatal (which would skip cleanup).
+                if ($meta['usize'] <= 0 || $meta['usize'] > $manifestCap || @filesize($tmp) > $manifestCap) {
+                    $manifestTooLarge = true;
+                    return false;
+                }
                 $raw = @file_get_contents($tmp);
                 if ($raw !== false && $raw !== '') {
                     $manifestRaw = $raw;
@@ -322,7 +345,7 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
 
         if ($zipOk === false) {
             $this->removeDir($staging);
-            return array('error' => Text::_('COM_CLUBLEADDIR_IMPORT_ERROR_ZIP'));
+            return array('error' => Text::_($manifestTooLarge ? 'COM_CLUBLEADDIR_IMPORT_ERROR_FORMAT' : 'COM_CLUBLEADDIR_IMPORT_ERROR_ZIP'));
         }
 
         $manifest = $manifestRaw !== null ? json_decode($manifestRaw, true) : null;

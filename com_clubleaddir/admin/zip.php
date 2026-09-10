@@ -23,7 +23,7 @@ defined('_JEXEC') or die;
 
 class ClubleaddirZip
 {
-    const MAX_ENTRY   = 104857600; // 100 MiB per uncompressed entry
+    const MAX_ENTRY   = 16777216;  // 16 MiB per uncompressed entry; keeps the worst single inflate block comfortably inside a 128 MiB limit
     const MAX_TOTAL   = 268435456; // 256 MiB total uncompressed
     const MAX_ENTRIES = 5000;      // entries tolerated in one archive
     const CHUNK       = 65536;
