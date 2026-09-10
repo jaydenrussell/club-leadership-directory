@@ -243,11 +243,44 @@ $bioEnabled = !empty($item->bio);
                 </div>
                 <?php
                 $photoValue = ltrim((string) ($item->photo ?? ''), '/');
+                $basePath = rtrim(Uri::base(), '/');
+                $mediaUrl = 'index.php?option=com_media&view=images&tmpl=component&asset=com_clubleaddir&author=&fieldid=jform_photo&ismoo=0&folder=clubleaddir/photos';
                 ?>
-                <input type="hidden" name="jform[photo]" id="jform_photo" value="<?php echo $this->escape($photoValue); ?>">
-                <div class="clble-photo-actions">
-                    <button type="button" class="btn button-select"><?php echo Text::_('JSELECT'); ?></button>
-                    <button type="button" class="btn button-clear"><?php echo Text::_('JTOOLBAR_CLEAR'); ?></button>
+                <div class="field-media-wrapper"
+                     data-basepath="<?php echo $this->escape($basePath); ?>"
+                     data-url="<?php echo $this->escape($mediaUrl); ?>"
+                     data-modal=".modal"
+                     data-modal-width="100%"
+                     data-modal-height="645px"
+                     data-input=".field-media-input"
+                     data-button-select=".button-select"
+                     data-button-clear=".button-clear"
+                     data-preview="true"
+                     data-preview-as-tooltip="true"
+                     data-preview-container=".field-media-preview"
+                     data-preview-width="200"
+                     data-preview-height="200">
+                    <div id="imageModal_jform_photo" tabindex="-1" class="modal hide fade">
+                        <div class="modal-header">
+                            <button type="button" class="close novalidate" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">×</span>
+                            </button>
+                            <h3>Change Image</h3>
+                        </div>
+                        <div class="modal-body">
+                            <iframe src="" width="100%" height="400" frameborder="0"></iframe>
+                        </div>
+                    </div>
+                    <div class="input-prepend input-append">
+                        <span rel="popover" class="add-on pop-helper field-media-preview" title="" data-content="No image selected." data-original-title="Selected image." data-trigger="hover">
+                            <span class="icon-eye" aria-hidden="true"></span>
+                        </span>
+                        <input type="text" name="jform[photo]" id="jform_photo" value="<?php echo $this->escape($photoValue); ?>" readonly="readonly" class="input-small hasTooltip field-media-input" data-original-title="" title="" aria-invalid="false">
+                        <button type="button" class="btn button-select"><?php echo Text::_('JSELECT'); ?></button>
+                        <button type="button" class="btn hasTooltip button-clear" title="" aria-label="Clear" data-original-title="<?php echo Text::_('JTOOLBAR_CLEAR'); ?>">
+                            <span class="icon-remove" aria-hidden="true"></span>
+                        </button>
+                    </div>
                 </div>
                 <p class="help-block">
                     <span class="label label-info"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_PHOTO_HELP'); ?></span>
