@@ -344,15 +344,26 @@ class ClubleaddirControllerLeadership extends BaseController
             $this->setRedirect('index.php?option=com_clubleaddir&view=leaderships', Text::_('COM_CLUBLEADDIR_EXPORT_ERROR'), 'error');
             return false;
         }
+        $tmpPath = $pack['file'];
+        register_shutdown_function(function () use ($tmpPath) {
+            if (is_file($tmpPath)) {
+                @unlink($tmpPath);
+            }
+        });
 
         @ini_set('zlib.output_compression', '0');
         $app = Factory::getApplication();
         $app->setHeader('Content-Type', 'application/zip', true);
         $app->setHeader('Content-Disposition', 'attachment; filename="' . basename($pack['name']) . '"', true);
-        $app->setHeader('Content-Length', (string) filesize($pack['file']), true);
+        $app->setHeader('Content-Length', (string) filesize($tmpPath), true);
+        $app->setHeader('Cache-Control', 'private, no-store, no-cache, must-revalidate', true);
+        $app->setHeader('X-Content-Type-Options', 'nosniff', true);
         $app->sendHeaders();
-        readfile($pack['file']);
-        @unlink($pack['file']);
+
+        while (ob_get_level()) {
+            @ob_end_clean();
+        }
+        readfile($tmpPath);
         $app->close();
     }
 

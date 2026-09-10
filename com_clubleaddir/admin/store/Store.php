@@ -128,34 +128,18 @@ class ClubleaddirStoreJson
             }
         }
 
-        if ((!isset($this->data['records']) || empty($this->data['records'])) && is_file($this->file . '.bak')) {
-            $lock = fopen($this->file . '.bak', 'c');
-            if ($lock && flock($lock, LOCK_SH)) {
-                $bak = file_get_contents($this->file . '.bak');
-                flock($lock, LOCK_UN);
-                fclose($lock);
+        if ((!isset($this->data['records']) || empty($this->data['records']))) {
+            // A live .tmp is the newest complete intent (a write that was
+            // interrupted between staging and completing); prefer it.
+            if (is_file($this->file . '.tmp')) {
+                if (!$this->recoverFromBackup($this->file . '.tmp')) {
+                    $this->recoverFromBackup($this->file . '.bak');
+                }
             } else {
-                if ($lock) { fclose($lock); }
-                $bak = false;
-            }
-            if ($bak !== false) {
-                try {
-                    $dec = json_decode($bak, true, 512, JSON_THROW_ON_ERROR);
-                    if (is_array($dec) && isset($dec['records']) && is_array($dec['records'])) {
-                        $valid = true;
-                        foreach ($dec['records'] as $r) {
-                            if (!is_array($r) || !isset($r['id']) || !is_int($r['id'])) {
-                                $valid = false;
-                                break;
-                            }
-                        }
-                        if ($valid) {
-                            $this->data = $dec;
-                            $this->save();
-                        }
+                foreach (array('.bak', '.bak.1', '.bak.2') as $gen) {
+                    if ($this->recoverFromBackup($this->file . $gen)) {
+                        break;
                     }
-                } catch (\JsonException $e) {
-                    // .bak is also corrupt; leave data empty.
                 }
             }
         }
@@ -163,6 +147,47 @@ class ClubleaddirStoreJson
         if (!isset($this->data['records']) || !is_array($this->data['records'])) {
             $this->data['records'] = array();
         }
+    }
+
+    /**
+     * Validate a backup/tmp copy and, if good, restore it as the live data.
+     * Returns true when the copy was recovered (and persisted).
+     */
+    private function recoverFromBackup($path)
+    {
+        if (!is_file($path)) {
+            return false;
+        }
+        $lock = fopen($path, 'c');
+        if ($lock && flock($lock, LOCK_SH)) {
+            $raw = file_get_contents($path);
+            flock($lock, LOCK_UN);
+            fclose($lock);
+        } else {
+            if ($lock) {
+                fclose($lock);
+            }
+            return false;
+        }
+        if ($raw === false || $raw === '') {
+            return false;
+        }
+        try {
+            $dec = json_decode($raw, true, 512, JSON_THROW_ON_ERROR);
+        } catch (\JsonException $e) {
+            return false;
+        }
+        if (!is_array($dec) || !isset($dec['records']) || !is_array($dec['records'])) {
+            return false;
+        }
+        foreach ($dec['records'] as $r) {
+            if (!is_array($r) || !isset($r['id']) || !is_int($r['id'])) {
+                return false;
+            }
+        }
+        $this->data = $dec;
+        $this->save();
+        return true;
     }
 
     /**
@@ -208,18 +233,36 @@ class ClubleaddirStoreJson
 
     /**
      * Flush $this->data to disk through the SAME locked handle the caller
-     * already holds (single-open invariant, see readRawFromLock()). Existing
-     * bytes are backed up to .bak before the file is truncated and rewritten.
+     * already holds (single-open invariant, see readRawFromLock()). The
+     * complete new content is staged to {file}.tmp before the live file is
+     * truncated, so an interrupted write never loses data: the finished copy
+     * is on disk at {file}.tmp and the prior state survives in {file}.bak
+     * plus two older generations.
      */
     private function writeToLock($lock)
     {
         $rawBefore = $this->readRawFromLock($lock);
-        if ($rawBefore !== '' && file_put_contents($this->file . '.bak', $rawBefore) === false) {
+        // Only archive a valid prior state; a torn or corrupt file must not
+        // pollute the backup chain (generations already protect history).
+        $validPrior = false;
+        if ($rawBefore !== '') {
+            try {
+                $dec = json_decode($rawBefore, true, 512, JSON_THROW_ON_ERROR);
+                $validPrior = is_array($dec) && isset($dec['records']) && is_array($dec['records']);
+            } catch (\JsonException $e) {
+                $validPrior = false;
+            }
+        }
+        if ($validPrior && !$this->rotateBackup($rawBefore)) {
             Log::add('Clubleaddir Store: cannot create backup, aborting save: ' . ($this->file . '.bak'), Log::WARNING, 'com_clubleaddir');
             return false;
         }
         $json = json_encode($this->data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
         if ($json === false) {
+            return false;
+        }
+        if (file_put_contents($this->file . '.tmp', $json) === false) {
+            Log::add('Clubleaddir Store: cannot stage write: ' . ($this->file . '.tmp'), Log::WARNING, 'com_clubleaddir');
             return false;
         }
         if (!ftruncate($lock, 0)) {
@@ -236,7 +279,25 @@ class ClubleaddirStoreJson
             $cursor += $n;
         }
         fflush($lock);
+        @unlink($this->file . '.tmp');
         return true;
+    }
+
+    /**
+     * Rotate the single .bak into a 3-generation history, then write the new
+     * pre-write copy, so several consecutive failure windows stay recoverable.
+     */
+    private function rotateBackup($rawBefore)
+    {
+        $bak = $this->file . '.bak';
+        @unlink($bak . '.2');
+        if (is_file($bak . '.1')) {
+            @rename($bak . '.1', $bak . '.2');
+        }
+        if (is_file($bak)) {
+            @rename($bak, $bak . '.1');
+        }
+        return file_put_contents($bak, $rawBefore) !== false;
     }
 
     /**
@@ -277,6 +338,53 @@ class ClubleaddirStoreJson
     public function getRawRecords()
     {
         return $this->data['records'];
+    }
+
+    public function getFilePath()
+    {
+        return $this->file;
+    }
+
+    /**
+     * Write a crash-safe copy of the store to {file}.{suffix}.{timestamp}
+     * and prune to the 3 newest of that suffix. Used before destructive
+     * operations (import) so a bad replace can be recovered without relying
+     * on the next write clobbering .bak. Reads only; never re-opens the
+     * data file inside a nested lock.
+     */
+    public function snapshot($suffix)
+    {
+        $sfx = preg_replace('/[^A-Za-z0-9_-]/', '', (string) $suffix);
+        if ($sfx === '') {
+            return false;
+        }
+        $lock = fopen($this->file, 'c+');
+        if (!$lock || !flock($lock, LOCK_EX)) {
+            if ($lock) {
+                fclose($lock);
+            }
+            return false;
+        }
+        $raw = $this->readRawFromLock($lock);
+        flock($lock, LOCK_UN);
+        fclose($lock);
+        if ($raw === '' || $raw === false) {
+            return false;
+        }
+        $dest = $this->file . '.' . $sfx . '.' . date('Ymd-His') . '-' . bin2hex(random_bytes(3));
+        if (file_put_contents($dest, $raw) === false) {
+            return false;
+        }
+        $list = glob($this->file . '.' . $sfx . '.*');
+        if ($list && count($list) > 3) {
+            usort($list, function ($a, $b) {
+                return (int) filemtime($b) - (int) filemtime($a);
+            });
+            foreach (array_slice($list, 3) as $old) {
+                @unlink($old);
+            }
+        }
+        return true;
     }
 
     /**
