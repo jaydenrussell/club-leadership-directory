@@ -19,7 +19,23 @@ require_once __DIR__ . '/../zip.php';
 
 class ClubleaddirModelLeaderships extends BaseDatabaseModel
 {
+    /** Hard ceiling on imported records; prevents decode/cleanup amplification. */
+    const MAX_RECORDS = 50000;
+
+    /** Byte cap for the legacy records.json entry (whole-array JSON decode). */
+    const LEGACY_MANIFEST_CAP = 2097152;
+
+    /** Warnings are surfaced, never allowed to grow without bound. */
+    const MAX_WARNINGS = 100;
+
     private $store;
+
+    private function addWarning(array &$result, $msg)
+    {
+        if (count($result['warnings']) < self::MAX_WARNINGS) {
+            $result['warnings'][] = $msg;
+        }
+    }
 
     public function __construct($config = array())
     {
@@ -205,11 +221,40 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
             'exported'    => date('c'),
             'count'       => count($records),
             'photo_count' => count($photoNames),
-            'records'     => $records,
         );
 
         $entries   = array();
+
+        // Primary manifest is an NDJSON stream: the importer decodes one
+        // record per line, so json_decode can never blow the memory budget no
+        // matter how many records there are. A compact records.json header
+        // signs the format; the legacy whole-array 'records' blob is only
+        // embedded when it fits the reader's byte budget so older component
+        // versions can still read small backups.
+        $ndEntries = array();
+        foreach ($records as $r) {
+            if (is_array($r)) {
+                $ndEntries[] = json_encode($r, JSON_UNESCAPED_SLASHES);
+            }
+        }
+        $ndBody = implode("\n", $ndEntries) . ($ndEntries ? "\n" : "");
+
+        $legacyRecords = json_encode($records, JSON_UNESCAPED_SLASHES);
+        if (strlen($legacyRecords) <= self::LEGACY_MANIFEST_CAP) {
+            $manifest['records'] = $records;
+        } else {
+            $manifest['records_file'] = 'records.ndjson';
+        }
+        unset($legacyRecords);
+
         $entries[] = array('name' => 'records.json', 'data' => json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+        $ndTmp = rtrim($this->tmpBase(), '/\\') . '/clubleaddir-ndjson-' . bin2hex(random_bytes(4));
+        if (file_put_contents($ndTmp, $ndBody) === false) {
+            return false;
+        }
+        $entries[] = array('name' => 'records.ndjson', 'path' => $ndTmp);
+
+        unset($ndEntries, $ndBody);
 
         foreach (array_keys($photoNames) as $base) {
             $src = $photoDir . '/' . $base;
@@ -228,8 +273,10 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
 
         if (!ClubleaddirZip::writeStream($tmpFile, $entries)) {
             @unlink($tmpFile);
+            @unlink($ndTmp);
             return false;
         }
+        @unlink($ndTmp);
 
         return array(
             'file'           => $tmpFile,
@@ -300,23 +347,68 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
 
         $manifestRaw       = null;
         $manifestTooLarge  = false;
-        $manifestCap       = 16777216;
         $extracted         = array();
         $photoCap          = 6291456;
+        $ndRows            = null;      // populated only when records.ndjson exists
+        $ndCount           = 0;
+        $recordsJsonSeen   = false;
 
-        // Single streaming pass: records.json is captured, photos/ entries
-        // are validated and staged. Caps on per-entry and total size are
-        // enforced inside ClubleaddirZip::iterate().
-        $zipOk = ClubleaddirZip::iterate($src, function ($name, $tmp, $meta) use (&$manifestRaw, &$manifestTooLarge, $manifestCap, &$extracted, $photoCap, $stagingPhotos, &$result) {
+        // Single streaming pass: records.ndjson is parsed line-by-line (each
+        // line is one record, so json_decode is amortised per record and can
+        // never amplify into a memory blow-up), records.json is only read as a
+        // small format header, and photos/ entries are validated and staged.
+        // Caps on per-entry and total size are enforced inside
+        // ClubleaddirZip::iterate().
+        $zipOk = ClubleaddirZip::iterate($src, function ($name, $tmp, $meta) use (&$manifestRaw, &$manifestTooLarge, &$ndRows, &$ndCount, &$recordsJsonSeen, &$extracted, $photoCap, $stagingPhotos, &$result) {
             $name = (string) $name;
             if ($name === '' || substr($name, -1) === '/') {
                 return true;
             }
+            if ($name === 'records.ndjson') {
+                // One record per line. A single line is capped so one huge
+                // crafted line cannot become a huge json_decode; the line
+                // count is capped so a huge number of lines cannot be
+                // accumulated. Either violation aborts the archive cleanly.
+                $fh2 = @fopen($tmp, 'rb');
+                if (!$fh2) {
+                    $manifestTooLarge = true;
+                    return false;
+                }
+                $rows = array();
+                while (($line = fgets($fh2)) !== false) {
+                    $ndCount++;
+                    if ($ndCount > self::MAX_RECORDS) {
+                        fclose($fh2);
+                        $manifestTooLarge = true;
+                        return false;
+                    }
+                    $line = trim($line);
+                    if ($line === '') {
+                        continue;
+                    }
+                    if (strlen($line) > 1048576) {
+                        fclose($fh2);
+                        $manifestTooLarge = true;
+                        return false;
+                    }
+                    $rec = json_decode($line, true);
+                    if (!is_array($rec)) {
+                        fclose($fh2);
+                        $manifestTooLarge = true;
+                        return false;
+                    }
+                    $rows[] = $rec;
+                }
+                fclose($fh2);
+                $ndRows = $rows;
+                return true;
+            }
             if ($name === 'records.json') {
-                // The manifest is the one thing held fully in memory; bound
-                // it tightly so a hostile or oversized entry cannot push a
-                // 128 MiB memory limit into a fatal (which would skip cleanup).
-                if ($meta['usize'] <= 0 || $meta['usize'] > $manifestCap || @filesize($tmp) > $manifestCap) {
+                $recordsJsonSeen = true;
+                // Bounded strictly: the legacy whole-array decode below has a
+                // ~25x memory amplification on crafted input, which is why the
+                // byte budget is a fraction of the cap for the streaming file.
+                if ($meta['usize'] <= 0 || $meta['usize'] > self::LEGACY_MANIFEST_CAP || @filesize($tmp) > self::LEGACY_MANIFEST_CAP) {
                     $manifestTooLarge = true;
                     return false;
                 }
@@ -329,19 +421,19 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
             if (strpos($name, 'photos/') === 0) {
                 $base = basename($name);
                 if ($name !== 'photos/' . $base || !$this->isAllowedPhotoName($base)) {
-                    $result['warnings'][] = Text::sprintf('COM_CLUBLEADDIR_IMPORT_SKIPPED_PHOTO', $this->escapeQuiet($name));
+                    $this->addWarning($result, Text::sprintf('COM_CLUBLEADDIR_IMPORT_SKIPPED_PHOTO', $this->escapeQuiet($name)));
                     return true;
                 }
                 if ($meta['usize'] <= 0 || $meta['usize'] > $photoCap) {
-                    $result['warnings'][] = Text::sprintf('COM_CLUBLEADDIR_IMPORT_SKIPPED_PHOTO', $base);
+                    $this->addWarning($result, Text::sprintf('COM_CLUBLEADDIR_IMPORT_SKIPPED_PHOTO', $base));
                     return true;
                 }
                 if (!$this->isImageFile($tmp)) {
-                    $result['warnings'][] = Text::sprintf('COM_CLUBLEADDIR_IMPORT_SKIPPED_PHOTO', $base);
+                    $this->addWarning($result, Text::sprintf('COM_CLUBLEADDIR_IMPORT_SKIPPED_PHOTO', $base));
                     return true;
                 }
                 if (!$this->moveOrCopy($tmp, $stagingPhotos . '/' . $base)) {
-                    $result['warnings'][] = Text::sprintf('COM_CLUBLEADDIR_IMPORT_SKIPPED_PHOTO', $base);
+                    $this->addWarning($result, Text::sprintf('COM_CLUBLEADDIR_IMPORT_SKIPPED_PHOTO', $base));
                     return true;
                 }
                 @chmod($stagingPhotos . '/' . $base, 0600);
@@ -355,12 +447,31 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
             return array('error' => Text::_($manifestTooLarge ? 'COM_CLUBLEADDIR_IMPORT_ERROR_FORMAT' : 'COM_CLUBLEADDIR_IMPORT_ERROR_ZIP'));
         }
 
+        if (!$recordsJsonSeen) {
+            // The format header must be present; reject anonymous data.
+            $this->removeDir($staging);
+            return array('error' => Text::_('COM_CLUBLEADDIR_IMPORT_ERROR_FORMAT'));
+        }
         $manifest = $manifestRaw !== null ? json_decode($manifestRaw, true) : null;
         if (!is_array($manifest) || ($manifest['format'] ?? '') !== 'clubleaddir-records') {
             $this->removeDir($staging);
             return array('error' => Text::_('COM_CLUBLEADDIR_IMPORT_ERROR_FORMAT'));
         }
-        $rawRecords = (isset($manifest['records']) && is_array($manifest['records'])) ? $manifest['records'] : array();
+
+        // Records come from the streaming file when present; otherwise from
+        // the (bounded, legacy) whole-array manifest.
+        $rawRecords = null;
+        if ($ndRows !== null) {
+            $rawRecords = $ndRows;
+        } elseif (isset($manifest['records']) && is_array($manifest['records'])) {
+            $rawRecords = $manifest['records'];
+            if (count($rawRecords) > self::MAX_RECORDS) {
+                $this->removeDir($staging);
+                return array('error' => Text::_('COM_CLUBLEADDIR_IMPORT_ERROR_FORMAT'));
+            }
+        } else {
+            $rawRecords = array();
+        }
 
         $cleaned = array();
         $seen    = array();
@@ -368,7 +479,7 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
             if (!is_array($r)) {
                 continue;
             }
-            $n = $this->normalizeRecord($r, $result['warnings']);
+            $n = $this->normalizeRecord($r, $result);
             if ($n === null) {
                 $result['skipped']++;
                 continue;
@@ -386,7 +497,7 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
                 $pb = $this->photoFromPath($n[$k]);
                 if ($pb === null || !isset($extracted[$pb])) {
                     $n[$k] = '';
-                    $result['warnings'][] = Text::sprintf('COM_CLUBLEADDIR_IMPORT_PHOTO_MISSING', $this->escapeQuiet($n['name']));
+                    $this->addWarning($result, Text::sprintf('COM_CLUBLEADDIR_IMPORT_PHOTO_MISSING', $this->escapeQuiet($n['name'])));
                 }
             }
             $seen[$id] = true;
@@ -442,7 +553,7 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
      * Sanitise one imported record to exactly the rules the save path uses.
      * Returns the cleaned array, or null if the record must be skipped.
      */
-    private function normalizeRecord(array $r, array &$warnings)
+    private function normalizeRecord(array $r, array &$result)
     {
         $id   = (int) ($r['id'] ?? 0);
         $type = (string) ($r['type'] ?? '');
@@ -473,7 +584,7 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
         $role = mb_substr(trim((string) ($r['role'] ?? '')), 0, 80);
         $email = mb_substr(trim((string) ($r['email'] ?? '')), 0, 254);
         if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $warnings[] = Text::sprintf('COM_CLUBLEADDIR_IMPORT_BAD_EMAIL', $this->escapeQuiet($name));
+            $this->addWarning($result, Text::sprintf('COM_CLUBLEADDIR_IMPORT_BAD_EMAIL', $this->escapeQuiet($name)));
             $email = '';
         }
 
@@ -541,6 +652,26 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
 
     protected function isImageFile($path)
     {
+        // Structural validation over magic bytes whenever GD is present: a
+        // genuine decoder rejects header-only fakes, truncated files and
+        // non-image polyglots, so junk never reaches the web-served photos
+        // directory. (A real carrier image with appended payload still parses
+        // — extension whitelisting plus non-executable placement is the
+        // boundary for that, not this check.) Hosts whose GD lacks a codec
+        // (e.g. WebP) fall through to the mime check for that file.
+        if (function_exists('imagecreatefromstring')) {
+            $data = @file_get_contents($path);
+            if ($data !== false && $data !== '') {
+                $im = @imagecreatefromstring($data);
+                if ($im !== false) {
+                    imagedestroy($im);
+                    return true;
+                }
+                // Decode failed: fall through to an independent detector so a
+                // type the local GD build cannot decode is not silently lost.
+            }
+        }
+
         // Header signatures are decisive: they are unambiguous for real
         // JPEG/PNG/GIF/WebP regardless of the host's libmagic state. MIME
         // detection is only a fallback (a stale or missing magic DB on shared
