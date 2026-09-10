@@ -256,7 +256,6 @@ $bioEnabled = !empty($item->bio);
                                         <?php echo Text::_('JSELECT'); ?>
                                     </a>
                                 </div>
-                                <p class="help-block"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_PHOTO_PICK_HELP'); ?></p>
                                 <p class="help-block">
                                     <span class="label label-info"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_PHOTO_HELP'); ?></span>
                                     <?php if ($item->photo): ?> <span class="muted">(<?php echo Text::_('COM_CLUBLEADDIR_FIELD_PHOTO_REPLACE'); ?>)</span><?php endif; ?>
