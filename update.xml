@@ -6,12 +6,12 @@
         <element>pkg_clubleaddir</element>
         <type>package</type>
         <client>site</client>
-        <version>3.28.10</version>
+        <version>3.28.11</version>
         <infourl title="Club Leadership">https://github.com/jaydenrussell/club-leadership-directory</infourl>
         <downloads>
-            <downloadurl type="full" format="zip">https://github.com/jaydenrussell/club-leadership-directory/releases/download/v3.28.10/pkg_clubleaddir.zip</downloadurl>
+            <downloadurl type="full" format="zip">https://github.com/jaydenrussell/club-leadership-directory/releases/download/v3.28.11/pkg_clubleaddir.zip</downloadurl>
         </downloads>
-        <sha256>9034dedc7b860e766eda82bb21d83c6185506179357d5fe4f2ab47ef07c330b2</sha256>
+        <sha256>057231f273c2fa8ca25c3f74c76c0e8e375b55c8c1ba2a57bc9ae93b72dcd7c8</sha256>
         <maintainer>Jayden Russell</maintainer>
         <maintainerurl>https://simcoecurlingclub.ca</maintainerurl>
         <targetplatform name="joomla" version="3.[0-9]+" />
