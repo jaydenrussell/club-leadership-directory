@@ -47,50 +47,106 @@
 		clbleStripPhone(this);
 	}
 
-	function onPhotoChange() {
-		clblePreviewPhoto(this);
+function onPhotoChange() {
+	clblePreviewPhoto(this);
+	updatePhotoPreview(this);
+}
+
+function onPhotoSelectClick() {
+	var input = document.getElementById('jform_photo');
+	if (!input) { return; }
+	var url = 'index.php?option=com_media&view=media&tmpl=component&asset=com_clubleaddir&author=1&fieldid=jform_photo&folder=clubleaddir/photos';
+	if (typeof SqueezeBox !== 'undefined') {
+		SqueezeBox.open(url, {handler: 'iframe', size: {x: 800, y: 450}});
+	} else {
+		window.open(url, 'Modal', 'width=800,height=450,toolbar=no,status=no,menubar=no,scrollbars=yes');
+	}
+}
+
+function onPhotoClearClick() {
+	var input = document.getElementById('jform_photo');
+	if (!input) { return; }
+	input.value = '';
+	updatePhotoPreview(input);
+}
+
+function updatePhotoPreview(input) {
+	var preview = document.querySelector('.field-media-preview');
+	if (!preview) { return; }
+	var val = (input && input.value) ? input.value : '';
+	var wrap = document.querySelector('.input-prepend.input-append');
+	var previewTitle = wrap ? wrap.getAttribute('data-preview-title') || 'Selected image.' : 'Selected image.';
+	var noImage = wrap ? wrap.getAttribute('data-no-image') || 'No image selected.' : 'No image selected.';
+	if (val) {
+		var src = (typeof window.clbleJRoot !== 'undefined' ? window.clbleJRoot : '')
+			+ '/' + val.replace(/^media:\/\/local\//, '').replace(/^\//, '');
+		preview.setAttribute('data-content', '<img src="' + src + '" style="max-width:260px;max-height:180px;display:block;" alt="">');
+		preview.setAttribute('data-original-title', previewTitle);
+	} else {
+		preview.setAttribute('data-content', noImage);
+		preview.setAttribute('data-original-title', previewTitle);
+	}
+	if (typeof jQuery !== 'undefined' && jQuery(preview).data('bs.popover')) {
+		jQuery(preview).data('bs.popover').setContent();
+	}
+}
+
+function init() {
+	var typeEl = document.getElementById('type');
+	if (typeEl) {
+		typeEl.addEventListener('change', onTypeChange);
+		toggleTypeFields(typeEl.value);
 	}
 
-	function init() {
-		var typeEl = document.getElementById('type');
-		if (typeEl) {
-			typeEl.addEventListener('change', onTypeChange);
-			toggleTypeFields(typeEl.value);
-		}
+	var roleSelect = document.getElementById('role_select');
+	if (roleSelect) {
+		roleSelect.addEventListener('change', onRoleSelectChange);
+	}
 
-		var roleSelect = document.getElementById('role_select');
-		if (roleSelect) {
-			roleSelect.addEventListener('change', onRoleSelectChange);
-		}
+	var roleText = document.getElementById('role_text');
+	if (roleText) {
+		roleText.addEventListener('input', onRoleTextInput);
+	}
 
-		var roleText = document.getElementById('role_text');
-		if (roleText) {
-			roleText.addEventListener('input', onRoleTextInput);
-		}
+	var vacantEl = document.getElementById('vacant');
+	if (vacantEl) {
+		vacantEl.addEventListener('change', onVacantChange);
+		toggleVacantFields(vacantEl.checked);
+	}
 
-		var vacantEl = document.getElementById('vacant');
-		if (vacantEl) {
-			vacantEl.addEventListener('change', onVacantChange);
-			toggleVacantFields(vacantEl.checked);
-		}
+	var bioEl = document.getElementById('bio_enabled');
+	if (bioEl) {
+		bioEl.addEventListener('change', onBioToggle);
+		toggleBioFields(bioEl.checked);
+	}
 
-		var bioEl = document.getElementById('bio_enabled');
-		if (bioEl) {
-			bioEl.addEventListener('change', onBioToggle);
-			toggleBioFields(bioEl.checked);
-		}
+	var phoneEl = document.getElementById('phone');
+	if (phoneEl) {
+		phoneEl.addEventListener('input', onPhoneInput);
+	}
 
-		var phoneEl = document.getElementById('phone');
-		if (phoneEl) {
-			phoneEl.addEventListener('input', onPhoneInput);
-		}
+	var photoEl = document.getElementById('photo');
+	if (!photoEl) { photoEl = document.getElementById('jform_photo'); }
+	if (photoEl) {
+		photoEl.addEventListener('change', onPhotoChange);
+	}
 
-		var photoEl = document.getElementById('photo');
-		if (!photoEl) { photoEl = document.getElementById('jform_photo'); }
-		if (photoEl) {
-			photoEl.addEventListener('change', onPhotoChange);
+	var selectBtn = document.querySelector('.button-select');
+	if (selectBtn) {
+		selectBtn.addEventListener('click', onPhotoSelectClick);
+	}
+	var clearBtn = document.querySelector('.button-clear');
+	if (clearBtn) {
+		clearBtn.addEventListener('click', onPhotoClearClick);
+	}
+	var previewEl = document.querySelector('.field-media-preview');
+	if (previewEl && photoEl) {
+		updatePhotoPreview(photoEl);
+		if (typeof jQuery !== 'undefined' && jQuery(previewEl).popover) {
+			jQuery(previewEl).popover({html: true, trigger: 'hover focus'});
 		}
 	}
+}
 
 	if (document.readyState === 'loading') {
 		document.addEventListener('DOMContentLoaded', init);
