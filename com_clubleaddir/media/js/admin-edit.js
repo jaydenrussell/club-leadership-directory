@@ -225,20 +225,22 @@ function toggleBioFields(enabled) {
 function clblePreviewPhoto(input) {
 	var box = document.getElementById('photo_preview');
 	if (!box) { return; }
-	if (!input.files || !input.files[0]) {
-		return;
-	}
-	var file = input.files[0];
+	var pickedFile = (input.files && input.files[0]) ? input.files[0] : null;
 	var name = document.createElement('p');
 	name.className = 'help-block clble-photo-name';
-	name.textContent = file.name + ' (' + (file.size ? Math.round(file.size / 1024) + ' KB' : '') + ')';
-
+	if (pickedFile) {
+		name.textContent = pickedFile.name + ' (' + (pickedFile.size ? Math.round(pickedFile.size / 1024) + ' KB' : '') + ')';
+	} else if (input.value) {
+		name.textContent = input.value.replace(/^media:\/\/local\//, '').replace(/^\//, '');
+	} else {
+		return;
+	}
 	if (box.querySelector('img')) { box.querySelector('img').remove(); }
 	if (box.querySelector('.clble-photo-placeholder')) { box.querySelector('.clble-photo-placeholder').remove(); }
 	var old = box.querySelector('p.help-block');
 	if (old) { old.remove(); }
 
-	if (window.FileReader && file.type.indexOf('image/') === 0) {
+	if (pickedFile && window.FileReader && pickedFile.type.indexOf('image/') === 0) {
 		var reader = new FileReader();
 		reader.onload = function (e) {
 			var img = document.createElement('img');
@@ -248,8 +250,14 @@ function clblePreviewPhoto(input) {
 			box.appendChild(img);
 			box.appendChild(name);
 		};
-		reader.readAsDataURL(file);
+		reader.readAsDataURL(pickedFile);
 	} else {
+		var img = document.createElement('img');
+		img.src = (typeof window.clbleJRoot !== 'undefined' ? window.clbleJRoot : '')
+			+ '/' + input.value.replace(/^media:\/\/local\//, '').replace(/^\//, '');
+		img.alt = '';
+		img.className = 'thumbnail clble-photo-img';
+		box.appendChild(img);
 		box.appendChild(name);
 	}
 }

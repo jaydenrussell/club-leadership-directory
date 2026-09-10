@@ -241,8 +241,40 @@ $bioEnabled = !empty($item->bio);
                                         <div class="clble-photo-placeholder"><span class="icon-user clble-icon-large"></span></div>
                                     <?php endif; ?>
                                 </div>
-                                <input type="file" name="jform[photo]" id="photo" class="inputbox" accept="image/*">
-                                <p class="help-block"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_PHOTO_HELP'); ?><?php if ($item->photo): ?> <span class="muted">(<?php echo Text::_('COM_CLUBLEADDIR_FIELD_PHOTO_REPLACE'); ?>)</span><?php endif; ?></p>
+                                <?php
+                                // Media picker: default folder is images/clubleaddir/photos so admins
+                                // reuse an already-stored photo instead of uploading a duplicate. Renders
+                                // with JForm/Form::getInstance so it works on Joomla 3 and 4/5 alike. If
+                                // the platform cannot render it (no com_media, odd override), fall back
+                                // to the legacy single-file upload input.
+                                $photoPickerHtml = '';
+                                try {
+                                    $formClass = class_exists('Joomla\CMS\Form\Form') ? 'Joomla\CMS\Form\Form' : (class_exists('JForm') ? 'JForm' : '');
+                                    if ($formClass !== '') {
+                                        $pickerForm = $formClass::getInstance(
+                                            'com_clubleaddir.leadership.photo',
+                                            '<form><field name="photo" type="media" directory="clubleaddir/photos" '
+                                            . 'hide_default="0" /></form>',
+                                            array('control' => 'jform')
+                                        );
+                                        $pickerField = $pickerForm->getField('photo');
+                                        if ($pickerField) {
+                                            $pickerField->setValue(ltrim((string) ($item->photo ?? ''), '/'));
+                                            $photoPickerHtml = $pickerField->render();
+                                        }
+                                    }
+                                } catch (\Throwable $e) {
+                                    $photoPickerHtml = '';
+                                }
+                                ?>
+                                <?php if ($photoPickerHtml !== ''): ?>
+                                    <?php echo $photoPickerHtml; ?>
+                                    <p class="help-block"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_PHOTO_PICK_HELP'); ?></p>
+                                <?php else: ?>
+                                    <input type="file" name="jform[photo]" id="photo" class="inputbox" accept="image/*">
+                                    <p class="help-block"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_PHOTO_HELP'); ?><?php if ($item->photo): ?> <span class="muted">(<?php echo Text::_('COM_CLUBLEADDIR_FIELD_PHOTO_REPLACE'); ?>)</span><?php endif; ?></p>
+                                <?php endif; ?>
+                                <script>window.clbleJRoot = "<?php echo rtrim(Uri::base(), '/'); ?>";</script>
                             </div>
                         </div>
                     </fieldset>

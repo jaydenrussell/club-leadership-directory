@@ -35,13 +35,25 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
         $data['contact_id']=max(0,(int)($data['contact_id']??0));
         $record=['name'=>$data['name'],'type'=>$data['type'],'role'=>$data['role']??'','league_name'=>$data['league_name']??'','term'=>$data['term']??'','bio'=>$data['bio']??'','email'=>$data['email']??'','phone'=>$data['phone']??'','contact_id'=>(int)($data['contact_id']??0),'vacant'=>!empty($data['vacant'])?1:0,'ordering'=>(int)($data['ordering']??0),'published'=>isset($data['published'])?(int)$data['published']:1,'status'=>$data['status']??'active'];
         $app=Factory::getApplication(); $files=$app->input->files->get('jform',[],'array');
+        $existing=null; if(!empty($data['id'])) $existing=$this->store->getById((int)$data['id']);
         if(!empty($files['photo']['name'])){
+            // Legacy single-file upload (kept for old clients / batch scripts).
             if(($files['photo']['error']??UPLOAD_ERR_NO_FILE)!==UPLOAD_ERR_OK){ $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_PHOTO_UPLOAD_FAILED')); return false; }
             if(!is_uploaded_file($files['photo']['tmp_name'])){ $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_PHOTO_UPLOAD_FAILED')); return false; }
             $photoPaths=$this->handlePhotoUpload($files['photo']); if($photoPaths===false) return false;
             $record['photo_full']=$photoPaths[0]; $record['photo']=$photoPaths[1];
-        }elseif(!empty($data['id'])){
-            $existing=$this->store->getById((int)$data['id']); if($existing){ $record['photo']=$existing->photo; $record['photo_full']=$existing->photo_full; }
+        }elseif(trim((string)($data['photo'] ?? '')) !== ''){
+            // Media picker: reuse an image already stored under images/clubleaddir/photos
+            // (the picker's default folder), generating a square crop only on first use.
+            $photoPaths=$this->setPhotoFromPicker((string)$data['photo'], $existing);
+            if($photoPaths===false) return false;
+            $record['photo_full']=$photoPaths[0]; $record['photo']=$photoPaths[1];
+        }elseif(array_key_exists('photo',$data) && $existing){
+            // Media picker posted an empty value: the admin explicitly cleared the photo.
+            $record['photo']=''; $record['photo_full']='';
+        }elseif($existing){
+            // No photo field in the payload (batch/programmatic saves): leave untouched.
+            $record['photo']=$existing->photo; $record['photo_full']=$existing->photo_full;
         }
         $record['modified']=$date; $record['modified_by']=$userId;
         $orderingChanged = false;
@@ -98,6 +110,117 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
         if(!move_uploaded_file($fileInfo['tmp_name'],$origPath)){ $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_PHOTO_UPLOAD_FAILED')); return false; }
         chmod($origPath,0644); $this->makeSquareCrop($origPath,$squarePath,400); if(is_file($squarePath)) chmod($squarePath,0644);
         return ['/images/clubleaddir/photos/'.$orig,'/images/clubleaddir/photos/'.$square];
+    }
+    /**
+     * Normalise a media-picker value to the canonical store path
+     * (/images/clubleaddir/photos/<name>) or null when it does not resolve to
+     * an allowed file inside the photos directory. Accepts every form the
+     * Joomla media field returns across versions: leading-slash absolute,
+     * site-root relative, images/-relative, folder-relative, and the J4
+     * media://local/ scheme. Any other location or a traversal attempt is
+     * rejected.
+     */
+    private function normalizePhotoPath($path)
+    {
+        $p = trim((string) $path);
+        if ($p === '') {
+            return '';
+        }
+        if (strpos($p, 'media://local/') === 0) {
+            $p = substr($p, strlen('media://local/'));
+        }
+        if (strpos($p, '/images/clubleaddir/photos/') === 0) {
+            $rel = substr($p, strlen('/images/clubleaddir/photos/'));
+        } elseif (strpos($p, 'images/clubleaddir/photos/') === 0) {
+            $rel = substr($p, strlen('images/clubleaddir/photos/'));
+        } elseif (strpos($p, 'clubleaddir/photos/') === 0) {
+            $rel = substr($p, strlen('clubleaddir/photos/'));
+        } else {
+            return null;
+        }
+        $rel = str_replace('\\', '/', $rel);
+        if ($rel === '' || strpos($rel, '/') !== false || strpos($rel, '..') !== false) {
+            return null;
+        }
+        if (!preg_match('/^[A-Za-z0-9_.\-]+$/D', $rel)) {
+            return null;
+        }
+        if (!preg_match('/\.(jpg|jpeg|png|gif|webp)$/D', strtolower($rel))) {
+            return null;
+        }
+        return '/images/clubleaddir/photos/' . $rel;
+    }
+    /**
+     * Persist an image chosen through the media picker. The file must already
+     * exist under images/clubleaddir/photos; a square avatar crop is generated
+     * next to it on first use and reused afterwards, mirroring the upload
+     * flow's photo/photo_full pair. Returns array($photoFull,$photo) or false.
+     */
+    protected function setPhotoFromPicker($path, $existing)
+    {
+        $canonical = $this->normalizePhotoPath($path);
+        if ($canonical === null) {
+            $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_PHOTO_INVALID_TYPE'));
+            return false;
+        }
+        $abs = JPATH_ROOT . $canonical;
+
+        if ($existing) {
+            $exFull = (string) ($existing->photo_full ?? '');
+            $exSq   = (string) ($existing->photo ?? '');
+            if ($exFull === $canonical && $exSq !== ''
+                && strpos($exSq, '/images/clubleaddir/photos/') === 0
+                && is_file(JPATH_ROOT . $exSq)) {
+                return array($exFull, $exSq);
+            }
+        }
+
+        if (!is_file($abs) || !is_readable($abs)) {
+            $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_PHOTO_UPLOAD_FAILED'));
+            return false;
+        }
+        $fs = @filesize($abs);
+        if ($fs === false || $fs <= 0 || $fs > 6291456) {
+            $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_PHOTO_TOO_LARGE'));
+            return false;
+        }
+        $dims = @getimagesize($abs);
+        if (!$dims || !isset(array('image/jpeg'=>1,'image/png'=>1,'image/gif'=>1,'image/webp'=>1)[$dims['mime'] ?? ''])) {
+            $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_PHOTO_INVALID_TYPE'));
+            return false;
+        }
+        if ($dims[0] > 2500 || $dims[1] > 2500 || ($dims[0] * $dims[1]) > 6250000) {
+            $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_PHOTO_DIMENSIONS'));
+            return false;
+        }
+
+        $dir  = dirname($abs);
+        $base = pathinfo($canonical, PATHINFO_FILENAME);
+        $ext  = strtolower(pathinfo($canonical, PATHINFO_EXTENSION));
+
+        // The picker may have selected the pre-generated square itself.
+        if (preg_match('/_sq$/D', $base)) {
+            $origBase = substr($base, 0, -3);
+            if (!is_file($dir . '/' . $origBase . '.' . $ext)) {
+                // Degenerate: only the square exists; keep it as-is.
+                return array($canonical, $canonical);
+            }
+            return array('/images/clubleaddir/photos/' . $origBase . '.' . $ext, $canonical);
+        }
+
+        $sqPath = $dir . '/' . $base . '_sq.' . $ext;
+        $sq = '';
+        if (is_file($sqPath)) {
+            $sq = '/images/clubleaddir/photos/' . basename($sqPath);
+        } elseif ($this->makeSquareCrop($abs, $sqPath, 400)) {
+            if (is_file($sqPath)) {
+                chmod($sqPath, 0644);
+                $sq = '/images/clubleaddir/photos/' . basename($sqPath);
+            }
+        }
+        // GD absent or crop failed: keep the original as both files rather than
+        // fail the save; the avatar still renders uncompressed.
+        return array($canonical, $sq !== '' ? $sq : $canonical);
     }
     protected function makeSquareCrop($src,$dest,$size=400){
         if(!function_exists('imagecreatefromstring')) return false;
@@ -187,6 +310,13 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
                 json_encode($data, JSON_UNESCAPED_SLASHES)
             );
             $file = $logDir . '/audit.log';
+            // Serialise rotate+append so concurrent saves cannot interleave
+            // against rotation (losing a generation, or appending mid-rename
+            // and landing in a rotated file). Same scheme as leaderships.php.
+            $lock = @fopen($logDir . '/.lock', 'c');
+            if ($lock) {
+                flock($lock, LOCK_EX);
+            }
             if (is_file($file) && filesize($file) > 10485760) {
                 for ($i = 5; $i >= 1; $i--) {
                     $src = $file . ($i === 1 ? '' : '.' . ($i - 1));
@@ -198,6 +328,10 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
             }
             if (file_put_contents($file, $entry, FILE_APPEND | LOCK_EX) === false) {
                 Log::add('Clubleaddir audit log: write failed to: ' . $file, Log::WARNING, 'com_clubleaddir');
+            }
+            if ($lock) {
+                flock($lock, LOCK_UN);
+                fclose($lock);
             }
         } catch (\Throwable $e) {
             Log::add('Clubleaddir audit log exception: ' . $e->getMessage(), Log::WARNING, 'com_clubleaddir');
