@@ -6,7 +6,7 @@
     <authorEmail>noreply@simcoecurlingclub.ca</authorEmail>
     <copyright>Copyright (C) 2026 Jayden Russell</copyright>
     <license>GNU General Public License version 2 or later</license>
-    <version>3.28.12</version>
+    <version>3.28.13</version>
     <description>COM_CLUBLEADDIR_DESC</description>
     <scriptfile>script.php</scriptfile>
 
@@ -22,6 +22,7 @@
             <filename>script.php</filename>
             <filename>access.xml</filename>
             <filename>config.xml</filename>
+            <filename>zip.php</filename>
             <folder>controllers</folder>
             <folder>models</folder>
             <folder>store</folder>
