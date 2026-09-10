@@ -200,6 +200,19 @@
     border: 0;
     display: block;
 }
+.clble-photo-col .help-block .label {
+    display: inline-block;
+    vertical-align: top;
+    max-width: 100%;
+    white-space: normal;
+    word-wrap: break-word;
+    text-align: left;
+}
+.clble-photo-col .help-block .muted {
+    display: block;
+    margin-top: 2px;
+    word-break: break-word;
+}
 .clble-photo-img {
 	max-width: 80px;
 	max-height: 80px;

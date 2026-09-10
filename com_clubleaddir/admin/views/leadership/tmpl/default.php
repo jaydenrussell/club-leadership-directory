@@ -286,7 +286,7 @@ $bioEnabled = !empty($item->bio);
                     <span class="label label-info"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_PHOTO_HELP'); ?></span>
                     <?php if ($item->photo): ?> <span class="muted">(<?php echo Text::_('COM_CLUBLEADDIR_FIELD_PHOTO_REPLACE'); ?>)</span><?php endif; ?>
                 </p>
-                <script>window.clbleJRoot = "<?php echo rtrim(Uri::base(), '/'); ?>";</script>
+                <script>window.clbleJRoot = "<?php echo rtrim(Uri::root(), '/'); ?>";</script>
             </div>
         </div>
     </fieldset>
