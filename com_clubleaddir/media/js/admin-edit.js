@@ -65,21 +65,28 @@ function onPhotoSelectClick() {
     var modal = document.getElementById('imageModal_jform_photo');
     if (!wrapper || !modal) { return; }
     var body = modal.querySelector('.modal-body');
-    var iframe = modal.querySelector('iframe');
     var mediaUrl = wrapper.getAttribute('data-url') || 'index.php?option=com_media&view=images&tmpl=component&asset=com_clubleaddir&author=&fieldid=jform_photo&ismoo=0&folder=clubleaddir/photos';
-    if (!iframe) {
-        iframe = document.createElement('iframe');
+    if (body && !modal.querySelector('iframe')) {
+        var iframe = document.createElement('iframe');
         iframe.src = mediaUrl;
         iframe.width = '100%';
         iframe.height = '100%';
         iframe.frameBorder = '0';
         iframe.scrolling = 'auto';
-        if (body) { body.appendChild(iframe); }
-    } else {
-        iframe.src = mediaUrl;
-    }
-    if (typeof jQuery !== 'undefined' && jQuery(modal).modal) {
-        jQuery(modal).modal('show');
+        iframe.style.border = '0';
+        iframe.style.display = 'block';
+        iframe.style.width = '100%';
+        iframe.style.height = '600px';
+        body.appendChild(iframe);
+        // Show modal only after iframe is injected so com_media can init cleanly.
+        if (typeof jQuery !== 'undefined' && jQuery(modal).modal) {
+            jQuery(modal).modal('show');
+        }
+    } else if (modal.querySelector('iframe')) {
+        modal.querySelector('iframe').src = mediaUrl;
+        if (typeof jQuery !== 'undefined' && jQuery(modal).modal) {
+            jQuery(modal).modal('show');
+        }
     }
 }
 

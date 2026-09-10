@@ -185,8 +185,8 @@
     cursor: pointer;
 }
 #imageModal_jform_photo {
-    width: 900px;
-    margin-left: -450px;
+    width: 1050px;
+    margin-left: -525px;
     max-width: none;
 }
 #imageModal_jform_photo .modal-body {
@@ -196,7 +196,7 @@
 }
 #imageModal_jform_photo .modal-body iframe {
     width: 100%;
-    height: 520px;
+    height: 640px;
     border: 0;
     display: block;
 }

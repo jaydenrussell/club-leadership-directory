@@ -251,8 +251,8 @@ $bioEnabled = !empty($item->bio);
                      data-basepath="<?php echo $this->escape($basePath); ?>"
                      data-url="<?php echo $this->escape($mediaUrl); ?>"
                      data-modal=".modal"
-                     data-modal-width="900"
-                     data-modal-height="640"
+                     data-modal-width="1050"
+                     data-modal-height="700"
                      data-input=".field-media-input"
                      data-button-select=".button-select"
                      data-button-clear=".button-clear"
@@ -261,7 +261,7 @@ $bioEnabled = !empty($item->bio);
                      data-preview-container=".field-media-preview"
                      data-preview-width="200"
                      data-preview-height="200">
-                    <div id="imageModal_jform_photo" tabindex="-1" class="modal hide fade" aria-hidden="true">
+                    <div id="imageModal_jform_photo" tabindex="-1" class="modal hide fade" aria-hidden="true" style="display: none;">
                         <div class="modal-header">
                             <button type="button" class="close novalidate" data-dismiss="modal" aria-label="Close">
                                 <span aria-hidden="true">×</span>
