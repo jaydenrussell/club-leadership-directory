@@ -244,15 +244,30 @@ $bioEnabled = !empty($item->bio);
                 </div>
                 <?php
                 $photoValue = ltrim((string) ($item->photo ?? ''), '/');
-                $basePath = rtrim(Uri::base(), '/');
+                $basePath = rtrim(Uri::root(), '/');
                 $mediaUrl = 'index.php?option=com_media&view=images&tmpl=component&asset=com_clubleaddir&author=&fieldid=jform_photo&ismoo=0&folder=clubleaddir/photos';
                 ?>
+                <script>
+                window.jSelectImage = function (fieldid, url, dir, ext) {
+                    var input = document.getElementById(fieldid);
+                    if (!input) { return; }
+                    input.value = url;
+                    if (typeof updatePhotoPreviewFromInput === 'function') {
+                        updatePhotoPreviewFromInput(input);
+                    }
+                    var modal = document.getElementById('imageModal_' + fieldid);
+                    if (modal && typeof jQuery !== 'undefined' && jQuery(modal).modal) {
+                        jQuery(modal).modal('hide');
+                    }
+                };
+                try { parent.jSelectImage = window.jSelectImage; } catch (e) {}
+                </script>
                 <div class="field-media-wrapper"
                      data-basepath="<?php echo $this->escape($basePath); ?>"
                      data-url="<?php echo $this->escape($mediaUrl); ?>"
                      data-modal=".modal"
                      data-modal-width="1050"
-                     data-modal-height="700"
+                     data-modal-height="720"
                      data-input=".field-media-input"
                      data-button-select=".button-select"
                      data-button-clear=".button-clear"
