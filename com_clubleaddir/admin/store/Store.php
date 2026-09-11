@@ -359,12 +359,14 @@ class ClubleaddirStoreJson
     {
         $this->maxId = 0;
         if (is_file($this->metaFile)) {
-            $raw = @file_get_contents($this->metaFile);
+            $raw = file_get_contents($this->metaFile);
             if ($raw !== false) {
                 $dec = json_decode($raw, true);
                 if (is_array($dec) && isset($dec['max_id']) && is_int($dec['max_id'])) {
                     $this->maxId = $dec['max_id'];
                 }
+            } else {
+                Log::add('Clubleaddir Store: cannot read meta file: ' . $this->metaFile, self::LOG_LEVEL, 'com_clubleaddir');
             }
         }
         if ($this->maxId === 0) {
@@ -382,7 +384,9 @@ class ClubleaddirStoreJson
         if ($result === false) {
             Log::add('Clubleaddir Store: cannot write meta file: ' . $this->metaFile, self::LOG_LEVEL, 'com_clubleaddir');
         } elseif (is_file($this->metaFile)) {
-            @chmod($this->metaFile, 0600);
+            if (!chmod($this->metaFile, 0600)) {
+                Log::add('Clubleaddir Store: cannot chmod meta file to 0600: ' . $this->metaFile, self::LOG_LEVEL, 'com_clubleaddir');
+            }
         }
     }
 
