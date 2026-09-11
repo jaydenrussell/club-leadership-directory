@@ -252,15 +252,13 @@ $bioEnabled = !empty($item->bio);
                     var input = document.getElementById(fieldid);
                     if (!input) { return; }
                     input.value = url;
-                    if (typeof updatePhotoPreviewFromInput === 'function') {
-                        updatePhotoPreviewFromInput(input);
-                    }
                     var modal = document.getElementById('imageModal_' + fieldid);
                     if (modal && typeof jQuery !== 'undefined' && jQuery(modal).modal) {
                         jQuery(modal).modal('hide');
                     }
                 };
                 try { parent.jSelectImage = window.jSelectImage; } catch (e) {}
+                try { top.jSelectImage = window.jSelectImage; } catch (e) {}
                 </script>
                 <div class="field-media-wrapper"
                      data-basepath="<?php echo $this->escape($basePath); ?>"
@@ -270,12 +268,7 @@ $bioEnabled = !empty($item->bio);
                      data-modal-height="720"
                      data-input=".field-media-input"
                      data-button-select=".button-select"
-                     data-button-clear=".button-clear"
-                     data-preview="true"
-                     data-preview-as-tooltip="true"
-                     data-preview-container=".field-media-preview"
-                     data-preview-width="200"
-                     data-preview-height="200">
+                     data-button-clear=".button-clear">
                     <div id="imageModal_jform_photo" tabindex="-1" class="modal hide fade" aria-hidden="true" style="display: none;">
                         <div class="modal-header">
                             <button type="button" class="close novalidate" data-dismiss="modal" aria-label="Close">
@@ -283,18 +276,13 @@ $bioEnabled = !empty($item->bio);
                             </button>
                             <h3>Change Image</h3>
                         </div>
-                        <div class="modal-body" style="max-height: initial; overflow-y: initial;">
+                        <div class="modal-body" style="max-height: initial; overflow-y: auto;">
                         </div>
                     </div>
-                    <div class="input-prepend input-append">
-                        <span rel="popover" class="add-on pop-helper field-media-preview" title="" data-content="No image selected." data-original-title="Selected image." data-trigger="hover">
-                            <span class="icon-eye" aria-hidden="true"></span>
-                        </span>
-                        <input type="text" name="jform[photo]" id="jform_photo" value="<?php echo $this->escape($photoValue); ?>" readonly="readonly" class="input-small hasTooltip field-media-input" data-original-title="" title="" aria-invalid="false">
+                    <input type="hidden" name="jform[photo]" id="jform_photo" value="<?php echo $this->escape($photoValue); ?>">
+                    <div class="clble-photo-actions">
                         <button type="button" class="btn button-select"><?php echo Text::_('JSELECT'); ?></button>
-                        <button type="button" class="btn hasTooltip button-clear" title="" aria-label="Clear" data-original-title="<?php echo Text::_('JTOOLBAR_CLEAR'); ?>">
-                            <span class="icon-remove" aria-hidden="true"></span>
-                        </button>
+                        <button type="button" class="btn button-clear"><?php echo Text::_('JTOOLBAR_CLEAR'); ?></button>
                     </div>
                 </div>
                 <p class="help-block">

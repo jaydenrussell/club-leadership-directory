@@ -53,17 +53,11 @@ window.jSelectImage = function (fieldid, url, dir, ext) {
     var input = document.getElementById(fieldid);
     if (!input) { return; }
     input.value = url;
-    updatePhotoPreviewFromInput(input);
     var modal = document.getElementById('imageModal_' + fieldid);
     if (modal && typeof jQuery !== 'undefined' && jQuery(modal).modal) {
         jQuery(modal).modal('hide');
     }
 };
-// Expose on parent explicitly so the com_media iframe's window.parent.jSelectImage
-// resolves correctly in all Joomla 3 admin contexts.
-if (typeof parent !== 'undefined' && parent !== window) {
-    parent.jSelectImage = window.jSelectImage;
-}
 
 function onPhotoSelectClick() {
     var wrapper = document.querySelector('.field-media-wrapper');
@@ -99,21 +93,6 @@ function onPhotoClearClick() {
     var input = document.getElementById('jform_photo');
     if (!input) { return; }
     input.value = '';
-    updatePhotoPreviewFromInput(input);
-}
-
-function updatePhotoPreviewFromInput(input) {
-    var preview = document.getElementById('photo_preview');
-    if (!preview) { return; }
-    var val = (input && input.value) ? input.value : '';
-    if (val) {
-        var src = (typeof window.clbleJRoot !== 'undefined' ? window.clbleJRoot : '')
-            + '/' + val.replace(/^media:\/\/local\//, '').replace(/^\//, '');
-        preview.innerHTML = '<img src="' + src + '" alt="" class="thumbnail clble-photo-img">'
-            + '<p class="help-block clble-photo-name">' + val.replace(/^.*[\\\/]/, '') + '</p>';
-    } else {
-        preview.innerHTML = '<div class="clble-photo-placeholder"><span class="icon-user clble-icon-large"></span></div>';
-    }
 }
 
 function init() {

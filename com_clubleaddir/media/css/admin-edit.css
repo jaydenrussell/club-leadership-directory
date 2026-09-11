@@ -188,20 +188,23 @@
     width: 1050px;
     margin-left: -525px;
     max-width: none;
+    resize: both;
+    overflow: auto;
+    min-width: 800px;
+    min-height: 500px;
 }
 #imageModal_jform_photo .modal-body {
     max-height: initial;
-    overflow-y: initial;
+    overflow-y: auto;
     padding: 0;
-    resize: both;
-    min-height: 480px;
+    min-height: 400px;
 }
 #imageModal_jform_photo .modal-body iframe {
     width: 100%;
-    height: 680px;
+    height: 640px;
     border: 0;
     display: block;
-    min-height: 480px;
+    min-height: 400px;
 }
 .clble-photo-col .help-block .label {
     display: inline-block;
