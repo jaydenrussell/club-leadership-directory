@@ -9,6 +9,7 @@
 defined('_JEXEC') or die;
 
 use Joomla\CMS\Component\ComponentHelper;
+use Joomla\CMS\Form\Form;
 use Joomla\CMS\HTML\HTMLHelper;
 use Joomla\CMS\Language\Text;
 use Joomla\CMS\Router\Route;
@@ -230,84 +231,19 @@ $bioEnabled = !empty($item->bio);
 <div class="well">
     <fieldset>
         <legend><?php echo Text::_('COM_CLUBLEADDIR_PHOTO'); ?></legend>
-        <div class="control-group">
-            <div class="control-label"><label id="jform_photo-lbl" for="jform_photo"><?php echo Text::_('COM_CLUBLEADDIR_PHOTO'); ?></label></div>
-            <div class="controls clble-photo-col">
-                <div id="photo_preview">
-                    <?php if ($item->photo): ?>
-                        <img src="<?php echo $this->escape(ClubleaddirHelper::photoUrl($item->photo)); ?>" alt="<?php echo $this->escape($item->name); ?>"
-                             class="thumbnail clble-photo-img">
-                        <p class="help-block clble-photo-name"><?php echo $this->escape(basename($item->photo)); ?></p>
-                    <?php else: ?>
-                        <div class="clble-photo-placeholder"><span class="icon-user clble-icon-large"></span></div>
-                    <?php endif; ?>
-                </div>
                 <?php
-                $photoValue = ltrim((string) ($item->photo ?? ''), '/');
-                $basePath = rtrim(Uri::root(), '/');
-                $mediaUrl = 'index.php?option=com_media&view=images&tmpl=component&asset=com_clubleaddir&author=&fieldid=jform_photo&ismoo=0&folder=clubleaddir/photos';
+                $photoForm = Form::getInstance(
+                    'com_clubleaddir.leadership.photo',
+                    JPATH_COMPONENT_ADMINISTRATOR . '/forms/leadership.xml',
+                    array('control' => 'jform')
+                );
+                $photoForm->bind((array) $item);
+                echo $photoForm->renderField('photo');
                 ?>
-                <script>
-                window.jSelectImage = function (fieldid, url, dir, ext) {
-                    var input = document.getElementById(fieldid);
-                    if (!input) { return; }
-                    input.value = url;
-                    var modal = document.getElementById('imageModal_' + fieldid);
-                    if (modal && typeof jQuery !== 'undefined' && jQuery(modal).modal) {
-                        jQuery(modal).modal('hide');
-                    }
-                };
-                </script>
-                <div class="field-media-wrapper"
-                     data-basepath="<?php echo $this->escape($basePath); ?>"
-                     data-url="<?php echo $this->escape($mediaUrl); ?>"
-                     data-modal=".modal"
-                     data-modal-width="1050"
-                     data-modal-height="720"
-                     data-input=".field-media-input"
-                     data-button-select=".button-select"
-                     data-button-clear=".button-clear"
-                     data-preview="true"
-                     data-preview-as-tooltip="true"
-                     data-preview-container=".field-media-preview"
-                     data-preview-width="200"
-                     data-preview-height="200">
-                    <div id="imageModal_jform_photo" tabindex="-1" class="modal hide fade" aria-hidden="true" style="display: none;">
-                        <div class="modal-header">
-                            <button type="button" class="close novalidate" data-dismiss="modal" aria-label="Close">
-                                <span aria-hidden="true">×</span>
-                            </button>
-                            <h3>Change Image</h3>
-                        </div>
-                        <div class="modal-body" style="max-height: initial; overflow-y: initial;">
-                        </div>
-                    </div>
-                    <div class="input-prepend input-append">
-                        <span rel="popover" class="add-on pop-helper field-media-preview" title="" data-content="No image selected." data-original-title="Selected image." data-trigger="hover">
-                            <span class="icon-eye" aria-hidden="true"></span>
-                        </span>
-                        <input type="text" name="jform[photo]" id="jform_photo" value="<?php echo $this->escape($photoValue); ?>" readonly="readonly" class="input-small hasTooltip field-media-input" data-original-title="" title="" aria-invalid="false">
-                        <button type="button" class="btn button-select"><?php echo Text::_('JSELECT'); ?></button>
-                        <button type="button" class="btn hasTooltip button-clear" title="" aria-label="Clear" data-original-title="<?php echo Text::_('JTOOLBAR_CLEAR'); ?>">
-                            <span class="icon-remove" aria-hidden="true"></span>
-                        </button>
-                    </div>
-                </div>
-                <p class="help-block">
-                    <span class="label label-info"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_PHOTO_HELP'); ?></span>
-                    <?php if ($item->photo): ?> <span class="muted">(<?php echo Text::_('COM_CLUBLEADDIR_FIELD_PHOTO_REPLACE'); ?>)</span><?php endif; ?>
-                </p>
-                <script>window.clbleJRoot = "<?php echo rtrim(Uri::root(), '/'); ?>";</script>
-            </div>
-        </div>
     </fieldset>
 </div>
-                            </div>
-                        </div>
-                    </fieldset>
-                </div>
 
-                <div class="well">
+            <div class="well">
                     <fieldset>
                         <legend><?php echo Text::_('COM_CLUBLEADDIR_FIELD_BIO'); ?></legend>
                         <div class="control-group">

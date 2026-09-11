@@ -47,52 +47,6 @@
 		clbleStripPhone(this);
 	}
 
-// Native Joomla 3 media manager return handler — must be global so the
-// com_media iframe can call window.parent.jSelectImage(...).
-window.jSelectImage = function (fieldid, url, dir, ext) {
-    var input = document.getElementById(fieldid);
-    if (!input) { return; }
-    input.value = url;
-    var modal = document.getElementById('imageModal_' + fieldid);
-    if (modal && typeof jQuery !== 'undefined' && jQuery(modal).modal) {
-        jQuery(modal).modal('hide');
-    }
-};
-
-function onPhotoSelectClick() {
-    var wrapper = document.querySelector('.field-media-wrapper');
-    var modal = document.getElementById('imageModal_jform_photo');
-    if (!wrapper || !modal) { return; }
-    var body = modal.querySelector('.modal-body');
-    var mediaUrl = wrapper.getAttribute('data-url') || 'index.php?option=com_media&view=images&tmpl=component&asset=com_clubleaddir&author=&fieldid=jform_photo&ismoo=0&folder=clubleaddir/photos';
-    if (body && !modal.querySelector('iframe')) {
-        var iframe = document.createElement('iframe');
-        iframe.src = mediaUrl;
-        iframe.width = '100%';
-        iframe.height = '100%';
-        iframe.frameBorder = '0';
-        iframe.scrolling = 'auto';
-        iframe.style.border = '0';
-        iframe.style.display = 'block';
-        iframe.style.width = '100%';
-        iframe.style.height = '600px';
-        body.appendChild(iframe);
-        if (typeof jQuery !== 'undefined' && jQuery(modal).modal) {
-            jQuery(modal).modal('show');
-        }
-    } else if (modal.querySelector('iframe')) {
-        modal.querySelector('iframe').src = mediaUrl;
-        if (typeof jQuery !== 'undefined' && jQuery(modal).modal) {
-            jQuery(modal).modal('show');
-        }
-    }
-}
-
-function onPhotoClearClick() {
-    var input = document.getElementById('jform_photo');
-    if (!input) { return; }
-    input.value = '';
-}
 
 function init() {
     var typeEl = document.getElementById('type');
@@ -126,19 +80,6 @@ function init() {
     var phoneEl = document.getElementById('phone');
     if (phoneEl) {
         phoneEl.addEventListener('input', onPhoneInput);
-    }
-
-    var selectBtn = document.querySelector('.button-select');
-    if (selectBtn) {
-        selectBtn.addEventListener('click', onPhotoSelectClick);
-    }
-    var clearBtn = document.querySelector('.button-clear');
-    if (clearBtn) {
-        clearBtn.addEventListener('click', onPhotoClearClick);
-    }
-    var photoInput = document.getElementById('jform_photo');
-    if (photoInput) {
-        updatePhotoPreviewFromInput(photoInput);
     }
 }
 
@@ -229,8 +170,13 @@ function toggleVacantFields(isVacant) {
 			if (el) { el.disabled = isVacant; }
 		});
 	}
-	var photo = document.getElementById('photo');
-	if (photo) { photo.disabled = isVacant; }
+	var photo = document.getElementById('jform_photo');
+	if (photo) {
+		photo.disabled = isVacant;
+		var wrap = photo.closest('.controls') || photo.parentElement;
+		var buttons = wrap.querySelectorAll('button');
+		for (var b = 0; b < buttons.length; b++) { buttons[b].disabled = isVacant; }
+	}
 	setRoleRequired();
 	var nameEl = document.getElementById('name');
 	if (nameEl) {
@@ -273,45 +219,7 @@ function toggleBioFields(enabled) {
 	}
 }
 
-function clblePreviewPhoto(input) {
-	var box = document.getElementById('photo_preview');
-	if (!box) { return; }
-	var pickedFile = (input.files && input.files[0]) ? input.files[0] : null;
-	var name = document.createElement('p');
-	name.className = 'help-block clble-photo-name';
-	if (pickedFile) {
-		name.textContent = pickedFile.name + ' (' + (pickedFile.size ? Math.round(pickedFile.size / 1024) + ' KB' : '') + ')';
-	} else if (input.value) {
-		name.textContent = input.value.replace(/^media:\/\/local\//, '').replace(/^\//, '');
-	} else {
-		return;
-	}
-	if (box.querySelector('img')) { box.querySelector('img').remove(); }
-	if (box.querySelector('.clble-photo-placeholder')) { box.querySelector('.clble-photo-placeholder').remove(); }
-	var old = box.querySelector('p.help-block');
-	if (old) { old.remove(); }
 
-	if (pickedFile && window.FileReader && pickedFile.type.indexOf('image/') === 0) {
-		var reader = new FileReader();
-		reader.onload = function (e) {
-			var img = document.createElement('img');
-			img.src = e.target.result;
-			img.alt = '';
-			img.className = 'thumbnail clble-photo-img';
-			box.appendChild(img);
-			box.appendChild(name);
-		};
-		reader.readAsDataURL(pickedFile);
-	} else {
-		var img = document.createElement('img');
-		img.src = (typeof window.clbleJRoot !== 'undefined' ? window.clbleJRoot : '')
-			+ '/' + input.value.replace(/^media:\/\/local\//, '').replace(/^\//, '');
-		img.alt = '';
-		img.className = 'thumbnail clble-photo-img';
-		box.appendChild(img);
-		box.appendChild(name);
-	}
-}
 
 function clbleStripPhone(input) {
 	input.value = input.value.replace(/[^0-9+\-\s()]/g, '');
