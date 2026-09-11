@@ -59,6 +59,11 @@ window.jSelectImage = function (fieldid, url, dir, ext) {
         jQuery(modal).modal('hide');
     }
 };
+// Expose on parent explicitly so the com_media iframe's window.parent.jSelectImage
+// resolves correctly in all Joomla 3 admin contexts.
+if (typeof parent !== 'undefined' && parent !== window) {
+    parent.jSelectImage = window.jSelectImage;
+}
 
 function onPhotoSelectClick() {
     var wrapper = document.querySelector('.field-media-wrapper');
@@ -76,9 +81,9 @@ function onPhotoSelectClick() {
         iframe.style.border = '0';
         iframe.style.display = 'block';
         iframe.style.width = '100%';
-        iframe.style.height = '600px';
+        iframe.style.height = '640px';
+        iframe.style.minHeight = '480px';
         body.appendChild(iframe);
-        // Show modal only after iframe is injected so com_media can init cleanly.
         if (typeof jQuery !== 'undefined' && jQuery(modal).modal) {
             jQuery(modal).modal('show');
         }
