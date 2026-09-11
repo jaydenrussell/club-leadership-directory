@@ -7,9 +7,9 @@ TOKEN = os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN") or ""
 if not TOKEN:
     print("ERROR: Set GH_TOKEN env var", file=sys.stderr)
     sys.exit(1)
-TAG = "v3.28.41"
-NAME = f"Club Leadership Directory v3.28.41"
-BODY = "Version 3.28.41: vacant watermark restyled to spec. The VACANT stamp on vacant cards is now rendered above the card content (z-index 999) in the theme red (#9f1239) at 55% opacity with a white glow, no border/radius, centred and rotated -22deg. The pale pink vacant-card shading remains removed, so vacant cards keep the default white look with only the stamp distinguishing them. Verified: 12 watermark assertions (markup unchanged), 29 picker, 16 fix-suite."
+TAG = "v3.28.42"
+NAME = f"Club Leadership Directory v3.28.42"
+BODY = "Version 3.28.42: fix admin save bugs. Role/Title is now persisted correctly when editing or adding director/staff/league records: the edit form no longer wipes the role field client-side on load (init now preserves the server-rendered value; the role is only cleared when the type is actually changed). The Save button now saves and stays on the entry (new apply-style toolbar labelled 'Save'), with an explicit 'Save & Close' action renamed accordingly; for new entries Save redirects to the actual saved record. The model exposes the newly inserted id (lastSavedId) so redirects land on the created record, and it resets on every save call. New language key COM_CLUBLEADDIR_TOOLBAR_SAVE_CLOSE. Verified: php -l clean, node --check clean, 8 JS behaviour assertions, 15 model save assertions."
 PKG = str((__import__("pathlib").Path(__file__).parent / "dist" / "pkg_clubleaddir.zip").resolve())
 UPDATE_XML = str((__import__("pathlib").Path(__file__).parent / "update.xml").resolve())
 HDRS = {"Authorization": "token " + TOKEN, "Accept": "application/vnd.github+json"}

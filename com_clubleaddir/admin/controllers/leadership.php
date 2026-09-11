@@ -66,7 +66,7 @@ class ClubleaddirControllerLeadership extends BaseController
         }
 
         $task = (string) $this->input->getCmd('task');
-        $id   = !empty($data['id']) ? (int) $data['id'] : 0;
+        $id   = $model->lastSavedId ? (int) $model->lastSavedId : (!empty($data['id']) ? (int) $data['id'] : 0);
 
         if ($task === 'leadership.apply') {
             $this->setRedirect('index.php?option=com_clubleaddir&view=leadership&id=' . $id);

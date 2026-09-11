@@ -42,8 +42,8 @@ class ClubleaddirViewLeadership extends HtmlView
             'users'
         );
 
-        ToolbarHelper::apply('leadership.apply');
-        ToolbarHelper::save('leadership.save');
+        ToolbarHelper::apply('leadership.apply', 'COM_CLUBLEADDIR_TOOLBAR_SAVE');
+        ToolbarHelper::save('leadership.save', 'COM_CLUBLEADDIR_TOOLBAR_SAVE_CLOSE');
         ToolbarHelper::cancel('leadership.cancel');
     }
 }

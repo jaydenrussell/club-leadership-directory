@@ -52,7 +52,7 @@ function init() {
     var typeEl = document.getElementById('type');
     if (typeEl) {
         typeEl.addEventListener('change', onTypeChange);
-        toggleTypeFields(typeEl.value);
+        toggleTypeFields(typeEl.value, true);
     }
 
     var roleSelect = document.getElementById('role_select');
@@ -90,7 +90,7 @@ function init() {
 	}
 })();
 
-function toggleTypeFields(type) {
+function toggleTypeFields(type, preserve) {
 	var leagueWrap = document.getElementById('league-fields');
 	if (type === 'director_league') {
 		leagueWrap.style.display = 'block';
@@ -108,22 +108,18 @@ function toggleTypeFields(type) {
 	if (isOfficer) {
 		roleSelect.style.display = 'block';
 		roleText.style.display = 'none';
-		roleText.value = '';
+		if (!preserve) { roleText.value = ''; }
 		roleHidden.value = roleSelect.value;
 		setRoleDisabled(false);
 	} else if (isLeague) {
 		roleSelect.style.display = 'none';
 		roleText.style.display = 'none';
-		roleHidden.value = '';
-		roleText.value = '';
-		roleSelect.value = '';
+		if (!preserve) { roleHidden.value = ''; roleText.value = ''; roleSelect.value = ''; }
 		setRoleDisabled(true);
 	} else {
 		roleSelect.style.display = 'none';
 		roleText.style.display = 'block';
-		roleHidden.value = '';
-		roleText.value = '';
-		roleSelect.value = '';
+		if (!preserve) { roleHidden.value = ''; roleText.value = ''; roleSelect.value = ''; }
 		setRoleDisabled(false);
 	}
 	setRoleRequired();

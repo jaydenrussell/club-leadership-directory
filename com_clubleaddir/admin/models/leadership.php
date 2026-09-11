@@ -7,7 +7,7 @@ use Joomla\CMS\MVC\Model\BaseDatabaseModel;
 require_once __DIR__ . '/../store/Store.php';
 class ClubleaddirModelLeadership extends BaseDatabaseModel
 {
-    private $store; public $item;
+    private $store; public $item; public $lastSavedId = 0;
     public function __construct($config=[]){ parent::__construct($config); try{ $this->store=ClubleaddirStore::getInstance(); }catch(\Throwable $e){ $this->store=null; } }
     public function getItem($pk=null){
         if($this->store===null) return (object)[];
@@ -16,6 +16,7 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
         return $this->item;
     }
     public function save(array $data){
+        $this->lastSavedId = 0;
         $date=Factory::getDate()->toSql(); $userId=(int)Factory::getUser()->id; $data=$this->validate($data); if($data===false) return false;
         // Vacant: name is logical "Vacant", role is the unique identifier (keeps admin access)
         if (!empty($data['vacant']) && trim((string)($data['name'] ?? '')) === '') {
@@ -64,12 +65,13 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
                 $orderingChanged = ((int)($record['ordering'] ?? 0) !== (int)($existing->ordering ?? 0));
             }
             $result=(bool)$this->store->update((int)$data['id'],$record);
-            if($result) $this->logAudit('update', (int)$data['id'], array('id' => (int)$data['id']));
+            if($result){ $this->lastSavedId=(int)$data['id']; $this->logAudit('update', (int)$data['id'], array('id' => (int)$data['id'])); }
         }else{
             $record['created']=$date; $record['created_by']=$userId;
             $orderingChanged = ((int)($record['ordering'] ?? 0) === 0);
-            $result=(bool)$this->store->insert($record);
-            if($result) $this->logAudit('insert', (int)($record['id'] ?? 0), array('record' => $record));
+            $newId=$this->store->insert($record);
+            $result=($newId!==false);
+            if($result){ $this->lastSavedId=(int)$newId; $this->logAudit('insert', (int)$newId, array('id' => (int)$newId)); }
         }
         if($result && $this->store!==null && $orderingChanged) $this->store->reorderAll($record['type']??null);
         return $result;
