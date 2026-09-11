@@ -7,9 +7,9 @@ TOKEN = os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN") or ""
 if not TOKEN:
     print("ERROR: Set GH_TOKEN env var", file=sys.stderr)
     sys.exit(1)
-TAG = "v3.28.39"
-NAME = f"Club Leadership Directory v3.28.39"
-BODY = "Version 3.28.39: vacant cards redesigned. Vacant positions no longer render a photo/logo box, so they no longer impose a card size on the rest of the grid. Each vacant card now carries a translucent, angled ``VACANT`` watermark stamped behind the card content (position, term/years, and contact button stay readable and clickable above it). Applied to officer, director, and league-director cards alike (helpers cardHtml + leagueCardHtml, CSS overlay, reuses the existing COM_CLUBLEADDIR_VACANT string). Verified: 11 watermark assertions, 29 picker, 16 fix-suite, full model suite."
+TAG = "v3.28.40"
+NAME = f"Club Leadership Directory v3.28.40"
+BODY = "Version 3.28.40: vacant-card design refinement. Vacant cards now match the default card look (no shaded pink box) and the role title keeps its normal colour; the redundant ``Position is Vacant`` name badge was removed. Vacancy is indicated solely by a far more subtle, neutral slate-grey ``VACANT`` stamp angled behind the card content, so position, term, and contact button remain fully readable. Verified: 12 watermark assertions, 29 picker, 16 fix-suite."
 PKG = str((__import__("pathlib").Path(__file__).parent / "dist" / "pkg_clubleaddir.zip").resolve())
 UPDATE_XML = str((__import__("pathlib").Path(__file__).parent / "update.xml").resolve())
 HDRS = {"Authorization": "token " + TOKEN, "Accept": "application/vnd.github+json"}

@@ -388,7 +388,7 @@ class ClubleaddirHelper
 			. ($isVacant ? '<span class="clubleadership-vacant-wm" aria-hidden="true">' . htmlspecialchars(Text::_('COM_CLUBLEADDIR_VACANT'), ENT_QUOTES, 'UTF-8') . '</span>' : '')
 			. $photoHtml
 			. '<div class="clubleadership-card-content">'
-			. '<h4 class="clubleadership-card-name">' . htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8') . '</h4>'
+			. ($isVacant ? '' : '<h4 class="clubleadership-card-name">' . htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8') . '</h4>')
 			. $metaHtml
 			. $contactHtml
 			. '</div>'
@@ -429,7 +429,7 @@ class ClubleaddirHelper
 			. ($isVacant ? '<span class="clubleadership-vacant-wm" aria-hidden="true">' . htmlspecialchars(Text::_('COM_CLUBLEADDIR_VACANT'), ENT_QUOTES, 'UTF-8') . '</span>' : '')
 			. '<div class="clubleadership-card-photo"></div>'
 			. '<div class="clubleadership-card-content">'
-			. '<h4 class="clubleadership-card-name">' . htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8') . '</h4>'
+			. ($isVacant ? '' : '<h4 class="clubleadership-card-name">' . htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8') . '</h4>')
 			. $metaHtml
 			. $contactHtml
 			. '</div>'
