@@ -7,9 +7,9 @@ TOKEN = os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN") or ""
 if not TOKEN:
     print("ERROR: Set GH_TOKEN env var", file=sys.stderr)
     sys.exit(1)
-TAG = "v3.28.35"
-NAME = f"Club Leadership Directory v3.28.35"
-BODY = "Version 3.28.35: adversarial hardening. (1) WebP crop: when imagewebp is unavailable the fallback now writes .jpg instead of corrupt .webp. (2) makeSquareCrop: memory guard prevents OOM on cheap hosting. (3) Store nextId: O(1) meta.json counter replaces O(n) scan. (4) Contact modal: tmpl=component present. (5) normalizePhotoPath rejects http(s):// to prevent SSRF via stored photo URLs. (6) toggleVacantFields closes any open media modal before disabling. (7) All text inputs now carry maxlength matching server-side caps. (8) release-v312.py urllib calls have 30s timeouts. (9) @ suppression replaced with explicit logging in Store and model. (10) Joomla.submitbutton preserves prior handler. (11) build-pkgs.py aborts on version mismatch. Verified: 29 picker assertions, 16 fix-suite assertions, manifest parity."
+TAG = "v3.28.36"
+NAME = f"Club Leadership Directory v3.28.36"
+BODY = "Version 3.28.36: final adversarial hardening. (1) writeToLock: removed @ from fopen, logs actual error messages, aborts on short write. (2) meta.json: chmod 0600 after every write, saveMaxId logs on failure. (3) makeSquareCrop: memory estimate factor increased from 4.5 to 12 to account for PHP overhead and source string. (4) Import path: replaced @fopen, @filesize, @file_get_contents, @chmod with explicit error checks and Log::add() calls. (5) removeDir: fixed iterative stack-based implementation. (6) build-pkgs.py: added semver validation (^\\d+\\.\\d+\\.\\d+$) for all manifest versions. (7) phone maxlength corrected to 30 to match server-side cap. Verified: 29 picker assertions, 16 fix-suite assertions, manifest parity."
 PKG = str((__import__("pathlib").Path(__file__).parent / "dist" / "pkg_clubleaddir.zip").resolve())
 UPDATE_XML = str((__import__("pathlib").Path(__file__).parent / "update.xml").resolve())
 HDRS = {"Authorization": "token " + TOKEN, "Accept": "application/vnd.github+json"}

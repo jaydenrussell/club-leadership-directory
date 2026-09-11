@@ -55,6 +55,9 @@ try:
         mod_txt = mod_xml.read_text(encoding="utf-8")
         mod_ver = re.search(r"<version>([^<]+)</version>", mod_txt)
         mod_ver = mod_ver.group(1).strip() if mod_ver else "0.0.0"
+        if not re.match(r'^\d+\.\d+\.\d+$', mod_ver):
+            print(f"ERROR: mod_clubleaddir.xml version '{mod_ver}' is not valid semver", file=sys.stderr)
+            sys.exit(1)
         if mod_ver != ver:
             print(f"ERROR: mod_clubleaddir.xml version {mod_ver} != component {ver}", file=sys.stderr)
             sys.exit(1)
@@ -66,6 +69,9 @@ try:
         pkg_txt = pkg_xml.read_text(encoding="utf-8")
         pkg_ver = re.search(r"<version>([^<]+)</version>", pkg_txt)
         pkg_ver = pkg_ver.group(1).strip() if pkg_ver else "0.0.0"
+        if not re.match(r'^\d+\.\d+\.\d+$', pkg_ver):
+            print(f"ERROR: pkg_clubleaddir.xml version '{pkg_ver}' is not valid semver", file=sys.stderr)
+            sys.exit(1)
         if pkg_ver != ver:
             print(f"ERROR: pkg_clubleaddir.xml version {pkg_ver} != component {ver}", file=sys.stderr)
             sys.exit(1)

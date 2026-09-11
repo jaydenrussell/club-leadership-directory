@@ -266,13 +266,18 @@ class ClubleaddirStoreJson
             return false;
         }
         $tmp = $this->file . '.tmp';
-        $out = @fopen($tmp, 'wb');
+        $out = fopen($tmp, 'wb');
         if ($out === false) {
-            Log::add('Clubleaddir Store: cannot stage write: ' . $tmp, self::LOG_LEVEL, 'com_clubleaddir');
+            Log::add('Clubleaddir Store: cannot stage write (fopen failed): ' . $tmp, self::LOG_LEVEL, 'com_clubleaddir');
             return false;
         }
-        fwrite($out, $json);
+        $written = fwrite($out, $json);
         fclose($out);
+        if ($written === false || $written !== strlen($json)) {
+            @unlink($tmp);
+            Log::add('Clubleaddir Store: short write staging (wrote ' . ($written ?? 0) . ' of ' . strlen($json) . ' bytes): ' . $tmp, self::LOG_LEVEL, 'com_clubleaddir');
+            return false;
+        }
         if (!ftruncate($lock, 0)) {
             @unlink($tmp);
             return false;
@@ -373,7 +378,12 @@ class ClubleaddirStoreJson
 
     private function saveMaxId()
     {
-        file_put_contents($this->metaFile, json_encode(array('max_id' => $this->maxId), JSON_PRETTY_PRINT));
+        $result = file_put_contents($this->metaFile, json_encode(array('max_id' => $this->maxId), JSON_PRETTY_PRINT));
+        if ($result === false) {
+            Log::add('Clubleaddir Store: cannot write meta file: ' . $this->metaFile, self::LOG_LEVEL, 'com_clubleaddir');
+        } elseif (is_file($this->metaFile)) {
+            @chmod($this->metaFile, 0600);
+        }
     }
 
     /**

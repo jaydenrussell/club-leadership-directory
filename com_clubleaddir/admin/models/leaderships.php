@@ -388,8 +388,9 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
                 // crafted line cannot become a huge json_decode; the line
                 // count is capped so a huge number of lines cannot be
                 // accumulated. Either violation aborts the archive cleanly.
-                $fh2 = @fopen($tmp, 'rb');
+                $fh2 = fopen($tmp, 'rb');
                 if (!$fh2) {
+                    Log::add('Clubleaddir import: cannot open ndjson temp file: ' . $tmp, self::LOG_LEVEL, 'com_clubleaddir');
                     $manifestTooLarge = true;
                     return false;
                 }
@@ -427,14 +428,17 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
                 // Bounded strictly: the legacy whole-array decode below has a
                 // ~25x memory amplification on crafted input, which is why the
                 // byte budget is a fraction of the cap for the streaming file.
-                if ($meta['usize'] <= 0 || $meta['usize'] > self::LEGACY_MANIFEST_CAP || @filesize($tmp) > self::LEGACY_MANIFEST_CAP) {
+                $manifestSize = @filesize($tmp);
+                if ($manifestSize === false || $manifestSize <= 0 || $manifestSize > self::LEGACY_MANIFEST_CAP || $meta['usize'] > self::LEGACY_MANIFEST_CAP) {
                     $manifestTooLarge = true;
                     $legacyTooLarge   = true;
                     return false;
                 }
-                $raw = @file_get_contents($tmp);
+                $raw = file_get_contents($tmp);
                 if ($raw !== false && $raw !== '') {
                     $manifestRaw = $raw;
+                } elseif ($raw === false) {
+                    Log::add('Clubleaddir import: cannot read records.json temp file: ' . $tmp, self::LOG_LEVEL, 'com_clubleaddir');
                 }
                 return true;
             }
@@ -456,7 +460,9 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
                     $this->addWarning($result, Text::sprintf('COM_CLUBLEADDIR_IMPORT_SKIPPED_PHOTO', $base));
                     return true;
                 }
-                @chmod($stagingPhotos . '/' . $base, 0600);
+                if (!@chmod($stagingPhotos . '/' . $base, 0600)) {
+                    Log::add('Clubleaddir import: cannot chmod staged photo: ' . ($stagingPhotos . '/' . $base), self::LOG_LEVEL, 'com_clubleaddir');
+                }
                 $extracted[$base] = true;
             }
             return true;
@@ -801,29 +807,40 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
     }
 
     /**
-     * Recursive delete of the private import staging directory.
+     * Iterative recursive delete of the private import staging directory.
      */
     private function removeDir($dir)
     {
         if (!is_dir($dir)) {
             return;
         }
-        $items = @scandir($dir);
-        if ($items === false) {
-            return;
-        }
-        foreach ($items as $i) {
-            if ($i === '.' || $i === '..') {
-                continue;
-            }
-            $p = $dir . '/' . $i;
-            if (is_dir($p)) {
-                $this->removeDir($p);
+        $stack = array($dir);
+        $scanned = array();
+        while ($stack) {
+            $current = $stack[count($stack) - 1];
+            if (!isset($scanned[$current])) {
+                $scanned[$current] = true;
+                $entries = @scandir($current);
+                if ($entries === false) {
+                    array_pop($stack);
+                    continue;
+                }
+                foreach ($entries as $entry) {
+                    if ($entry === '.' || $entry === '..') {
+                        continue;
+                    }
+                    $path = $current . '/' . $entry;
+                    if (is_dir($path) && !is_link($path)) {
+                        $stack[] = $path;
+                    } else {
+                        @unlink($path);
+                    }
+                }
             } else {
-                @unlink($p);
+                array_pop($stack);
+                @rmdir($current);
             }
         }
-        @rmdir($dir);
     }
 
     /**

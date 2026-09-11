@@ -100,6 +100,11 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
         if(!$mime) $mime=mime_content_type($fileInfo['tmp_name']);
         if(!in_array($mime,$allowedMimes,true)){ $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_PHOTO_INVALID_TYPE')); return false; }
         $ext='jpg'; switch($mime){ case 'image/png': $ext='png'; break; case 'image/gif': $ext='gif'; break; case 'image/webp': $ext='webp'; break; }
+        $origExt = $ext;
+        $sqExt = $ext;
+        if ($sqExt === 'webp' && !function_exists('imagewebp')) {
+            $sqExt = 'jpg';
+        }
         $destDir=JPATH_ROOT.'/images/clubleaddir/photos';
         if(!is_dir($destDir)){
             $ok = @mkdir($destDir,0755,true);
@@ -108,7 +113,7 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
         do {
             try { $base='photo_'.time().'_'.bin2hex(random_bytes(4)); }
             catch (\Throwable $e) { $base='photo_'.time().'_'.bin2hex(openssl_random_pseudo_bytes(4)); }
-            $orig=$base.'.'.$ext; $square=$base.'_sq.'.$ext; $origPath=$destDir.'/'.$orig; $squarePath=$destDir.'/'.$square;
+            $orig=$base.'.'.$origExt; $square=$base.'_sq.'.$sqExt; $origPath=$destDir.'/'.$orig; $squarePath=$destDir.'/'.$square;
         } while (is_file($origPath) || is_file($squarePath));
         if(!move_uploaded_file($fileInfo['tmp_name'],$origPath)){ $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_PHOTO_UPLOAD_FAILED')); return false; }
         @chmod($origPath,0644);
@@ -214,6 +219,9 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
         }
 
         $sqPath = $dir . '/' . $base . '_sq.' . $ext;
+        if (strtolower($ext) === 'webp' && !function_exists('imagewebp')) {
+            $sqPath = preg_replace('/\.webp$/i', '.jpg', $sqPath);
+        }
         $sq = '';
         if (is_file($sqPath)) {
             $sq = '/images/clubleaddir/photos/' . basename($sqPath);
@@ -234,7 +242,7 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
         if($dims && ($dims[0]>2500 || $dims[1]>2500)){ $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_PHOTO_DIMENSIONS')); return false; }
         if($dims && ($dims[0]*$dims[1] > 6250000)){ $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_PHOTO_DIMENSIONS')); return false; }
         $memLimit = $this->memoryLimitBytes();
-        $estimated = ($dims[0] ?? 0) * ($dims[1] ?? 0) * 4.5;
+        $estimated = ($dims[0] ?? 0) * ($dims[1] ?? 0) * 12;
         if ($estimated > 0 && $memLimit > 0 && $estimated > $memLimit * 0.75) {
             return false;
         }
@@ -245,17 +253,15 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
         imagefill($out,0,0,imagecolorallocate($out,255,255,255)); imagesavealpha($out,true); imagealphablending($out,false);
         imagecopyresampled($out,$img,0,0,$srcX,$srcY,$size,$size,$side,$side);
         $ok=false; $low=strtolower($dest);
-        if (substr($low,-5)==='.webp' && function_exists('imagewebp')) {
-            $ok=imagewebp($out,$dest,90);
-        } elseif (substr($low,-5)==='.webp' && !function_exists('imagewebp')) {
-            $jpgDest = preg_replace('/\.webp$/i', '.jpg', $dest);
-            $ok=imagejpeg($out,$jpgDest,90);
-        } elseif (substr($low,-4)==='.png') {
+        if (substr($low,-4)==='.png') {
             $ok=imagepng($out,$dest,8);
         } elseif (substr($low,-4)==='.gif') {
             $ok=imagegif($out,$dest);
-        } elseif (substr($low,-5)==='.webp') {
+        } elseif (substr($low,-5)==='.webp' && function_exists('imagewebp')) {
             $ok=imagewebp($out,$dest,90);
+        } elseif (substr($low,-5)==='.webp') {
+            $jpgDest = preg_replace('/\.webp$/i', '.jpg', $dest);
+            $ok=imagejpeg($out,$jpgDest,90);
         } else {
             $ok=imagejpeg($out,$dest,90);
         }
