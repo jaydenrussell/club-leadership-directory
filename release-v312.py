@@ -7,9 +7,9 @@ TOKEN = os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN") or ""
 if not TOKEN:
     print("ERROR: Set GH_TOKEN env var", file=sys.stderr)
     sys.exit(1)
-TAG = "v3.28.40"
-NAME = f"Club Leadership Directory v3.28.40"
-BODY = "Version 3.28.40: vacant-card design refinement. Vacant cards now match the default card look (no shaded pink box) and the role title keeps its normal colour; the redundant ``Position is Vacant`` name badge was removed. Vacancy is indicated solely by a far more subtle, neutral slate-grey ``VACANT`` stamp angled behind the card content, so position, term, and contact button remain fully readable. Verified: 12 watermark assertions, 29 picker, 16 fix-suite."
+TAG = "v3.28.41"
+NAME = f"Club Leadership Directory v3.28.41"
+BODY = "Version 3.28.41: vacant watermark restyled to spec. The VACANT stamp on vacant cards is now rendered above the card content (z-index 999) in the theme red (#9f1239) at 55% opacity with a white glow, no border/radius, centred and rotated -22deg. The pale pink vacant-card shading remains removed, so vacant cards keep the default white look with only the stamp distinguishing them. Verified: 12 watermark assertions (markup unchanged), 29 picker, 16 fix-suite."
 PKG = str((__import__("pathlib").Path(__file__).parent / "dist" / "pkg_clubleaddir.zip").resolve())
 UPDATE_XML = str((__import__("pathlib").Path(__file__).parent / "update.xml").resolve())
 HDRS = {"Authorization": "token " + TOKEN, "Accept": "application/vnd.github+json"}
