@@ -13,9 +13,13 @@ use Joomla\CMS\HTML\HTMLHelper;
 use Joomla\CMS\Language\Text;
 use Joomla\CMS\Router\Route;
 
+$listOrder = $this->escape($this->listOrder);
+$listDirn  = $this->escape($this->listDirn);
+$saveOrder = ($listOrder === 'ordering');
+
 HTMLHelper::_('behavior.core');
 HTMLHelper::_('bootstrap.modal');
-HTMLHelper::_('sortablelist.sortable', 'clubleaddirList', 'adminForm', 'asc', 'index.php?option=com_clubleaddir&task=leadership.saveorderAjax&tmpl=component');
+HTMLHelper::_('sortablelist.sortable', 'clubleaddirList', 'adminForm', $listDirn, 'index.php?option=com_clubleaddir&task=leadership.saveorderAjax&tmpl=component');
 HTMLHelper::stylesheet('com_clubleaddir/admin-list.css', array('relative' => true));
 
 $typeFilter        = $this->filters['type'];
@@ -23,10 +27,6 @@ $publishedFilter   = $this->filters['published'];
 $statusFilter      = $this->filters['status'];
 $termFilter        = $this->filters['term'];
 $search            = $this->filters['search'];
-
-$listOrder = $this->escape($this->listOrder);
-$listDirn  = $this->escape($this->listDirn);
-$saveOrder = ($listOrder === 'ordering');
 ?>
 
 <form action="<?php echo Route::_('index.php?option=com_clubleaddir'); ?>" method="post" name="adminForm" id="adminForm">
@@ -50,7 +50,7 @@ $saveOrder = ($listOrder === 'ordering');
         <div class="span4" style="text-align:right;">
             <select name="filter_term" id="filter_term" class="inputbox" style="width:auto;margin-bottom:0;" onchange="this.form.submit();">
                 <?php foreach ($this->termOptions as $value => $label): ?>
-                <option value="<?php echo $value; ?>" <?php echo $termFilter === $value ? 'selected' : ''; ?>><?php echo $this->escape($label); ?></option>
+                <option value="<?php echo $this->escape((string) $value); ?>" <?php echo $termFilter === $value ? 'selected' : ''; ?>><?php echo $this->escape((string) $label); ?></option>
                 <?php endforeach; ?>
             </select>
             <select name="filter_type" id="filter_type" class="inputbox" style="width:auto;margin-bottom:0;" onchange="this.form.submit();">
@@ -218,8 +218,13 @@ $saveOrder = ($listOrder === 'ordering');
         </tbody>
     </table>
 
+    <?php if ($this->paginationHtml !== ''): ?>
+    <?php echo $this->paginationHtml; ?>
+    <?php endif; ?>
+
     <input type="hidden" name="task" value="">
     <input type="hidden" name="boxchecked" value="0">
+    <input type="hidden" name="limitstart" value="<?php echo (int) $this->limitstart; ?>">
     <input type="hidden" name="filter_order" value="<?php echo $listOrder; ?>">
     <input type="hidden" name="filter_order_Dir" value="<?php echo $listDirn; ?>">
     <?php echo HTMLHelper::_('form.token'); ?>

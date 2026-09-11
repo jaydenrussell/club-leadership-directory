@@ -26,6 +26,17 @@ class ClubleaddirViewLeaderships extends HtmlView
 
     public function display($tpl = null)
     {
+        $app = Factory::getApplication();
+
+        // The admin list (and every row inside it) is sensitive: an
+        // unprivileged user must never even see it. core.manage is the
+        // standard gate for component back-ends.
+        if (!$app->getIdentity()->authorise('core.manage', 'com_clubleaddir')) {
+            $app->enqueueMessage(Text::_('JERROR_ALERTNOAUTHOR'), 'error');
+            $app->redirect('index.php');
+            return false;
+        }
+
         $this->params = ClubleaddirHelper::getGlobalConfig();
         $model = $this->getModel();
 
@@ -42,6 +53,9 @@ class ClubleaddirViewLeaderships extends HtmlView
             $this->statusOptions    = $model->getStatusOptions();
             $this->termOptions      = $model->getTermOptions();
         }
+
+        $this->paginationHtml = $model ? $model->getPaginationHtml() : '';
+        $this->limitstart     = $model ? $model->getLimitStart() : 0;
 
         $this->filters = array(
             'type'      => $model ? $model->getFilterValue('type') : '',

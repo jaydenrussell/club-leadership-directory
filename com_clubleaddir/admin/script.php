@@ -20,6 +20,8 @@
 
 defined('_JEXEC') or die;
 
+require_once __DIR__ . '/helpers.php';
+
 use Joomla\CMS\Factory;
 use Joomla\CMS\Language\Text;
 use Joomla\CMS\Log\Log;
@@ -121,18 +123,7 @@ class com_clubleaddirInstallerScript
 			chmod($dir, 0755);
 			$ht = $dir . '/.htaccess';
 			if (!is_file($ht)) {
-				file_put_contents($ht,
-					"<IfModule mod_php.c>\n"
-					. "    php_flag engine off\n"
-					. "</IfModule>\n"
-					. "<IfModule mod_negotiation.c>\n"
-					. "    Options -MultiViews\n"
-					. "</IfModule>\n"
-					. "AddType text/plain .php .phtml .php3 .php4 .php5 .php7 .pht .phps .cgi .pl .py .asp .aspx .jsp .shtml\n"
-					. "<FilesMatch \"\\.(php|phtml|pht|phps|cgi|pl|py|asp|aspx|jsp|shtml)$\">\n"
-					. "    Require all denied\n"
-					. "</FilesMatch>\n"
-				);
+				file_put_contents($ht, ClubleaddirHelper::photoHtaccessRules());
 			}
 
 			$nx = $dir . '/nginx.conf';
@@ -331,16 +322,23 @@ class com_clubleaddirInstallerScript
 			'records' => $records,
 		);
 
-		$logDir = JPATH_ADMINISTRATOR . '/components/com_clubleaddir/logs';
-		if (!is_dir($logDir) && !mkdir($logDir, 0700, true) && !is_dir($logDir)) {
+		// Written outside the web root so the JSON file can never be fetched
+		// over HTTP: the component folder itself is removed right after this
+		// returns, which is exactly why a backup cannot live in its own logs
+		// subdirectory (that directory is deleted together with the extension).
+		// Joomla's global logs folder survives the uninstall by design.
+		$logDir = JPATH_ROOT . '/logs';
+		if (!is_dir($logDir) && !@mkdir($logDir, 0700, true) && !is_dir($logDir)) {
+			Log::add('Clubleaddir uninstall: cannot create backup dir ' . $logDir, Log::WARNING, 'com_clubleaddir');
 			return;
 		}
 
-		$file = 'backup-' . date('Ymd-His') . '.json';
+		$file = 'com_clubleaddir-backup-' . date('Ymd-His') . '.json';
 		$backupPath = $logDir . '/' . $file;
 
-		if (file_put_contents($backupPath, json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)) !== false) {
-			$this->backupPath = 'logs/com_clubleaddir/' . $file;
+		if (@file_put_contents($backupPath, json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)) !== false) {
+			@chmod($backupPath, 0600);
+			$this->backupPath = $backupPath;
 		} else {
 			Log::add('Clubleaddir uninstall: cannot write backup to ' . $backupPath, Log::WARNING, 'com_clubleaddir');
 		}

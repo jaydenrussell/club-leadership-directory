@@ -305,6 +305,10 @@ class ClubleaddirControllerLeadership extends BaseController
         $pks   = array_map('intval', (array) $this->input->post->get('cid', array(), 'array'));
         $order = array_map('intval', (array) $this->input->post->get('order', array(), 'array'));
         $pks   = array_filter($pks, function ($id) { return $id > 0; });
+        // When the list is paginated the drop only touches the current page's
+        // rows; the WYSIWYG reorder numbers them from this offset so page 2
+        // keeps on numbering where page 1 stopped instead of colliding.
+        $limitstart = abs((int) $this->input->post->getInt('limitstart', 0));
 
         if (empty($pks) || empty($order) || count($pks) !== count($order)) {
             echo '0';
@@ -320,7 +324,7 @@ class ClubleaddirControllerLeadership extends BaseController
         }
 
         $ok = false;
-        if ($model->saveOrder($pks, $order)) {
+        if ($model->saveOrderWysiwyg($pks, $order, $limitstart)) {
             $ok = true;
         }
 
@@ -351,6 +355,9 @@ class ClubleaddirControllerLeadership extends BaseController
             }
         });
 
+        // Large rosters stream for a while; never let the PHP max_execution_time
+        // cut the backup off mid-send.
+        @set_time_limit(0);
         @ini_set('zlib.output_compression', '0');
         $app = Factory::getApplication();
         $app->setHeader('Content-Type', 'application/zip', true);

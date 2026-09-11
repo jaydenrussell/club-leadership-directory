@@ -871,6 +871,55 @@ class ClubleaddirStoreJson
             throw $e;
         }
     }
+
+    /**
+     * WYSIWYG variant for drag-to-reorder (sortablelist AJAX). Rewrites the
+     * posted records to a strict 1..N sequence in the posted cid[] order, so
+     * the admin list renders exactly as dropped even when the JS recalc
+     * leaves duplicate values behind (cross-type ties from per-type
+     * ordering namespaces).
+     */
+    public function saveOrderAllWysiwyg(array $pks, array $order, $offset = 0)
+    {
+        $lock = fopen($this->file, 'c+');
+        if (!$lock || !flock($lock, LOCK_EX)) {
+            if ($lock) {
+                fclose($lock);
+            }
+            return false;
+        }
+
+        try {
+            $this->reloadFromLock($lock);
+
+            // Strict 1..N in the posted cid[] order, starting after $offset so
+            // a paginated drop renumbers only the current page's rows (page 2
+            // continues where the invisible page 1 left off).
+            foreach ($pks as $i => $pk) {
+                $pk = (int) $pk;
+                if ($pk <= 0) {
+                    continue;
+                }
+                $ord = (int) $offset + $i + 1;
+                foreach ($this->data['records'] as &$r) {
+                    if ((int) $r['id'] === $pk) {
+                        $r['ordering'] = $ord;
+                        break;
+                    }
+                }
+                unset($r);
+            }
+
+            $ok = $this->writeToLock($lock);
+            flock($lock, LOCK_UN);
+            fclose($lock);
+            return $ok;
+        } catch (\Throwable $e) {
+            flock($lock, LOCK_UN);
+            fclose($lock);
+            throw $e;
+        }
+    }
 }
 
 /**

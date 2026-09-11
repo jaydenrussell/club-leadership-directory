@@ -203,10 +203,38 @@ class ClubleaddirHelper
 		if ($path === '') {
 			return '';
 		}
-		if ($path[0] === '/') {
+		// Only links beneath the public images/media roots are ever emitted so
+		// a tampered path can never point at e.g. /administrator or a wrapper.
+		if ($path[0] === '/' && (strpos($path, '/images/') === 0 || strpos($path, '/media/') === 0)) {
 			return $path;
 		}
 		return '';
+	}
+
+	/**
+	 * Canonical .htaccess ruleset for the public photo upload directory. Used
+	 * by BOTH the installer (script.php) and the import path so the two can
+	 * never drift apart: PHP disabled, MultiViews off, risky extensions forced
+	 * to text/plain, script and svg execution denied, plus an index.html
+	 * sentinel so directory listing of the media folder is inert.
+	 *
+	 * @return  string
+	 */
+	public static function photoHtaccessRules()
+	{
+		return "<IfModule mod_php.c>\n"
+			. "    php_flag engine off\n"
+			. "</IfModule>\n"
+			. "<IfModule mod_negotiation.c>\n"
+			. "    Options -MultiViews\n"
+			. "</IfModule>\n"
+			. "AddType text/plain .php .phps .phtml .pht .php3 .php4 .php5 .php7 .cgi .pl .py .asp .aspx .jsp .shtml\n"
+			. "<FilesMatch \"\\.(php|phps|phtml|pht|php[0-9]|cgi|pl|py|asp|aspx|shtml|sh|csh|jsp|htaccess)$\">\n"
+			. "    Require all denied\n"
+			. "</FilesMatch>\n"
+			. "<FilesMatch \"\\.svg$\">\n"
+			. "    Require all denied\n"
+			. "</FilesMatch>\n";
 	}
 
 	/**

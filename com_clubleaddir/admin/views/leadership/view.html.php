@@ -21,7 +21,16 @@ class ClubleaddirViewLeadership extends HtmlView
 
     public function display($tpl = null)
     {
-        $id         = Factory::getApplication()->input->getInt('id', 0);
+        $app = Factory::getApplication();
+
+        // Editing a leadership card is a manager operation; standard gate.
+        if (!$app->getIdentity()->authorise('core.manage', 'com_clubleaddir')) {
+            $app->enqueueMessage(Text::_('JERROR_ALERTNOAUTHOR'), 'error');
+            $app->redirect('index.php?option=com_clubleaddir&view=leaderships');
+            return false;
+        }
+
+        $id         = $app->input->getInt('id', 0);
         $model      = $this->getModel('Leadership');
         $this->item = $model->getItem($id);
         $this->state = $model->getState();

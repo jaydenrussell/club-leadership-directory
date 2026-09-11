@@ -28,7 +28,14 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
     /** Warnings are surfaced, never allowed to grow without bound. */
     const MAX_WARNINGS = 100;
 
+    /** Above this many filtered rows the admin list paginates, keeping every
+     *  render bounded and drag-reorder page-aware via limitstart offsets. */
+    const LIST_PAGE_LIMIT = 100;
+
     private $store;
+    private $total;
+    private $limitstart;
+    private $pageLimit;
 
     private function addWarning(array &$result, $msg)
     {
@@ -95,7 +102,8 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
             $item->type_class = 'badge-' . $item->type;
         }
 
-        return $items;
+        $this->total = count($items);
+        return $this->paginate($items);
     }
 
     private function orderValue($item, $col)
@@ -111,6 +119,8 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
                 return strtolower((string) ($item->term ?: ''));
             case 'published':
                 return (int) $item->published;
+            case 'id':
+                return (int) $item->id;
             case 'ordering':
                 return (int) $item->ordering;
             default:
@@ -120,7 +130,98 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
 
     public function getPagination()
     {
-        return null;
+        if ($this->store === null || $this->total === null || $this->total <= self::LIST_PAGE_LIMIT) {
+            return null;
+        }
+        try {
+            return new \JPagination($this->getTotal(), (int) $this->limitstart, (int) $this->pageLimit);
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
+    public function getTotal()
+    {
+        if ($this->total === null) {
+            $this->getItems();
+        }
+        return (int) $this->total;
+    }
+
+    public function getLimitStart()
+    {
+        if ($this->limitstart === null) {
+            $this->getItems();
+        }
+        return (int) $this->limitstart;
+    }
+
+    /**
+     * Self-contained pagination toolbar rendered only when the filtered
+     * roster exceeds LIST_PAGE_LIMIT. Pure links carry the active filters so
+     * navigating never silently resets them; the hidden limitstart input in
+     * the form keeps drag-reorder offsets in sync.
+     */
+    public function getPaginationHtml()
+    {
+        $pagination = $this->getPagination();
+        if ($pagination === null) {
+            return '';
+        }
+
+        $total = $this->getTotal();
+        $pages = max(1, (int) ceil($total / $this->pageLimit));
+        $cur   = (int) floor($this->limitstart / $this->pageLimit);
+
+        $app  = Factory::getApplication();
+        $in   = $app->input;
+        $base = 'index.php?option=' . urlencode((string) $in->getCmd('option', 'com_clubleaddir')) . '&view=leaderships';
+        foreach (array('filter_type', 'filter_published', 'filter_status', 'filter_term', 'filter_search', 'filter_order', 'filter_order_Dir') as $k) {
+            $v = (string) $in->get($k, '', 'string');
+            if ($v !== '') {
+                $base .= '&' . $k . '=' . urlencode($v);
+            }
+        }
+
+        $html  = '<div class="pagination">';
+        $html .= '<ul>' ;
+        if ($cur > 0) {
+            $html .= '<li><a href="' . $base . '&limitstart=' . (($cur - 1) * $this->pageLimit) . '">&laquo; ' . Text::_('JPREV') . '</a></li>';
+        }
+        for ($p = 0; $p < $pages; $p++) {
+            $label = $p + 1;
+            $html .= $p === $cur
+                ? '<li class="active"><span>' . $label . '</span></li>'
+                : '<li><a href="' . $base . '&limitstart=' . ($p * $this->pageLimit) . '">' . $label . '</a></li>';
+        }
+        if ($cur < $pages - 1) {
+            $html .= '<li><a href="' . $base . '&limitstart=' . (($cur + 1) * $this->pageLimit) . '">' . Text::_('JNEXT') . ' &raquo;</a></li>';
+        }
+        $html .= '</ul>';
+        $html .= '<div class="pagination-counter">' . Text::sprintf('JLIB_HTML_PAGE_CURRENT_OF_TOTAL', $cur + 1, $pages) . '</div>';
+        $html .= '</div>';
+        return $html;
+    }
+
+    private function paginate(array $items)
+    {
+        $total = count($items);
+        $this->total = $total;
+        $this->pageLimit = self::LIST_PAGE_LIMIT;
+        $this->limitstart = 0;
+
+        if ($total <= self::LIST_PAGE_LIMIT) {
+            return $items;
+        }
+
+        $app = Factory::getApplication();
+        $limit = (int) $app->input->getInt('limit', self::LIST_PAGE_LIMIT);
+        $this->pageLimit = max(1, min(500, $limit));
+
+        $limitstart = abs((int) $app->input->getInt('limitstart', 0));
+        $this->limitstart = min($limitstart, max(0, $total - 1));
+
+        return array_slice($items, $this->limitstart, $this->pageLimit);
     }
 
     public function getFilterValue($key)
@@ -252,6 +353,9 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
         if (file_put_contents($ndTmp, $ndBody) === false) {
             return false;
         }
+        // The staging files can hold names/emails and must not be world
+        // readable even under a permissive umask.
+        @chmod($ndTmp, 0600);
         $entries[] = array('name' => 'records.ndjson', 'path' => $ndTmp);
 
         unset($ndEntries, $ndBody);
@@ -277,6 +381,9 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
             return false;
         }
         @unlink($ndTmp);
+        // The finished backup zip also carries personal data; lock it down
+        // the moment it exists (owner-only, on top of the HTTPS-only stream).
+        @chmod($tmpFile, 0600);
 
         return array(
             'file'           => $tmpFile,
@@ -335,11 +442,16 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
         $photoDir = JPATH_ROOT . '/images/clubleaddir/photos';
         // Photos are served statically by the web server (see
         // ClubleaddirHelper::photoUrl). A locked-down 0700/0600 pair only
-        // works when the web server and PHP share a user; relax to the files
-        // Joomla default so a PHP-FPM user that differs from Apache still
-        // serves the imported thumbnails. Staging ($staging, $stagingPhotos)
-        // stays private at 0700 regardless.
-        @chmod($photoDir, 0755);
+        // works when the web server and PHP share a user; relax only what the
+        // import actually needs (write + read by the serving user) instead of
+        // loosening an intentionally tightened directory: existing, writable
+        // directories keep their permissions untouched.
+        if (!is_dir($photoDir)) {
+            @mkdir($photoDir, 0755, true);
+        }
+        if (is_dir($photoDir) && !is_writable($photoDir)) {
+            @chmod($photoDir, 0755);
+        }
 
         // Defence-in-depth: the photos directory must never execute scripts
         // nor be served as active content (imports only ever place images
@@ -347,18 +459,10 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
         // installs get an explicit deny ruleset; nginx ignores .htaccess, so
         // outside Apache the extension whitelist and folder placement are the
         // boundary. Written only when absent so an intentionally managed
-        // .htaccess is never clobbered.
+        // .htaccess is never clobbered (same ruleset as the installer).
         $htPhotos = $photoDir . '/.htaccess';
         if (!is_file($htPhotos)) {
-            @file_put_contents(
-                $htPhotos,
-                "<FilesMatch \"\\.(php|phps|phtml|php[0-9]|cgi|pl|py|asp|aspx|shtml|sh|csh|jsp|htaccess)$\">\n" .
-                "    Require all denied\n" .
-                "</FilesMatch>\n" .
-                "<FilesMatch \"\\.svg$\">\n" .
-                "    Require all denied\n" .
-                "</FilesMatch>\n"
-            );
+            @file_put_contents($htPhotos, ClubleaddirHelper::photoHtaccessRules());
             @chmod($htPhotos, 0444);
         }
 

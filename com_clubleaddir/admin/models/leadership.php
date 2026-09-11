@@ -320,6 +320,22 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
         }
         return $ok;
     }
+    public function saveOrderWysiwyg(array $pks, array $order, $offset = 0){
+        if($this->store===null) return false;
+        $ok = false;
+        try {
+            $ok = (bool)$this->store->saveOrderAllWysiwyg($pks, $order, (int) $offset);
+        } catch (\Throwable $e) {
+            Log::add('Clubleaddir saveOrderWysiwyg failed: ' . $e->getMessage(), Log::WARNING, 'com_clubleaddir');
+            $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_SAVING'));
+        }
+        if ($ok) {
+            $this->logAudit('saveOrder', 0, array('pks' => $pks, 'order' => $order));
+        } else {
+            $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_SAVING'));
+        }
+        return $ok;
+    }
     private function logAudit($action, $id, array $data) {
         try {
             $user = Factory::getUser();

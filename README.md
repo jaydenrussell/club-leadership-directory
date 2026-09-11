@@ -64,8 +64,11 @@ The extension ships as a **single package**: **`pkg_clubleaddir.zip`**.
 
 ## Uninstall behaviour
 
-1. The roster is exported to `logs/com_clubleaddir/backup-YYYYMMDD-HHMM.json`
-   first (a message shows where).
+1. The roster is exported to the site's global log folder first
+   (`/logs/com_clubleaddir-backup-YYYYMMDD-HHMM.json`, owner-readable only; a
+   message shows the exact path). It is saved outside the extension's own
+   folders so Joomla's uninstaller - which deletes the component directory -
+   cannot remove it.
 2. All code, media, data files, upload folders, own menu items, hidden-menu
    artifacts, logs and orphan manifests are removed.
 3. Nothing is written to `#__extensions` beyond this extension's own rows, which
@@ -101,10 +104,18 @@ pwsh -NoProfile -File scripts/build.ps1
 - **Output is escaped**; phone numbers are stripped before being placed in a
   `tel:` link.
 - **CSRF** protected on every write (POST + token).
-- **ACL** gates delete / publish / reorder.
+- **ACL** gates delete / publish / reorder / export / import, **and the admin
+  list and editor views themselves** (`core.manage`, so only users who can
+  reach the component's back-end ever see the roster).
 - **Data file exposure:** the data directory lives outside the web root
   (`administrator/components/com_clubleaddir/data/`), so it is never reachable
   via HTTP. The photo upload folder gets a `.htaccess` lock-down for Apache.
+- **Single-host model:** the store is a per-site JSON file (no database). The
+  data lives on one host, is served from that same host, and is backed up by
+  the built-in export. If you need multi-site replication, use the backup zip
+  (admin list → Export) and import it on the target site. Load-balanced or
+  multi-server setups are not supported: each host keeps its own independent
+  copy.
 
 ## License
 
