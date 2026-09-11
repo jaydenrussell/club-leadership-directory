@@ -247,48 +247,20 @@ $bioEnabled = !empty($item->bio);
                 $basePath = rtrim(Uri::root(), '/');
                 $mediaUrl = 'index.php?option=com_media&view=images&tmpl=component&asset=com_clubleaddir&author=&fieldid=jform_photo&ismoo=0&folder=clubleaddir/photos';
                 ?>
-                <script>
-                window.jSelectImage = function (fieldid, url, dir, ext) {
-                    var input = document.getElementById(fieldid);
-                    if (!input) { return; }
-                    input.value = url;
-                    var modal = document.getElementById('imageModal_' + fieldid);
-                    if (modal && typeof jQuery !== 'undefined' && jQuery(modal).modal) {
-                        jQuery(modal).modal('hide');
-                    }
-                };
-                try { parent.jSelectImage = window.jSelectImage; } catch (e) {}
-                try { top.jSelectImage = window.jSelectImage; } catch (e) {}
-                </script>
                 <div class="field-media-wrapper"
                      data-basepath="<?php echo $this->escape($basePath); ?>"
                      data-url="<?php echo $this->escape($mediaUrl); ?>"
-                     data-modal=".modal"
-                     data-modal-width="1050"
-                     data-modal-height="720"
                      data-input=".field-media-input"
                      data-button-select=".button-select"
                      data-button-clear=".button-clear">
-                    <div id="imageModal_jform_photo" tabindex="-1" class="modal hide fade" aria-hidden="true" style="display: none;">
-                        <div class="modal-header">
-                            <button type="button" class="close novalidate" data-dismiss="modal" aria-label="Close">
-                                <span aria-hidden="true">×</span>
-                            </button>
-                            <h3>Change Image</h3>
-                        </div>
-                        <div class="modal-body" style="max-height: initial; overflow-y: auto;">
-                        </div>
-                    </div>
                     <input type="hidden" name="jform[photo]" id="jform_photo" value="<?php echo $this->escape($photoValue); ?>">
                     <div class="clble-photo-actions">
                         <button type="button" class="btn button-select"><?php echo Text::_('JSELECT'); ?></button>
-                        <button type="button" class="btn button-clear"><?php echo Text::_('JTOOLBAR_CLEAR'); ?></button>
+                        <button type="button" class="btn button-clear" aria-label="Clear" title="Clear">
+                            <span class="icon-remove" aria-hidden="true"></span>
+                        </button>
                     </div>
                 </div>
-                <p class="help-block">
-                    <span class="label label-info"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_PHOTO_HELP'); ?></span>
-                    <?php if ($item->photo): ?> <span class="muted">(<?php echo Text::_('COM_CLUBLEADDIR_FIELD_PHOTO_REPLACE'); ?>)</span><?php endif; ?>
-                </p>
                 <script>window.clbleJRoot = "<?php echo rtrim(Uri::root(), '/'); ?>";</script>
             </div>
         </div>
