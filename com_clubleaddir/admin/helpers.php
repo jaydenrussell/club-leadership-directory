@@ -323,8 +323,10 @@ class ClubleaddirHelper
 		$isVacant  = !empty($person->vacant);
 		$circular  = empty($options['circular']) ? false : true;
 
-		// Photo box only for officers/directors with photos — vacant cards are compact text-only with shaded background (no logo image).
-		$showPhotoBox = $showPhoto && ($hasPhoto || $isOfficer);
+		// Photo box only for filled officers/directors with photos. Vacant cards
+		// are compact text cards carrying a translucent angled "Vacant" watermark
+		// instead of a logo box, so they no longer dictate a card size for the grid.
+		$showPhotoBox = !$isVacant && $showPhoto && ($hasPhoto || $isOfficer);
 
 		// Vacant: show "Position is Vacant" in the name slot. Backend still stores real name for admin access.
 		if ($isVacant) {
@@ -333,14 +335,12 @@ class ClubleaddirHelper
 			$displayName = (string) ($person->name ?? '');
 		}
 		$size        = (int) ($options['photoSize'] ?? 120);
-		$logoSize    = (int) round($size * 0.75);
-		$boxSize     = $isVacant ? $logoSize : $size;
 
 		$photoHtml = '';
 
 		if ($showPhotoBox) {
 			$shapeClass = $circular ? 'is-circular' : 'is-rect';
-			$photoHtml  = '<div class="clubleadership-card-photo ' . $shapeClass . ' is-visible" style="width:' . $boxSize . 'px;height:' . $boxSize . 'px;">';
+			$photoHtml  = '<div class="clubleadership-card-photo ' . $shapeClass . ' is-visible" style="width:' . $size . 'px;height:' . $size . 'px;">';
 
 			// Circular avatar uses the square crop; non-circular shows the original.
 			$src = $hasPhoto
@@ -348,9 +348,7 @@ class ClubleaddirHelper
 				: '';
 
 			if ($src !== '') {
-				$photoHtml .= '<img src="' . htmlspecialchars(self::photoUrl($src), ENT_QUOTES, 'UTF-8') . '" alt="" loading="lazy" width="' . $boxSize . '" height="' . $boxSize . '">';
-			} elseif ($isVacant) {
-				$photoHtml .= '<img src="' . htmlspecialchars(self::vacantLogo(), ENT_QUOTES, 'UTF-8') . '" alt="" loading="lazy" width="' . $logoSize . '" height="' . $logoSize . '" style="object-fit:contain;background:#fff;">';
+				$photoHtml .= '<img src="' . htmlspecialchars(self::photoUrl($src), ENT_QUOTES, 'UTF-8') . '" alt="" loading="lazy" width="' . $size . '" height="' . $size . '">';
 			} elseif ($isOfficer) {
 				$photoHtml .= '<div class="clubleadership-card-photo--initials">' . htmlspecialchars(self::initials($displayName), ENT_QUOTES, 'UTF-8') . '</div>';
 			}
@@ -387,6 +385,7 @@ class ClubleaddirHelper
 		);
 
 		return '<article class="clubleadership-card clubleaddir-card--' . htmlspecialchars($person->type ?? '', ENT_QUOTES, 'UTF-8') . ($isVacant ? ' clubleaddir-card--vacant' : '') . '">'
+			. ($isVacant ? '<span class="clubleadership-vacant-wm" aria-hidden="true">' . htmlspecialchars(Text::_('COM_CLUBLEADDIR_VACANT'), ENT_QUOTES, 'UTF-8') . '</span>' : '')
 			. $photoHtml
 			. '<div class="clubleadership-card-content">'
 			. '<h4 class="clubleadership-card-name">' . htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8') . '</h4>'
@@ -427,6 +426,7 @@ class ClubleaddirHelper
 		);
 
 		return '<article class="clubleadership-card clubleaddir-card--director' . ($isVacant ? ' clubleaddir-card--vacant' : '') . '">'
+			. ($isVacant ? '<span class="clubleadership-vacant-wm" aria-hidden="true">' . htmlspecialchars(Text::_('COM_CLUBLEADDIR_VACANT'), ENT_QUOTES, 'UTF-8') . '</span>' : '')
 			. '<div class="clubleadership-card-photo"></div>'
 			. '<div class="clubleadership-card-content">'
 			. '<h4 class="clubleadership-card-name">' . htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8') . '</h4>'

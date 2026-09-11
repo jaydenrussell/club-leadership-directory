@@ -121,6 +121,31 @@
 	margin: 0 0 0.15rem;
 	line-height: inherit;
 }
+/* Translucent angled "Vacant" watermark stamped across the card, rendered
+   behind the card content (name, role, term, contact links stay clickable
+   and readable above it). White glyph fill so the red outline reads through
+   text: the drop-shadow lifts it off the pale card background. */
+.clubleaddir .clubleaddir-card--vacant .clubleadership-vacant-wm {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%) rotate(-22deg);
+	z-index: 1;
+	font-size: 2.4rem;
+	font-weight: 800;
+	letter-spacing: 0.08em;
+	line-height: 1;
+	text-transform: uppercase;
+	color: #9f1239;
+	white-space: nowrap;
+	pointer-events: none;
+	user-select: none;
+	padding: 0.1rem 0.6rem;
+	border: 3px solid rgba(159, 18, 57, 0.6);
+	border-radius: 8px;
+	text-shadow: 0 0 4px rgba(255, 255, 255, 0.9), 0 0 12px rgba(255, 255, 255, 0.8);
+	opacity: 0.55;
+}
 .clubleaddir .clubleadership-card--director,
 .clubleaddir .clubleadership-card--staff {
 	display: flex;
@@ -130,6 +155,7 @@
 }
 .clubleaddir .clubleadership-card-photo {
 	position: relative;
+	z-index: 2;
 	overflow: hidden;
 	background: #f5f7fa;
 	display: none;
@@ -157,6 +183,8 @@
 	font-weight: 700;
 }
 .clubleaddir .clubleadership-card-content {
+	position: relative;
+	z-index: 2;
 	padding: 0.625rem 0.75rem 0.75rem;
 	display: flex;
 	flex-direction: column;
