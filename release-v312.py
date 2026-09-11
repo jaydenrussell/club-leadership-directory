@@ -7,9 +7,9 @@ TOKEN = os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN") or ""
 if not TOKEN:
     print("ERROR: Set GH_TOKEN env var", file=sys.stderr)
     sys.exit(1)
-TAG = "v3.28.37"
-NAME = f"Club Leadership Directory v3.28.37"
-BODY = "Version 3.28.37: removed remaining @ error-suppression operators from Store.php loadMaxId() and saveMaxId(), replacing with explicit error checks and Log::add() calls. Verified: 29 picker assertions, 16 fix-suite assertions, manifest parity."
+TAG = "v3.28.38"
+NAME = f"Club Leadership Directory v3.28.38"
+BODY = "Version 3.28.38: import/export photo hardening. Export now fails loudly (instead of writing a corrupt archive) if any deflate chunk is short-written; import verifies each staged photo after final placement (exists, readable, non-empty, still an image, 0644) and clears any record photo reference whose file could not be finalised, so a host failure surfaces as an explicit warning instead of a phantom blank image. Verified: 26 round-trip assertions (fresh, overwrite-existing, re-import, blocked-finalise), 29 picker, 16 fix-suite."
 PKG = str((__import__("pathlib").Path(__file__).parent / "dist" / "pkg_clubleaddir.zip").resolve())
 UPDATE_XML = str((__import__("pathlib").Path(__file__).parent / "update.xml").resolve())
 HDRS = {"Authorization": "token " + TOKEN, "Accept": "application/vnd.github+json"}

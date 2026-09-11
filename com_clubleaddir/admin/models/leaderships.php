@@ -567,16 +567,49 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
         // Store committed: only now move staged photos into their final home. Only
         // photos actually referenced by a committed record go; extracted-but-
         // unreferenced files stay in staging and are discarded with it.
+        $finalized = array();
         foreach (array_keys($referenced) as $base) {
-            if ($this->moveOrCopy($stagingPhotos . '/' . $base, $photoDir . '/' . $base)) {
-                @chmod($photoDir . '/' . $base, 0644);
-                $result['photos']++;
-            } else {
-                // Never leave a staged photo to silently vanish: surface it so
-                // an admin can see exactly which file the server could not
-                // finalise (permissions / cross-device fallback failure).
+            if (!$this->moveOrCopy($stagingPhotos . '/' . $base, $photoDir . '/' . $base)) {
                 $result['warnings'][] = Text::sprintf('COM_CLUBLEADDIR_IMPORT_PHOTO_MOVE', $base);
+                continue;
             }
+            if (@chmod($photoDir . '/' . $base, 0644) === false) {
+                Log::add('Clubleaddir import: could not make photo world-readable (0644): ' . ($photoDir . '/' . $base), self::LOG_LEVEL, 'com_clubleaddir');
+            }
+            if (!is_file($photoDir . '/' . $base) || !is_readable($photoDir . '/' . $base)
+                || (int) @filesize($photoDir . '/' . $base) < 1
+                || !$this->isImageFile($photoDir . '/' . $base)) {
+                $result['warnings'][] = Text::sprintf('COM_CLUBLEADDIR_IMPORT_PHOTO_BAD', $base);
+                continue;
+            }
+            $finalized[$base] = true;
+            $result['photos']++;
+        }
+
+        // A photo reference must resolve to a file that was actually finalised.
+        // If the host could not place or verify a file, drop the reference so the
+        // site never renders a phantom blank in its place; the name is surfaced
+        // in the warnings above.
+        $cleanedPhotos = false;
+        foreach ($cleaned as $i => $rr) {
+            $touch = false;
+            foreach (array('photo', 'photo_full') as $k) {
+                if ($rr[$k] === '') {
+                    continue;
+                }
+                $pb = $this->photoFromPath($rr[$k]);
+                if ($pb === null || !isset($finalized[$pb])) {
+                    $rr[$k] = '';
+                    $touch  = true;
+                }
+            }
+            if ($touch) {
+                $cleaned[$i] = $rr;
+                $cleanedPhotos = true;
+            }
+        }
+        if ($cleanedPhotos && !$this->store->importAll($cleaned)) {
+            Log::add('Clubleaddir import: could not write photo-reference cleanup after move failures', self::LOG_LEVEL, 'com_clubleaddir');
         }
 
         $this->removeDir($staging);

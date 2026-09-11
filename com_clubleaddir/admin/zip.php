@@ -73,7 +73,7 @@ class ClubleaddirZip
 
             $localOffset = (int) ftell($out);
 
-            fwrite($out, "PK\x03\x04"
+            if (!self::wr($out, "PK\x03\x04"
                 . pack('v', 20)
                 . pack('v', 0x0800)
                 . pack('v', 8)
@@ -84,7 +84,11 @@ class ClubleaddirZip
                 . pack('V', 0)
                 . pack('v', strlen($name))
                 . pack('v', 0)
-                . $name);
+                . $name)) {
+                fclose($out);
+                @unlink($path);
+                return false;
+            }
 
             $ctx  = deflate_init(ZLIB_ENCODING_RAW);
             $hash = hash_init('crc32b');
@@ -125,7 +129,12 @@ class ClubleaddirZip
                         return false;
                     }
                     if ($outChunk !== '') {
-                        fwrite($out, $outChunk);
+                        if (!self::wr($out, $outChunk)) {
+                            fclose($src);
+                            fclose($out);
+                            @unlink($path);
+                            return false;
+                        }
                         $csize += strlen($outChunk);
                     }
                 }
@@ -141,7 +150,11 @@ class ClubleaddirZip
                     return false;
                 }
                 if ($outChunk !== '') {
-                    fwrite($out, $outChunk);
+                    if (!self::wr($out, $outChunk)) {
+                        fclose($out);
+                        @unlink($path);
+                        return false;
+                    }
                     $csize += strlen($outChunk);
                 }
             }
@@ -153,14 +166,22 @@ class ClubleaddirZip
                 return false;
             }
             if ($fin !== '') {
-                fwrite($out, $fin);
+                if (!self::wr($out, $fin)) {
+                    fclose($out);
+                    @unlink($path);
+                    return false;
+                }
                 $csize += strlen($fin);
             }
 
             $crc = (int) hexdec(hash_final($hash));
 
             fseek($out, $localOffset + 14, SEEK_SET);
-            fwrite($out, pack('V', $crc) . pack('V', $csize) . pack('V', $usize));
+            if (!self::wr($out, pack('V', $crc) . pack('V', $csize) . pack('V', $usize))) {
+                fclose($out);
+                @unlink($path);
+                return false;
+            }
             fseek($out, 0, SEEK_END);
 
             $central .= "PK\x01\x02"
@@ -189,9 +210,19 @@ class ClubleaddirZip
             . pack('V', (int) ftell($out))
             . pack('v', 0);
 
-        fwrite($out, $central . $eocd);
+        if (!self::wr($out, $central . $eocd)) {
+            fclose($out);
+            @unlink($path);
+            return false;
+        }
         fclose($out);
         return true;
+    }
+
+    private static function wr($fh, $bytes)
+    {
+        $len = strlen($bytes);
+        return @fwrite($fh, $bytes) === $len;
     }
 
     /**
