@@ -27,6 +27,7 @@
             <folder>models</folder>
             <folder>store</folder>
             <folder>views</folder>
+            <folder>forms</folder>
             <folder>language</folder>
         </files>
         <languages folder="admin/language">
