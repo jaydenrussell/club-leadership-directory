@@ -333,10 +333,6 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
         }
 
         $photoDir = JPATH_ROOT . '/images/clubleaddir/photos';
-        if ((!is_dir($photoDir) && !mkdir($photoDir, 0755, true) && !is_dir($photoDir)) || !is_writable($photoDir)) {
-            $this->removeDir($staging);
-            return array('error' => Text::_('COM_CLUBLEADDIR_IMPORT_ERROR_PHOTOS_DIR'));
-        }
         // Photos are served statically by the web server (see
         // ClubleaddirHelper::photoUrl). A locked-down 0700/0600 pair only
         // works when the web server and PHP share a user; relax to the files

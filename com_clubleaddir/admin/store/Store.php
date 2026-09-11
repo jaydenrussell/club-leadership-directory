@@ -27,12 +27,16 @@ use Joomla\CMS\Log\Log;
  */
 class ClubleaddirStoreJson
 {
+    const LOG_LEVEL = 'warning';
     private $file;
     private $data = array('records' => array());
+    private $metaFile;
+    private $maxId = 0;
 
     public function __construct($filePath)
     {
         $this->file = $filePath;
+        $this->metaFile = $filePath . '.meta';
         $dir = dirname($this->file);
         if (!is_dir($dir)) {
             if (!mkdir($dir, 0700, true) && !is_dir($dir)) {
@@ -41,7 +45,7 @@ class ClubleaddirStoreJson
         }
         if (is_dir($dir)) {
             if (!chmod($dir, 0700)) {
-                Log::add('Clubleaddir Store: cannot chmod data directory to 0700: ' . $dir, Log::WARNING, 'com_clubleaddir');
+                Log::add('Clubleaddir Store: cannot chmod data directory to 0700: ' . $dir, self::LOG_LEVEL, 'com_clubleaddir');
             }
             $ht = $dir . '/.htaccess';
             if (!is_file($ht)) {
@@ -54,13 +58,13 @@ class ClubleaddirStoreJson
                     . "    Deny from all\n"
                     . "</IfModule>\n"
                 ) === false) {
-                    Log::add('Clubleaddir Store: cannot write .htaccess: ' . $ht, Log::WARNING, 'com_clubleaddir');
+                    Log::add('Clubleaddir Store: cannot write .htaccess: ' . $ht, self::LOG_LEVEL, 'com_clubleaddir');
                 }
             }
             $idx = $dir . '/index.html';
             if (!is_file($idx)) {
                 if (file_put_contents($idx, '') === false) {
-                    Log::add('Clubleaddir Store: cannot write index.html: ' . $idx, Log::WARNING, 'com_clubleaddir');
+                    Log::add('Clubleaddir Store: cannot write index.html: ' . $idx, self::LOG_LEVEL, 'com_clubleaddir');
                 }
             }
             $wc = $dir . '/web.config';
@@ -79,7 +83,7 @@ class ClubleaddirStoreJson
                     . "    </system.webServer>\n"
                     . "</configuration>\n"
                 ) === false) {
-                    Log::add('Clubleaddir Store: cannot write web.config: ' . $wc, Log::WARNING, 'com_clubleaddir');
+                    Log::add('Clubleaddir Store: cannot write web.config: ' . $wc, self::LOG_LEVEL, 'com_clubleaddir');
                 }
             }
         }
@@ -129,8 +133,6 @@ class ClubleaddirStoreJson
         }
 
         if ((!isset($this->data['records']) || empty($this->data['records']))) {
-            // A live .tmp is the newest complete intent (a write that was
-            // interrupted between staging and completing); prefer it.
             if (is_file($this->file . '.tmp')) {
                 if (!$this->recoverFromBackup($this->file . '.tmp')) {
                     $this->recoverFromBackup($this->file . '.bak');
@@ -147,6 +149,8 @@ class ClubleaddirStoreJson
         if (!isset($this->data['records']) || !is_array($this->data['records'])) {
             $this->data['records'] = array();
         }
+
+        $this->loadMaxId();
     }
 
     /**
@@ -217,6 +221,7 @@ class ClubleaddirStoreJson
         $raw = $this->readRawFromLock($lock);
         if ($raw === '') {
             $this->data = array('records' => array());
+            $this->loadMaxId();
             return;
         }
         try {
@@ -229,6 +234,7 @@ class ClubleaddirStoreJson
         } catch (\JsonException $e) {
             $this->data = array('records' => array());
         }
+        $this->loadMaxId();
     }
 
     /**
@@ -242,8 +248,6 @@ class ClubleaddirStoreJson
     private function writeToLock($lock)
     {
         $rawBefore = $this->readRawFromLock($lock);
-        // Only archive a valid prior state; a torn or corrupt file must not
-        // pollute the backup chain (generations already protect history).
         $validPrior = false;
         if ($rawBefore !== '') {
             try {
@@ -254,18 +258,23 @@ class ClubleaddirStoreJson
             }
         }
         if ($validPrior && !$this->rotateBackup($rawBefore)) {
-            Log::add('Clubleaddir Store: cannot create backup, aborting save: ' . ($this->file . '.bak'), Log::WARNING, 'com_clubleaddir');
+            Log::add('Clubleaddir Store: cannot create backup, aborting save: ' . ($this->file . '.bak'), self::LOG_LEVEL, 'com_clubleaddir');
             return false;
         }
         $json = json_encode($this->data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
         if ($json === false) {
             return false;
         }
-        if (file_put_contents($this->file . '.tmp', $json) === false) {
-            Log::add('Clubleaddir Store: cannot stage write: ' . ($this->file . '.tmp'), Log::WARNING, 'com_clubleaddir');
+        $tmp = $this->file . '.tmp';
+        $out = @fopen($tmp, 'wb');
+        if ($out === false) {
+            Log::add('Clubleaddir Store: cannot stage write: ' . $tmp, self::LOG_LEVEL, 'com_clubleaddir');
             return false;
         }
+        fwrite($out, $json);
+        fclose($out);
         if (!ftruncate($lock, 0)) {
+            @unlink($tmp);
             return false;
         }
         rewind($lock);
@@ -274,12 +283,14 @@ class ClubleaddirStoreJson
         while ($cursor < $len) {
             $n = fwrite($lock, substr($json, $cursor));
             if ($n === false || $n === 0) {
+                @unlink($tmp);
                 return false;
             }
             $cursor += $n;
         }
         fflush($lock);
-        @unlink($this->file . '.tmp');
+        @unlink($tmp);
+        $this->saveMaxId();
         return true;
     }
 
@@ -322,13 +333,47 @@ class ClubleaddirStoreJson
 
     private function nextId()
     {
+        if ($this->maxId > 0) {
+            $this->maxId++;
+            $this->saveMaxId();
+            return $this->maxId;
+        }
         $max = 0;
         foreach ($this->data['records'] as $r) {
             if ((int) ($r['id'] ?? 0) > $max) {
                 $max = (int) $r['id'];
             }
         }
-        return $max + 1;
+        $this->maxId = $max;
+        $this->maxId++;
+        $this->saveMaxId();
+        return $this->maxId;
+    }
+
+    private function loadMaxId()
+    {
+        $this->maxId = 0;
+        if (is_file($this->metaFile)) {
+            $raw = @file_get_contents($this->metaFile);
+            if ($raw !== false) {
+                $dec = json_decode($raw, true);
+                if (is_array($dec) && isset($dec['max_id']) && is_int($dec['max_id'])) {
+                    $this->maxId = $dec['max_id'];
+                }
+            }
+        }
+        if ($this->maxId === 0) {
+            foreach ($this->data['records'] as $r) {
+                if ((int) ($r['id'] ?? 0) > $this->maxId) {
+                    $this->maxId = (int) $r['id'];
+                }
+            }
+        }
+    }
+
+    private function saveMaxId()
+    {
+        file_put_contents($this->metaFile, json_encode(array('max_id' => $this->maxId), JSON_PRETTY_PRINT));
     }
 
     /**
@@ -410,7 +455,7 @@ class ClubleaddirStoreJson
         } catch (\Throwable $e) {
             flock($lock, LOCK_UN);
             fclose($lock);
-            Log::add('Clubleaddir Store: importAll failed: ' . $e->getMessage(), Log::WARNING, 'com_clubleaddir');
+            Log::add('Clubleaddir Store: importAll failed: ' . $e->getMessage(), self::LOG_LEVEL, 'com_clubleaddir');
             return false;
         }
     }
@@ -835,7 +880,7 @@ class ClubleaddirStore
                     if (!is_file($newPath) && is_file($oldPath)) {
                         if (!is_dir($dataDir) && mkdir($dataDir, 0700, true) && is_dir($dataDir)) {
                             if (!chmod($dataDir, 0700)) {
-                                Log::add('Clubleaddir Store: cannot chmod migrated data directory to 0700: ' . $dataDir, Log::WARNING, 'com_clubleaddir');
+                                Log::add('Clubleaddir Store: cannot chmod migrated data directory to 0700: ' . $dataDir, self::LOG_LEVEL, 'com_clubleaddir');
                             }
                         }
                         if (is_dir($dataDir)) {

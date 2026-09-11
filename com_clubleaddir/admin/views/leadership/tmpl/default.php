@@ -85,7 +85,7 @@ $bioEnabled = !empty($item->bio);
                             <label for="name" class="required"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_NAME'); ?> <span class="star">*</span></label>
                         </div>
                         <div class="controls">
-                            <input type="text" name="jform[name]" id="name" class="inputbox" value="<?php echo $this->escape($item->name); ?>" required>
+                            <input type="text" name="jform[name]" id="name" class="inputbox" value="<?php echo $this->escape($item->name); ?>" required maxlength="120">
                         </div>
                     </div>
 
@@ -173,7 +173,7 @@ $bioEnabled = !empty($item->bio);
                             <label for="email"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_EMAIL'); ?></label>
                         </div>
                         <div class="controls">
-                            <input type="email" name="jform[email]" id="email" class="inputbox" value="<?php echo $this->escape($item->email); ?>">
+                            <input type="email" name="jform[email]" id="email" class="inputbox" value="<?php echo $this->escape($item->email); ?>" maxlength="254">
                         </div>
                     </div>
 
@@ -257,7 +257,7 @@ $bioEnabled = !empty($item->bio);
                         <div id="bio-wrap"<?php echo $bioEnabled ? '' : ' style="display:none;"'; ?>>
                             <div class="control-group">
                                 <div class="controls">
-                                    <textarea name="jform[bio]" id="bio" class="inputbox" rows="5"><?php echo $this->escape($item->bio); ?></textarea>
+                                    <textarea name="jform[bio]" id="bio" class="inputbox" rows="5" maxlength="5000"><?php echo $this->escape($item->bio); ?></textarea>
                                 </div>
                             </div>
                         </div>

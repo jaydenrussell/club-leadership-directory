@@ -94,21 +94,26 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
         $allowedMimes=['image/jpeg','image/png','image/gif','image/webp']; $maxSize=2*1024*1024;
         if(($fileInfo['size']??0) > $maxSize){ $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_PHOTO_TOO_LARGE')); return false; }
         if(!is_file($fileInfo['tmp_name'])){ $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_PHOTO_UPLOAD_FAILED')); return false; }
-        // Dimension check BEFORE loading into RAM — cheap-host OOM guard
         $dims=getimagesize($fileInfo['tmp_name']); if($dims && ($dims[0]>2500 || $dims[1]>2500)){ $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_PHOTO_DIMENSIONS')); return false; }
         if($dims && ($dims[0]*$dims[1] > 6250000)){ $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_PHOTO_DIMENSIONS')); return false; }
         $mime=null; if(class_exists('finfo')){ try{$f=new \finfo(FILEINFO_MIME_TYPE); $mime=$f->file($fileInfo['tmp_name']);}catch(\Throwable $e){ $mime=null; } }
         if(!$mime) $mime=mime_content_type($fileInfo['tmp_name']);
         if(!in_array($mime,$allowedMimes,true)){ $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_PHOTO_INVALID_TYPE')); return false; }
         $ext='jpg'; switch($mime){ case 'image/png': $ext='png'; break; case 'image/gif': $ext='gif'; break; case 'image/webp': $ext='webp'; break; }
-        $destDir=JPATH_ROOT.'/images/clubleaddir/photos'; if(!is_dir($destDir) && !mkdir($destDir,0755,true) && !is_dir($destDir)){ $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_PHOTO_UPLOAD_FAILED')); return false; }
+        $destDir=JPATH_ROOT.'/images/clubleaddir/photos';
+        if(!is_dir($destDir)){
+            $ok = @mkdir($destDir,0755,true);
+            if(!$ok && !is_dir($destDir)){ $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_PHOTO_UPLOAD_FAILED')); return false; }
+        }
         do {
             try { $base='photo_'.time().'_'.bin2hex(random_bytes(4)); }
             catch (\Throwable $e) { $base='photo_'.time().'_'.bin2hex(openssl_random_pseudo_bytes(4)); }
             $orig=$base.'.'.$ext; $square=$base.'_sq.'.$ext; $origPath=$destDir.'/'.$orig; $squarePath=$destDir.'/'.$square;
         } while (is_file($origPath) || is_file($squarePath));
         if(!move_uploaded_file($fileInfo['tmp_name'],$origPath)){ $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_PHOTO_UPLOAD_FAILED')); return false; }
-        chmod($origPath,0644); $this->makeSquareCrop($origPath,$squarePath,400); if(is_file($squarePath)) chmod($squarePath,0644);
+        @chmod($origPath,0644);
+        $this->makeSquareCrop($origPath,$squarePath,400);
+        if(is_file($squarePath)){ @chmod($squarePath,0644); }
         return ['/images/clubleaddir/photos/'.$orig,'/images/clubleaddir/photos/'.$square];
     }
     /**
@@ -123,8 +128,8 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
     private function normalizePhotoPath($path)
     {
         $p = trim((string) $path);
-        if ($p === '') {
-            return '';
+        if ($p === '' || preg_match('#^https?://#i', $p)) {
+            return null;
         }
         if (strpos($p, 'media://local/') === 0) {
             $p = substr($p, strlen('media://local/'));
@@ -228,6 +233,11 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
         $dims=getimagesize($src);
         if($dims && ($dims[0]>2500 || $dims[1]>2500)){ $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_PHOTO_DIMENSIONS')); return false; }
         if($dims && ($dims[0]*$dims[1] > 6250000)){ $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_PHOTO_DIMENSIONS')); return false; }
+        $memLimit = $this->memoryLimitBytes();
+        $estimated = ($dims[0] ?? 0) * ($dims[1] ?? 0) * 4.5;
+        if ($estimated > 0 && $memLimit > 0 && $estimated > $memLimit * 0.75) {
+            return false;
+        }
         $img=imagecreatefromstring(file_get_contents($src)); if($img===false) return false;
         $sw=imagesx($img); $sh=imagesy($img); if(!$sw||!$sh){ imagedestroy($img); return false; }
         $side=min($sw,$sh); $srcX=(int)(($sw-$side)/2); $srcY=(int)(($sh-$side)*0.38); if($srcY<0) $srcY=0;
@@ -235,10 +245,20 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
         imagefill($out,0,0,imagecolorallocate($out,255,255,255)); imagesavealpha($out,true); imagealphablending($out,false);
         imagecopyresampled($out,$img,0,0,$srcX,$srcY,$size,$size,$side,$side);
         $ok=false; $low=strtolower($dest);
-        if(substr($low,-4)==='.png') $ok=imagepng($out,$dest,8);
-        elseif(substr($low,-4)==='.gif') $ok=imagegif($out,$dest);
-        elseif(substr($low,-5)==='.webp' && function_exists('imagewebp')) $ok=imagewebp($out,$dest,90);
-        else $ok=imagejpeg($out,$dest,90);
+        if (substr($low,-5)==='.webp' && function_exists('imagewebp')) {
+            $ok=imagewebp($out,$dest,90);
+        } elseif (substr($low,-5)==='.webp' && !function_exists('imagewebp')) {
+            $jpgDest = preg_replace('/\.webp$/i', '.jpg', $dest);
+            $ok=imagejpeg($out,$jpgDest,90);
+        } elseif (substr($low,-4)==='.png') {
+            $ok=imagepng($out,$dest,8);
+        } elseif (substr($low,-4)==='.gif') {
+            $ok=imagegif($out,$dest);
+        } elseif (substr($low,-5)==='.webp') {
+            $ok=imagewebp($out,$dest,90);
+        } else {
+            $ok=imagejpeg($out,$dest,90);
+        }
         imagedestroy($img); imagedestroy($out); return (bool)$ok;
     }
     public function delete(array $pks){
@@ -338,4 +358,19 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
         }
     }
     public function setError($msg){ Factory::getApplication()->enqueueMessage($msg,'error'); }
+    private function memoryLimitBytes()
+    {
+        $ini = trim((string) ini_get('memory_limit'));
+        if ($ini === '-1') {
+            return -1;
+        }
+        $unit = strtolower(substr($ini, -1));
+        $val = (int) $ini;
+        switch ($unit) {
+            case 'g': return $val * 1024 * 1024 * 1024;
+            case 'm': return $val * 1024 * 1024;
+            case 'k': return $val * 1024;
+            default:  return (int) $ini;
+        }
+    }
 }

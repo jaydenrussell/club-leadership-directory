@@ -206,10 +206,7 @@ class ClubleaddirHelper
 		if ($path[0] === '/') {
 			return $path;
 		}
-		if (preg_match('#^https?://#i', $path)) {
-			return $path;
-		}
-		return '/' . ltrim($path, '/');
+		return '';
 	}
 
 	/**

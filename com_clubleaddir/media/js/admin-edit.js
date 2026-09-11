@@ -176,6 +176,10 @@ function toggleVacantFields(isVacant) {
 		var wrap = photo.closest('.controls') || photo.parentElement;
 		var buttons = wrap.querySelectorAll('button');
 		for (var b = 0; b < buttons.length; b++) { buttons[b].disabled = isVacant; }
+		var modal = wrap.querySelector('.modal');
+		if (modal && typeof jQuery !== 'undefined' && jQuery(modal).modal) {
+			jQuery(modal).modal('hide');
+		}
 	}
 	setRoleRequired();
 	var nameEl = document.getElementById('name');
@@ -230,36 +234,38 @@ function clbleValidateEmail(input) {
 	return !input.value || re.test(input.value);
 }
 
-Joomla.submitbutton = function (task) {
-	if (task === 'leadership.cancel') {
-		Joomla.submitform(task, document.getElementById('adminForm'));
-		return;
-	}
-	var form = document.getElementById('adminForm');
-	var ok = true;
-	var prev = form.querySelectorAll('.clble-invalid');
-	for (var i = 0; i < prev.length; i++) { prev[i].classList.remove('clble-invalid'); }
-	var req = form.querySelectorAll('[required]');
-	for (var j = 0; j < req.length; j++) {
-		var el = req[j];
-		if (el.id === 'league_name' && document.getElementById('league-fields').style.display === 'none') { continue; }
-		if (!el.value || !el.value.trim()) { el.classList.add('clble-invalid'); ok = false; }
-	}
-	var emailEl = document.getElementById('email');
-	if (emailEl && emailEl.value && !clbleValidateEmail(emailEl)) {
-		emailEl.classList.add('clble-invalid'); ok = false;
-	}
-	var bioEnable = document.getElementById('bio_enabled');
-	var bioText = document.getElementById('bio');
-	if (bioText && bioEnable && !bioEnable.checked) {
-		bioText.value = '';
-	}
-	if (!ok) {
-		alert(Joomla.JText._('COM_CLUBLEADDIR_ERROR_REQUIRED_FIELDS'));
-		return;
-	}
-	Joomla.submitform(task, form);
-};
+Joomla.submitbutton = (function (original) {
+    return function (task) {
+        if (task === 'leadership.cancel') {
+            Joomla.submitform(task, document.getElementById('adminForm'));
+            return;
+        }
+        var form = document.getElementById('adminForm');
+        var ok = true;
+        var prev = form.querySelectorAll('.clble-invalid');
+        for (var i = 0; i < prev.length; i++) { prev[i].classList.remove('clble-invalid'); }
+        var req = form.querySelectorAll('[required]');
+        for (var j = 0; j < req.length; j++) {
+            var el = req[j];
+            if (el.id === 'league_name' && document.getElementById('league-fields').style.display === 'none') { continue; }
+            if (!el.value || !el.value.trim()) { el.classList.add('clble-invalid'); ok = false; }
+        }
+        var emailEl = document.getElementById('email');
+        if (emailEl && emailEl.value && !clbleValidateEmail(emailEl)) {
+            emailEl.classList.add('clble-invalid'); ok = false;
+        }
+        var bioEnable = document.getElementById('bio_enabled');
+        var bioText = document.getElementById('bio');
+        if (bioText && bioEnable && !bioEnable.checked) {
+            bioText.value = '';
+        }
+        if (!ok) {
+            alert(Joomla.JText._('COM_CLUBLEADDIR_ERROR_REQUIRED_FIELDS'));
+            return;
+        }
+        Joomla.submitform(task, form);
+    };
+})(typeof Joomla.submitbutton === 'function' ? Joomla.submitbutton : null);
 
 function jClubleaddirSelectContact(id, name) {
 	var field = document.getElementById('contact_id');
