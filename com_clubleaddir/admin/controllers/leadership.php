@@ -247,10 +247,19 @@ class ClubleaddirControllerLeadership extends BaseController
         $ids = array_map('intval', (array) $this->input->post->get('cid', array(), 'array'));
         $ids = array_filter($ids, function ($id) { return $id > 0; });
 
-        $state = $this->input->post->getInt('state', null);
-        if ($state === null) {
-            $task  = (string) $this->input->post->getCmd('task');
-            $state = (strpos($task, 'unpublish') !== false) ? 0 : 1;
+        // Task is authoritative: the grid-column icons post a distinct task
+        // per action (leadership.unpublish / leadership.publish), and a toolbar
+        // unpublish button must never be overridden by a stray state field.
+        // An explicitly posted non-empty state is only honoured on plain
+        // 'publish' tasks (platforms that share one task for the toolbar pair
+        // and toggle the hidden state input themselves).
+        $posted = $this->input->post->get('state', null, 'raw');
+        $state  = 1;
+        if (strpos((string) $this->input->post->getCmd('task'), 'unpublish') !== false) {
+            $state = 0;
+        } elseif ($posted !== null && $posted !== '') {
+            $posted = (int) $posted;
+            $state  = in_array($posted, array(1, 0), true) ? $posted : 1;
         }
         $state = in_array($state, array(1, 0), true) ? $state : 1;
 

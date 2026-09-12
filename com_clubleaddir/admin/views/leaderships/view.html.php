@@ -114,7 +114,7 @@ class ClubleaddirViewLeaderships extends HtmlView
         }
         if ($canDo->get('core.edit.state')) {
             ToolbarHelper::publish('leadership.publish', 'JTOOLBAR_PUBLISH', true);
-            ToolbarHelper::unpublish('leadership.publish', 'JTOOLBAR_UNPUBLISH', true);
+            ToolbarHelper::unpublish('leadership.unpublish', 'JTOOLBAR_UNPUBLISH', true);
             ToolbarHelper::trash('leadership.trash', 'JTOOLBAR_TRASH');
         }
         if ($canDo->get('core.delete')) {
