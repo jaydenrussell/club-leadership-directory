@@ -372,18 +372,15 @@ class ClubleaddirStoreJson
 
     private function nextId()
     {
-        if ($this->maxId > 0) {
-            $this->maxId++;
-            $this->saveMaxId();
-            return $this->maxId;
-        }
-        $max = 0;
+        $liveMax = 0;
         foreach ($this->data['records'] as $r) {
-            if ((int) ($r['id'] ?? 0) > $max) {
-                $max = (int) $r['id'];
+            if (is_array($r) && (int) ($r['id'] ?? 0) > $liveMax) {
+                $liveMax = (int) $r['id'];
             }
         }
-        $this->maxId = $max;
+        if ($this->maxId <= $liveMax) {
+            $this->maxId = $liveMax;
+        }
         $this->maxId++;
         $this->saveMaxId();
         return $this->maxId;
@@ -670,21 +667,31 @@ class ClubleaddirStoreJson
 
         try {
             $this->reloadFromLock($lock);
+            $matched = 0;
             foreach ($this->data['records'] as &$r) {
+                if (!is_array($r) || !isset($r['id'])) {
+                    continue;
+                }
                 if ((int) $r['id'] === (int) $id) {
                     foreach ($filtered as $k => $v) {
                         $r[$k] = $v;
                     }
-                    $ok = $this->writeToLock($lock);
-                    flock($lock, LOCK_UN);
-                    fclose($lock);
-                    return $ok;
+                    $matched++;
                 }
             }
             unset($r);
+            if ($matched === 0) {
+                flock($lock, LOCK_UN);
+                fclose($lock);
+                return false;
+            }
+            if ($matched > 1) {
+                Log::add('Clubleaddir Store: reconciled ' . $matched . ' duplicate rows carrying id ' . (int) $id, self::LOG_LEVEL, 'com_clubleaddir');
+            }
+            $ok = $this->writeToLock($lock);
             flock($lock, LOCK_UN);
             fclose($lock);
-            return false;
+            return $ok;
         } catch (\Throwable $e) {
             flock($lock, LOCK_UN);
             fclose($lock);
@@ -704,19 +711,29 @@ class ClubleaddirStoreJson
 
         try {
             $this->reloadFromLock($lock);
+            $removed = 0;
             foreach ($this->data['records'] as $i => $r) {
+                if (!is_array($r) || !isset($r['id'])) {
+                    continue;
+                }
                 if ((int) $r['id'] === (int) $id) {
                     unset($this->data['records'][$i]);
-                    $this->data['records'] = array_values($this->data['records']);
-                    $ok = $this->writeToLock($lock);
-                    flock($lock, LOCK_UN);
-                    fclose($lock);
-                    return $ok;
+                    $removed++;
                 }
             }
+            if ($removed === 0) {
+                flock($lock, LOCK_UN);
+                fclose($lock);
+                return false;
+            }
+            if ($removed > 1) {
+                Log::add('Clubleaddir Store: remove ' . $removed . ' duplicate rows carrying id ' . (int) $id, self::LOG_LEVEL, 'com_clubleaddir');
+            }
+            $this->data['records'] = array_values($this->data['records']);
+            $ok = $this->writeToLock($lock);
             flock($lock, LOCK_UN);
             fclose($lock);
-            return false;
+            return $ok;
         } catch (\Throwable $e) {
             flock($lock, LOCK_UN);
             fclose($lock);
