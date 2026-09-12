@@ -3,13 +3,21 @@
  * Standalone data store for Club Leadership.
  *
  * This component intentionally does NOT use the Joomla MySQL database.
- * Records are kept in a plain JSON file at:
- *   JPATH_ADMINISTRATOR . '/components/com_clubleaddir/data/clubleaddir.json'
+ * Records are kept in a plain JSON file resolved by ClubleaddirStore::dataDir().
  *
- * The data lives OUTSIDE the Joomla/CB MySQL instance AND outside the web root,
- * so a bug or compromise here can never affect Joomla core, Community Builder,
- * or any other table. There is no SQL injection surface: the JSON backend
- * performs no query language at all. The file is not reachable via HTTP.
+ * The data lives OUTSIDE the Joomla/CB MySQL instance, so a bug or compromise
+ * here can never affect Joomla core, Community Builder, or any other table.
+ * There is no SQL injection surface: the JSON backend performs no query
+ * language at all.
+ *
+ * HTTP exposure is prevented by PLACEMENT, not by hope: dataDir() prefers a
+ * directory OUTSIDE the web root (a sibling of the site root). When the
+ * hosting account cannot write there it falls back to a web-root folder that
+ * is hardened with .htaccess / web.config / index.html (Apache + IIS). Note
+ * that .htaccess is Apache-only; nginx / LiteSpeed / AllowOverride-off setups
+ * MUST be able to use the out-of-web-root location, which is why every
+ * install/update migrates existing data out of the old in-root locations as
+ * soon as a safe directory is usable.
  *
  * @package     Joomla.Administrator
  * @subpackage  com_clubleaddir
@@ -28,10 +36,29 @@ use Joomla\CMS\Log\Log;
 class ClubleaddirStoreJson
 {
     const LOG_LEVEL = 'warning';
+    /** Hard ceiling so insert() can never grow the JSON without bound. */
+    const MAX_RECORDS = 50000;
     private $file;
     private $data = array('records' => array());
     private $metaFile;
     private $maxId = 0;
+
+    /**
+     * Normalise a record id into a platform-safe int. JSON decodes ids as int
+     * on 64-bit PHP but as float on 32-bit builds, where a value below 2^31 is
+     * a harmless integral float. Anything genuinely out of int range is
+     * rejected (the record must be quarantined), never silently truncated.
+     */
+    private static function normalizeId($v)
+    {
+        if (is_int($v)) {
+            return $v;
+        }
+        if (is_float($v) && floor($v) === $v && $v >= 0 && $v <= PHP_INT_MAX) {
+            return (int) $v;
+        }
+        return null;
+    }
 
     public function __construct($filePath)
     {
@@ -112,12 +139,19 @@ class ClubleaddirStoreJson
             }
 
             if (is_array($dec) && isset($dec['records']) && is_array($dec['records'])) {
-                foreach ($dec['records'] as $r) {
-                    if (!is_array($r) || !isset($r['id']) || !is_int($r['id'])) {
+                foreach ($dec['records'] as &$r) {
+                    if (!is_array($r)) {
                         $broken = true;
                         break;
                     }
+                    $nid = self::normalizeId($r['id'] ?? null);
+                    if ($nid === null) {
+                        $broken = true;
+                        break;
+                    }
+                    $r['id'] = $nid;
                 }
+                unset($r);
                 if (!$broken) {
                     $this->data = $dec;
                 }
@@ -185,7 +219,7 @@ class ClubleaddirStoreJson
             return false;
         }
         foreach ($dec['records'] as $r) {
-            if (!is_array($r) || !isset($r['id']) || !is_int($r['id'])) {
+            if (!is_array($r) || self::normalizeId($r['id'] ?? null) === null) {
                 return false;
             }
         }
@@ -462,6 +496,21 @@ class ClubleaddirStoreJson
         try {
             $this->reloadFromLock($lock);
             $this->data['records'] = array_values($records);
+            // The replaced set may carry ids higher than anything this store
+            // saw before (an archive restored from another site). The meta
+            // max_id must reflect the new set, otherwise nextId() hands out
+            // values that collide with imported records on the first inserts.
+            $max = 0;
+            foreach ($this->data['records'] as $rr) {
+                if (!is_array($rr) || !isset($rr['id'])) {
+                    continue;
+                }
+                $id = (int) $rr['id'];
+                if ($id > $max) {
+                    $max = $id;
+                }
+            }
+            $this->maxId = $max;
             $ok = $this->writeToLock($lock);
             flock($lock, LOCK_UN);
             fclose($lock);
@@ -573,6 +622,12 @@ class ClubleaddirStoreJson
         $lock = fopen($this->file, 'c+');
         if ($lock && flock($lock, LOCK_EX)) {
             $this->reloadFromLock($lock);
+            if (self::MAX_RECORDS > 0 && count($this->data['records']) >= self::MAX_RECORDS) {
+                flock($lock, LOCK_UN);
+                fclose($lock);
+                Log::add('Clubleaddir Store: insert rejected, record ceiling ' . self::MAX_RECORDS . ' reached', self::LOG_LEVEL, 'com_clubleaddir');
+                return false;
+            }
             $id = $this->nextId();
             $filtered['id'] = $id;
             if (!isset($filtered['status'])) {
@@ -929,49 +984,278 @@ class ClubleaddirStore
 {
     private static $instance = null;
 
+    /**
+     * mb_* helpers with a plain-PHP fallback. mbstring is frequently absent on
+     * budget hosts; validate()/save()/import must not hard-crash when it is.
+     */
+    public static function mbStrlen($s)
+    {
+        if (function_exists('mb_strlen')) {
+            return mb_strlen((string) $s, 'UTF-8');
+        }
+        return strlen((string) $s);
+    }
+
+    public static function mbSubstr($s, $start, $len = null)
+    {
+        $s = (string) $s;
+        if (function_exists('mb_substr')) {
+            return mb_substr($s, (int) $start, $len === null ? null : (int) $len, 'UTF-8');
+        }
+        return $len === null ? substr($s, (int) $start) : substr($s, (int) $start, (int) $len);
+    }
+
     public static function getInstance()
     {
         if (self::$instance === null) {
-            $dataDir = JPATH_ADMINISTRATOR . '/components/com_clubleaddir/data';
+            $dataDir = self::dataDir();
             $newPath = $dataDir . '/clubleaddir.json';
-            $oldPath = JPATH_ROOT . '/media/com_clubleaddir/data/clubleaddir.json';
 
-            if (!is_file($newPath) && is_file($oldPath)) {
-                $lockPath = $dataDir . '/migrate.lock';
-                $lock = fopen($lockPath, 'c');
-                if ($lock && flock($lock, LOCK_EX)) {
-                    if (!is_file($newPath) && is_file($oldPath)) {
-                        if (!is_dir($dataDir) && mkdir($dataDir, 0700, true) && is_dir($dataDir)) {
-                            if (!chmod($dataDir, 0700)) {
-                                Log::add('Clubleaddir Store: cannot chmod migrated data directory to 0700: ' . $dataDir, self::LOG_LEVEL, 'com_clubleaddir');
-                            }
-                        }
-                        if (is_dir($dataDir)) {
-                            copy($oldPath, $newPath);
-                            copy($oldPath, $newPath . '.bak');
-                            $bakContent = file_get_contents($newPath . '.bak');
-                            if ($bakContent !== false) {
-                                try {
-                                    $dec = json_decode($bakContent, true, 512, JSON_THROW_ON_ERROR);
-                                    if (!is_array($dec['records'] ?? null)) {
-                                        unlink($newPath . '.bak');
-                                    }
-                                } catch (\JsonException $e) {
-                                    unlink($newPath . '.bak');
-                                }
-                            }
-                        }
-                    }
-                    flock($lock, LOCK_UN);
-                    fclose($lock);
-                } elseif ($lock) {
-                    fclose($lock);
-                }
-            }
+            self::migrateOnce($dataDir, $newPath);
 
             self::$instance = new ClubleaddirStoreJson($newPath);
         }
 
         return self::$instance;
+    }
+
+    public static function dataDir()
+    {
+        $dir = self::resolveDir(self::dataDirCandidates(), 'data');
+        if ($dir === '') {
+            throw new RuntimeException('Clubleaddir Store: no writable data directory available.');
+        }
+        return $dir;
+    }
+
+    /**
+     * Directory for the uninstall roster backup. Must SURVIVE the component
+     * uninstall, so it is resolved independently of dataDir(): a sibling of
+     * the web root when possible, or a hardened /logs fallback.
+     */
+    public static function backupDir()
+    {
+        $root = self::normalizeRoot();
+        $dir  = '';
+        if ($root !== '') {
+            $dir = self::resolveDir(array(dirname($root) . '/com_clubleaddir-backups'), 'backup');
+        }
+        if ($dir === '' && $root !== '') {
+            $dir = self::resolveDir(array(rtrim($root, '/') . '/logs'), 'backup');
+        }
+        if ($dir === '') {
+            throw new RuntimeException('Clubleaddir Store: no writable backup directory available.');
+        }
+        return $dir;
+    }
+
+    /**
+     * Directory for the component's audit log (names + ids only). Lives next
+     * to the data file so it inherits the same out-of-web-root placement.
+     */
+    public static function logDir()
+    {
+        $dir = self::dataDir() . '/audit';
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0700, true);
+        }
+        if (is_dir($dir)) {
+            self::hardenDir($dir);
+        }
+        return $dir;
+    }
+
+    /**
+     * Try each candidate directory in order: create it (0700) and keep the
+     * first one that is usable, hardening it against HTTP access. Returns ''
+     * when every candidate fails.
+     */
+    private static function resolveDir(array $candidates, $label)
+    {
+        foreach ($candidates as $candidate) {
+            $candidate = (string) $candidate;
+            if ($candidate === '') {
+                continue;
+            }
+            $candidate = rtrim(str_replace('\\', '/', $candidate), '/');
+            if (!is_dir($candidate)) {
+                @mkdir($candidate, 0700, true);
+            }
+            if (is_dir($candidate) && is_writable($candidate)) {
+                if (!@chmod($candidate, 0700)) {
+                    Log::add('Clubleaddir Store: cannot chmod ' . $label . ' directory to 0700: ' . $candidate, 'warning', 'com_clubleaddir');
+                }
+                self::hardenDir($candidate);
+                return $candidate;
+            }
+        }
+        return '';
+    }
+
+    /**
+     * Candidates for the main data directory. Priority order:
+     *   1. A sibling of the web root (account-scoped, NEVER web-served). This
+     *      is the whole point of the relocation.
+     *   2. The site tmp/ folder (web-root, but hardened). Only reached when an
+     *      account cannot write above its own docroot.
+     *   3. The legacy in-component data folder (hardened). Last resort; the
+     *      migration moves data out of here whenever 1 or 2 succeeds.
+     */
+    private static function dataDirCandidates()
+    {
+        $root = self::normalizeRoot();
+        $cands = array();
+        if ($root !== '') {
+            $cands[] = dirname($root) . '/com_clubleaddir-data';
+            if ($root !== '/' && $root !== '.') {
+                $cands[] = $root . '/tmp/com_clubleaddir-data';
+            }
+        }
+        $cands[] = JPATH_ADMINISTRATOR . '/components/com_clubleaddir/data';
+        return $cands;
+    }
+
+    private static function legacySources()
+    {
+        $srcs = array();
+        $srcs[] = JPATH_ADMINISTRATOR . '/components/com_clubleaddir/data';
+        $root   = self::normalizeRoot();
+        if ($root !== '') {
+            $srcs[] = $root . '/media/com_clubleaddir/data';
+        }
+        return $srcs;
+    }
+
+    private static function normalizeRoot()
+    {
+        $root = defined('JPATH_ROOT') ? (string) JPATH_ROOT : JPATH_ADMINISTRATOR;
+        return rtrim(str_replace('\\', '/', $root), '/');
+    }
+
+    private static function samePath($a, $b)
+    {
+        $a = rtrim(str_replace('\\', '/', (string) $a), '/');
+        $b = rtrim(str_replace('\\', '/', (string) $b), '/');
+        return $a . '/' === $b . '/';
+    }
+
+    /**
+     * One-time, lock-serialised move of data files (and the audit log) from
+     * the in-web-root legacy locations into $dataDir. Runs whenever the store
+     * file does not yet exist at the resolved target. Idempotent and safe
+     * under concurrent requests; new installs have nothing to move.
+     */
+    private static function migrateOnce($dataDir, $newPath)
+    {
+        // Legacy versions wrote uninstall backups with guessable names into the
+        // web-visible /logs folder. Purge those survivors whenever we run (they
+        // are this extension's own files; they are replaced by out-of-web-root
+        // backups on the next uninstall).
+        $root = self::normalizeRoot();
+        if ($root !== '') {
+            foreach ((array) glob($root . '/logs/com_clubleaddir-backup-*.json') as $stale) {
+                if (is_file($stale)) {
+                    @unlink($stale);
+                }
+            }
+        }
+        if (is_file($newPath)) {
+            return;
+        }
+        if (!is_dir($dataDir)) {
+            @mkdir($dataDir, 0700, true);
+        }
+        $lock = @fopen($dataDir . '/migrate.lock', 'c');
+        if (!$lock) {
+            return;
+        }
+        if (!flock($lock, LOCK_EX)) {
+            fclose($lock);
+            return;
+        }
+        try {
+            if (is_file($newPath)) {
+                return;
+            }
+            // Move data files out of EVERY legacy location. If both the
+            // admin/data and the old media/data copies exist they hold the
+            // same roster; later sources simply overwrite identical files.
+            foreach (self::legacySources() as $srcDir) {
+                if (self::samePath($srcDir, $dataDir)) {
+                    continue;
+                }
+                foreach ((array) glob($srcDir . '/clubleaddir.json*') as $srcFile) {
+                    if (is_file($srcFile)) {
+                        @rename($srcFile, $dataDir . '/' . basename($srcFile));
+                    }
+                }
+            }
+            // Relocate the legacy audit log (names/ids history) out of the
+            // web root as well.
+            foreach (self::legacySources() as $srcDir) {
+                if (self::samePath($srcDir, $dataDir)) {
+                    continue;
+                }
+                $legacyLogs = dirname($srcDir) . '/logs';
+                $destLogs   = $dataDir . '/audit';
+                if (is_dir($legacyLogs) && !self::samePath($legacyLogs, $destLogs)) {
+                    if (!is_dir($destLogs)) {
+                        @mkdir($destLogs, 0700, true);
+                    }
+                    foreach ((array) glob($legacyLogs . '/audit.log*') as $oldLog) {
+                        if (is_file($oldLog)) {
+                            @rename($oldLog, $destLogs . '/' . basename($oldLog));
+                        }
+                    }
+                }
+            }
+        } finally {
+            flock($lock, LOCK_UN);
+            fclose($lock);
+        }
+    }
+
+    /**
+     * Apache (.htaccess), IIS (web.config) and index.html hardening. Written
+     * only when absent so an intentionally managed rule never gets clobbered.
+     */
+    public static function hardenDir($dir)
+    {
+        if (!is_dir($dir) || !is_writable($dir)) {
+            return;
+        }
+        $ht = $dir . '/.htaccess';
+        if (!is_file($ht)) {
+            @file_put_contents($ht,
+                "<Files *>\n"
+                . "    Require all denied\n"
+                . "</Files>\n"
+                . "# Apache 2.2 fallback\n"
+                . "<IfModule !mod_authz_core.c>\n"
+                . "    Deny from all\n"
+                . "</IfModule>\n"
+            );
+        }
+        $idx = $dir . '/index.html';
+        if (!is_file($idx)) {
+            @file_put_contents($idx, '');
+        }
+        $wc = $dir . '/web.config';
+        if (!is_file($wc)) {
+            @file_put_contents($wc,
+                "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+                . "<configuration>\n"
+                . "    <system.webServer>\n"
+                . "        <security>\n"
+                . "            <requestFiltering>\n"
+                . "                <hiddenSegments>\n"
+                . "                    <add segment=\"" . htmlspecialchars(basename($dir), ENT_XML1, 'UTF-8') . "\" />\n"
+                . "                </hiddenSegments>\n"
+                . "            </requestFiltering>\n"
+                . "        </security>\n"
+                . "    </system.webServer>\n"
+                . "</configuration>\n"
+            );
+        }
     }
 }

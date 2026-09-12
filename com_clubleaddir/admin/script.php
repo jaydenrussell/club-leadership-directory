@@ -9,8 +9,10 @@
  *  - On upgrade it repairs damage left by legacy 2.0.x installs (zombie
  *    package rows, hidden "stealth" menu leftovers, stale update sites,
  *    stray debug logs) — idempotently.
- *  - On uninstall it exports the roster to a JSON backup under /logs/,
- *    then removes every trace of itself (data file, photos, code).
+ *  - On uninstall it exports the roster to a JSON backup in a directory that
+ *    survives the uninstall OUTSIDE the web root when the account allows
+ *    (fallback: a hardened /logs/ folder), then removes every trace of itself
+ *    (data file, audit log, photos, code).
  *
  * @package     Joomla.Administrator
  * @subpackage  com_clubleaddir
@@ -70,6 +72,19 @@ class com_clubleaddirInstallerScript
 	{
 		$this->exportRosterBackup();
 		$this->removeDataDirs();
+
+		// Only after the roster is safely backed up: remove the live store
+		// (which lives OUTSIDE the component folder in dataDir() when the host
+		// allows it). Without this the PII would survive the uninstall in the
+		// sibling directory.
+		if ($this->backupPath !== '') {
+			try {
+				$this->deleteRecursive(ClubleaddirStore::dataDir());
+			} catch (\Throwable $e) {
+				Log::add('Clubleaddir uninstall: could not remove live data dir: ' . $e->getMessage(), Log::WARNING, 'com_clubleaddir');
+			}
+		}
+
 		$this->repairLegacy();
 		$this->removeOwnMenuItems();
 		$this->ensureMediaDirForCoreCleanup($parent);
@@ -89,18 +104,16 @@ class com_clubleaddirInstallerScript
 	}
 
 	/**
-	 * Create the isolated data directory under /administrator/components/com_clubleaddir/data
-	 * (outside the web root) so the JSON file can never be fetched over HTTP.
+	 * Resolve (or create) the isolated data directory. Preferred location is
+	 * OUTSIDE the web root (a sibling of the site root); see
+	 * ClubleaddirStore::dataDir() for the candidates and fallbacks.
 	 */
 	private function initDataDir()
 	{
-		$dir = JPATH_ADMINISTRATOR . '/components/com_clubleaddir/data';
-
-		if (!is_dir($dir)) {
-			mkdir($dir, 0700, true);
-		}
-		if (is_dir($dir)) {
-			chmod($dir, 0700);
+		try {
+			ClubleaddirStore::dataDir();
+		} catch (\Throwable $e) {
+			Log::add('Clubleaddir install: cannot resolve data dir: ' . $e->getMessage(), Log::WARNING, 'com_clubleaddir');
 		}
 
 		$this->initUploadDir();
@@ -113,14 +126,30 @@ class com_clubleaddirInstallerScript
 	 */
 	private function initUploadDir()
 	{
-		$dir = JPATH_ROOT . '/images/clubleaddir/photos';
+		// The photos folder is served statically by the web server, so BOTH it
+		// and its parent must expose traverse + read (0755). mkdir(..., 0755,
+		// true) only applies the mode to the final component; intermediate
+		// folders are created as 0777 & ~umask, which under umask 0077 leaves
+		// /images/clubleaddir at 0700 — PHP can still write through it, so the
+		// upload/import "succeeds" but every rendered photo 403s. Reassert 0755
+		// on the parent and the folder itself on every install/update so a
+		// stuck-0700 parent self-heals.
+		$base = JPATH_ROOT . '/images/clubleaddir';
+		$dir  = $base . '/photos';
+
+		if (!is_dir($base)) {
+			@mkdir($base, 0755, true);
+		}
+		if (is_dir($base)) {
+			@chmod($base, 0755);
+		}
 
 		if (!is_dir($dir)) {
-			mkdir($dir, 0755, true);
+			@mkdir($dir, 0755, true);
 		}
 
 		if (is_dir($dir)) {
-			chmod($dir, 0755);
+			@chmod($dir, 0755);
 			$ht = $dir . '/.htaccess';
 			if (!is_file($ht)) {
 				file_put_contents($ht, ClubleaddirHelper::photoHtaccessRules());
@@ -288,16 +317,19 @@ class com_clubleaddirInstallerScript
 	}
 
 	/**
-	 * Export every record in the roster store to a dated JSON backup under
-	 * /images/ before the data file is deleted, so uninstalling never destroys
-	 * board history without recourse.
+	 * Export every record in the roster store to a dated JSON backup in a
+	 * directory that survives the uninstall, so uninstalling never destroys
+	 * board history without recourse. The directory is resolved by
+	 * ClubleaddirStore::backupDir(): a sibling of the web root when possible,
+	 * otherwise a hardened /logs/ folder. Neither is a web-served location for
+	 * PII once this release is running.
 	 */
 	private function exportRosterBackup()
 	{
 		$records = array();
 
 		try {
-			$storePath = JPATH_ADMINISTRATOR . '/components/com_clubleaddir/store/Store.php';
+			$storePath = JPATH_ADMINISTRATOR . '/components/com_clubleaddir/admin/store/Store.php';
 
 			if (is_file($storePath)) {
 				require_once $storePath;
@@ -322,19 +354,32 @@ class com_clubleaddirInstallerScript
 			'records' => $records,
 		);
 
-		// Written outside the web root so the JSON file can never be fetched
-		// over HTTP: the component folder itself is removed right after this
-		// returns, which is exactly why a backup cannot live in its own logs
-		// subdirectory (that directory is deleted together with the extension).
-		// Joomla's global logs folder survives the uninstall by design.
-		$logDir = JPATH_ROOT . '/logs';
-		if (!is_dir($logDir) && !@mkdir($logDir, 0700, true) && !is_dir($logDir)) {
-			Log::add('Clubleaddir uninstall: cannot create backup dir ' . $logDir, Log::WARNING, 'com_clubleaddir');
+		// Outside the web root (survives the uninstall, never web-served), or a
+		// hardened /logs fallback when the account cannot write above the
+		// docroot. The component folder itself is removed right after this
+		// returns, which is exactly why the backup cannot live inside it.
+		try {
+			$backupDir = ClubleaddirStore::backupDir();
+		} catch (\Throwable $e) {
+			Log::add('Clubleaddir uninstall: cannot resolve backup dir: ' . $e->getMessage(), Log::WARNING, 'com_clubleaddir');
 			return;
 		}
 
-		$file = 'com_clubleaddir-backup-' . date('Ymd-His') . '.json';
-		$backupPath = $logDir . '/' . $file;
+		// Older releases wrote backups to the web-visible /logs folder. Remove
+		// those survivors now, while we still can.
+		foreach ((array) glob(JPATH_ROOT . '/logs/com_clubleaddir-backup-*.json') as $stale) {
+			if (is_file($stale)) {
+				@unlink($stale);
+			}
+		}
+
+		try {
+			$rnd = bin2hex(random_bytes(4));
+		} catch (\Throwable $e) {
+			$rnd = bin2hex(openssl_random_pseudo_bytes(4));
+		}
+		$file = 'com_clubleaddir-backup-' . date('Ymd-His') . '-' . $rnd . '.json';
+		$backupPath = $backupDir . '/' . $file;
 
 		if (@file_put_contents($backupPath, json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)) !== false) {
 			@chmod($backupPath, 0600);

@@ -30,6 +30,37 @@ class ClubleaddirZip
     const MAX_CENTRAL = 16777216; // 16 MiB cap for the central directory blob
 
     /**
+     * 32-bit-safe CRC helpers. hexdec() on 32-bit PHP overflows values >= 2^31
+     * to float, and (int)/dechex() then misbehave on that platform, so all
+     * numeric CRC handling is expressed as byte-wise hex manipulation that is
+     * bit-identical on any PHP build.
+     */
+    private static function crcLEBytes($hex8)
+    {
+        $hex8 = strtolower((string) $hex8);
+        $hex8 = substr($hex8 . '00000000', 0, 8);
+        return pack('H*', implode('', array_reverse(str_split($hex8, 2))));
+    }
+
+    private static function crcHex($crc)
+    {
+        $v = (float) $crc;
+        $v = fmod($v, 4294967296.0);
+        if ($v < 0) {
+            $v += 4294967296.0;
+        }
+        $hex = '';
+        for ($i = 3; $i >= 0; $i--) {
+            $pow = 1.0;
+            for ($k = 0; $k < $i; $k++) {
+                $pow *= 256.0;
+            }
+            $hex .= sprintf('%02x', (int) floor(fmod($v / $pow, 256.0)));
+        }
+        return $hex;
+    }
+
+    /**
      * BC write: $files as a name => content map. Small entries only.
      */
     public static function write($path, array $files)
@@ -174,10 +205,10 @@ class ClubleaddirZip
                 $csize += strlen($fin);
             }
 
-            $crc = (int) hexdec(hash_final($hash));
+            $crcHex = hash_final($hash);
 
             fseek($out, $localOffset + 14, SEEK_SET);
-            if (!self::wr($out, pack('V', $crc) . pack('V', $csize) . pack('V', $usize))) {
+            if (!self::wr($out, self::crcLEBytes($crcHex) . pack('V', $csize) . pack('V', $usize))) {
                 fclose($out);
                 @unlink($path);
                 return false;
@@ -189,7 +220,7 @@ class ClubleaddirZip
                 . pack('v', 0x0800)
                 . pack('v', 8)
                 . pack('v', 0) . pack('v', 0)
-                . pack('V', $crc)
+                . self::crcLEBytes($crcHex)
                 . pack('V', $csize)
                 . pack('V', $usize)
                 . pack('v', strlen($name))
@@ -354,7 +385,7 @@ class ClubleaddirZip
                 fclose($fh);
                 return false;
             }
-            if (str_pad(dechex($e['crc']), 8, '0', STR_PAD_LEFT) !== hash_final($hash)) {
+            if (self::crcHex($e['crc']) !== hash_final($hash)) {
                 @unlink($tmp);
                 fclose($fh);
                 return false;
@@ -443,7 +474,7 @@ class ClubleaddirZip
                 return false;
             }
             $method   = (int) unpack('v', substr($buf, $pos + 10, 2))[1];
-            $crc      = (int) unpack('V', substr($buf, $pos + 16, 4))[1];
+            $crc      = unpack('V', substr($buf, $pos + 16, 4))[1]; // float on 32-bit PHP; crcHex() normalises both
             $csize    = (int) unpack('V', substr($buf, $pos + 20, 4))[1];
             $usize    = (int) unpack('V', substr($buf, $pos + 24, 4))[1];
             $nlen     = (int) unpack('v', substr($buf, $pos + 28, 2))[1];

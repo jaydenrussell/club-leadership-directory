@@ -497,11 +497,24 @@ class ClubleaddirHelper
 			return '';
 		}
 
+		$first = self::cut($parts[0], 1);
+
 		if (count($parts) >= 2) {
-			return strtoupper(mb_substr($parts[0], 0, 1) . mb_substr(end($parts), 0, 1));
+			return strtoupper($first . self::cut(end($parts), 1));
 		}
 
-		return strtoupper(mb_substr($parts[0], 0, 2));
+		return strtoupper(self::cut($parts[0], 2));
+	}
+
+	/**
+	 * mb_substr with a plain-PHP fallback (mbstring is optional at runtime).
+	 */
+	private static function cut($s, $n)
+	{
+		if (function_exists('mb_substr')) {
+			return mb_substr((string) $s, 0, $n, 'UTF-8');
+		}
+		return substr((string) $s, 0, $n);
 	}
 
 	/**

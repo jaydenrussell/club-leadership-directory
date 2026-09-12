@@ -66,7 +66,7 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
             'published' => $app->input->get('filter_published', '', 'string'),
             'status'    => $app->input->get('filter_status', '', 'string'),
             'term'      => $app->input->get('filter_term', '', 'string'),
-            'search'    => mb_substr($app->input->get('filter_search', '', 'string'), 0, 255),
+            'search'    => ClubleaddirStore::mbSubstr($app->input->get('filter_search', '', 'string'), 0, 255),
         );
 
         $items = $this->store->getAll($filters);
@@ -439,17 +439,26 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
             return array('error' => Text::_('COM_CLUBLEADDIR_IMPORT_ERROR_STAGING'));
         }
 
-        $photoDir = JPATH_ROOT . '/images/clubleaddir/photos';
+        $photoBase = JPATH_ROOT . '/images/clubleaddir';
+        $photoDir  = $photoBase . '/photos';
         // Photos are served statically by the web server (see
-        // ClubleaddirHelper::photoUrl). A locked-down 0700/0600 pair only
-        // works when the web server and PHP share a user; relax only what the
-        // import actually needs (write + read by the serving user) instead of
-        // loosening an intentionally tightened directory: existing, writable
-        // directories keep their permissions untouched.
+        // ClubleaddirHelper::photoUrl). Both this folder and its parent must
+        // stay 0755 so the web server can traverse and read them even when it
+        // runs as a different user/group than PHP. mkdir(..., 0755, true) only
+        // modes the final component; intermediate folders become 0777 &
+        // ~umask, which under umask 0077 leaves /images/clubleaddir at 0700 —
+        // the import "succeeds" (PHP writes fine) but every rendered photo
+        // 403s. Reassert 0755 on both, matching the installer (script.php).
+        if (!is_dir($photoBase)) {
+            @mkdir($photoBase, 0755, true);
+        }
+        if (is_dir($photoBase)) {
+            @chmod($photoBase, 0755);
+        }
         if (!is_dir($photoDir)) {
             @mkdir($photoDir, 0755, true);
         }
-        if (is_dir($photoDir) && !is_writable($photoDir)) {
+        if (is_dir($photoDir)) {
             @chmod($photoDir, 0755);
         }
 
@@ -663,14 +672,14 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
             }
         }
 
-        if ($this->store === null || !$this->store->importAll($cleaned)) {
-            $this->removeDir($staging);
-            return array('error' => Text::_('COM_CLUBLEADDIR_IMPORT_ERROR_SAVE'));
-        }
-
-        // Store committed: only now move staged photos into their final home. Only
-        // photos actually referenced by a committed record go; extracted-but-
-        // unreferenced files stay in staging and are discarded with it.
+        // Move staged photos into their final home BEFORE the store write so
+        // the photo-reference cleanup below can fold into the single atomic
+        // store commit. Only photos actually referenced by a cleaned record
+        // go; extracted-but-unreferenced files stay in staging and are
+        // discarded with it. A failed store write afterwards leaves the moved
+        // files as orphaned (valid, unreferenced) images — a harmless tidiness
+        // cost that buys one locked write with no window for a concurrent save
+        // to be clobbered by a second importAll pass.
         $finalized = array();
         foreach (array_keys($referenced) as $base) {
             if (!$this->moveOrCopy($stagingPhotos . '/' . $base, $photoDir . '/' . $base)) {
@@ -691,12 +700,10 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
         }
 
         // A photo reference must resolve to a file that was actually finalised.
-        // If the host could not place or verify a file, drop the reference so the
-        // site never renders a phantom blank in its place; the name is surfaced
-        // in the warnings above.
-        $cleanedPhotos = false;
+        // If the host could not place or verify a file, drop the reference so
+        // the site never renders a phantom blank in its place; the name is
+        // surfaced in the warnings above.
         foreach ($cleaned as $i => $rr) {
-            $touch = false;
             foreach (array('photo', 'photo_full') as $k) {
                 if ($rr[$k] === '') {
                     continue;
@@ -704,16 +711,14 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
                 $pb = $this->photoFromPath($rr[$k]);
                 if ($pb === null || !isset($finalized[$pb])) {
                     $rr[$k] = '';
-                    $touch  = true;
                 }
             }
-            if ($touch) {
-                $cleaned[$i] = $rr;
-                $cleanedPhotos = true;
-            }
+            $cleaned[$i] = $rr;
         }
-        if ($cleanedPhotos && !$this->store->importAll($cleaned)) {
-            Log::add('Clubleaddir import: could not write photo-reference cleanup after move failures', self::LOG_LEVEL, 'com_clubleaddir');
+
+        if ($this->store === null || !$this->store->importAll($cleaned)) {
+            $this->removeDir($staging);
+            return array('error' => Text::_('COM_CLUBLEADDIR_IMPORT_ERROR_SAVE'));
         }
 
         $this->removeDir($staging);
@@ -741,7 +746,7 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
             return null;
         }
 
-        $name = mb_substr(trim((string) ($r['name'] ?? '')), 0, 120);
+        $name = ClubleaddirStore::mbSubstr(trim((string) ($r['name'] ?? '')), 0, 120);
         $vacant = !empty($r['vacant']) ? 1 : 0;
         if (!$vacant && $name === '') {
             return null;
@@ -760,8 +765,8 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
             }
         }
 
-        $role = mb_substr(trim((string) ($r['role'] ?? '')), 0, 80);
-        $email = mb_substr(trim((string) ($r['email'] ?? '')), 0, 254);
+        $role = ClubleaddirStore::mbSubstr(trim((string) ($r['role'] ?? '')), 0, 80);
+        $email = ClubleaddirStore::mbSubstr(trim((string) ($r['email'] ?? '')), 0, 254);
         if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $this->addWarning($result, Text::sprintf('COM_CLUBLEADDIR_IMPORT_BAD_EMAIL', $this->escapeQuiet($name)));
             $email = '';
@@ -786,20 +791,20 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
             'name'        => $name,
             'type'        => $type,
             'role'        => $role,
-            'league_name' => mb_substr(trim((string) ($r['league_name'] ?? '')), 0, 40),
-            'term'        => mb_substr(trim((string) ($r['term'] ?? '')), 0, 9),
-            'bio'         => mb_substr((string) ($r['bio'] ?? ''), 0, 5000),
+            'league_name' => ClubleaddirStore::mbSubstr(trim((string) ($r['league_name'] ?? '')), 0, 40),
+            'term'        => ClubleaddirStore::mbSubstr(trim((string) ($r['term'] ?? '')), 0, 9),
+            'bio'         => ClubleaddirStore::mbSubstr((string) ($r['bio'] ?? ''), 0, 5000),
             'photo'       => $photoBase === '' ? '' : '/images/clubleaddir/photos/' . $photoBase,
             'photo_full'  => $photoFullBase === '' ? '' : '/images/clubleaddir/photos/' . $photoFullBase,
             'email'       => $email,
-            'phone'       => mb_substr(preg_replace('/[^0-9+\-\s\(\)]/', '', (string) ($r['phone'] ?? '')), 0, 30),
+            'phone'       => ClubleaddirStore::mbSubstr(preg_replace('/[^0-9+\-\s\(\)]/', '', (string) ($r['phone'] ?? '')), 0, 30),
             'contact_id'  => max(0, (int) ($r['contact_id'] ?? 0)),
             'vacant'      => $vacant,
             'ordering'    => max(0, min(9999, (int) ($r['ordering'] ?? 0))),
             'published'   => $published,
             'status'      => ((string) ($r['status'] ?? 'active')) === 'archived' ? 'archived' : 'active',
-            'created'     => mb_substr((string) ($r['created'] ?? ''), 0, 40),
-            'modified'    => mb_substr((string) ($r['modified'] ?? ''), 0, 40),
+            'created'     => ClubleaddirStore::mbSubstr((string) ($r['created'] ?? ''), 0, 40),
+            'modified'    => ClubleaddirStore::mbSubstr((string) ($r['modified'] ?? ''), 0, 40),
             'created_by'  => max(0, (int) ($r['created_by'] ?? 0)),
             'modified_by' => max(0, (int) ($r['modified_by'] ?? 0)),
         );
@@ -1005,7 +1010,7 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
     {
         try {
             $user = Factory::getUser();
-            $logDir = JPATH_ADMINISTRATOR . '/components/com_clubleaddir/logs';
+            $logDir = ClubleaddirStore::logDir();
             if (!is_dir($logDir) && !mkdir($logDir, 0700, true) && !is_dir($logDir)) {
                 return;
             }

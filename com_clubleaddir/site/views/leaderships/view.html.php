@@ -19,7 +19,7 @@ class ClubleaddirViewLeaderships extends HtmlView
 
 	public function display($tpl = null)
 	{
-		require_once JPATH_ADMINISTRATOR . '/components/com_clubleaddir/store/Store.php';
+		require_once JPATH_ADMINISTRATOR . '/components/com_clubleaddir/admin/store/Store.php';
 
 		try {
 			$this->groups = ClubleaddirHelper::getGroupedRoster();

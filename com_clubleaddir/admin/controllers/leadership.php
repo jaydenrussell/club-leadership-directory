@@ -59,16 +59,25 @@ class ClubleaddirControllerLeadership extends BaseController
 
         $model = $this->getModel('Leadership', 'ClubleaddirModel');
 
-        if ($model->save($data)) {
+        $saved = $model->save($data);
+        $task  = (string) $this->input->getCmd('task');
+        $id    = $model->lastSavedId ? (int) $model->lastSavedId : (!empty($data['id']) ? (int) $data['id'] : 0);
+
+        if ($saved) {
             $this->setMessage(Text::_('COM_CLUBLEADDIR_ITEM_SAVED'));
         } else {
             $this->setMessage(Text::_('COM_CLUBLEADDIR_ERROR_SAVING'), 'error');
         }
 
-        $task = (string) $this->input->getCmd('task');
-        $id   = $model->lastSavedId ? (int) $model->lastSavedId : (!empty($data['id']) ? (int) $data['id'] : 0);
-
-        if ($task === 'leadership.apply') {
+        // A failed save must never "close" the edit view and lose the form:
+        // redirect back to the same record (or a fresh form) so the error above
+        // is shown and the unsaved data stays on screen. The modal/iframe the
+        // admin template opens the form in relies on this redirect to decide
+        // whether to close, so a redirect to the list here reads as a silent
+        // discard — exactly the "Save closes the modal but changes nothing"
+        // failure this route used to exhibit.
+        $stay = $task === 'leadership.apply' || !$saved;
+        if ($stay) {
             $this->setRedirect('index.php?option=com_clubleaddir&view=leadership&id=' . $id);
         } else {
             $this->setRedirect('index.php?option=com_clubleaddir&view=leaderships');

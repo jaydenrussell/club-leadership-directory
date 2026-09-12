@@ -17,21 +17,22 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
     }
     public function save(array $data){
         $this->lastSavedId = 0;
+        if($this->store===null){ $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_SAVING')); return false; }
         $date=Factory::getDate()->toSql(); $userId=(int)Factory::getUser()->id; $data=$this->validate($data); if($data===false) return false;
         // Vacant: name is logical "Vacant", role is the unique identifier (keeps admin access)
         if (!empty($data['vacant']) && trim((string)($data['name'] ?? '')) === '') {
             $data['name'] = 'Vacant';
         }
         // Hard caps — cheap hosting, maintainer copy-paste long bio
-        $data['name']=mb_substr(trim((string)($data['name']??'')),0,120);
-        $data['role']=mb_substr(trim((string)($data['role']??'')),0,80);
-        $data['league_name']=mb_substr(trim((string)($data['league_name']??'')),0,40);
-        $data['term']=mb_substr(trim((string)($data['term']??'')),0,9);
-        $data['bio']=mb_substr((string)($data['bio']??''),0,5000);
-        $data['email']=mb_substr(trim((string)($data['email']??'')),0,254);
-        $data['phone']=preg_replace('/[^0-9+\-\s\(\)]/','', (string)($data['phone']??'')); $data['phone']=mb_substr($data['phone'],0,30);
+        $data['name']=ClubleaddirStore::mbSubstr(trim((string)($data['name']??'')),0,120);
+        $data['role']=ClubleaddirStore::mbSubstr(trim((string)($data['role']??'')),0,80);
+        $data['league_name']=ClubleaddirStore::mbSubstr(trim((string)($data['league_name']??'')),0,40);
+        $data['term']=ClubleaddirStore::mbSubstr(trim((string)($data['term']??'')),0,9);
+        $data['bio']=ClubleaddirStore::mbSubstr((string)($data['bio']??''),0,5000);
+        $data['email']=ClubleaddirStore::mbSubstr(trim((string)($data['email']??'')),0,254);
+        $data['phone']=preg_replace('/[^0-9+\-\s\(\)]/','', (string)($data['phone']??'')); $data['phone']=ClubleaddirStore::mbSubstr($data['phone'],0,30);
         $data['ordering']=max(0,min(9999,(int)($data['ordering']??0)));
-        $data['published']=in_array((int)($data['published']??1),[1,0,-2],true)?(int)$data['published']:1;
+        $data['published']=in_array((int)($data['published']??1),[1,0,-2],true)?(int)($data['published']??1):1;
         $data['status']=($data['status']??'active')==='archived'?'archived':'active';
         $data['contact_id']=max(0,(int)($data['contact_id']??0));
         $record=['name'=>$data['name'],'type'=>$data['type'],'role'=>$data['role']??'','league_name'=>$data['league_name']??'','term'=>$data['term']??'','bio'=>$data['bio']??'','email'=>$data['email']??'','phone'=>$data['phone']??'','contact_id'=>(int)($data['contact_id']??0),'vacant'=>!empty($data['vacant'])?1:0,'ordering'=>(int)($data['ordering']??0),'published'=>isset($data['published'])?(int)$data['published']:1,'status'=>$data['status']??'active'];
@@ -47,8 +48,20 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
             // Media picker: reuse an image already stored under images/clubleaddir/photos
             // (the picker's default folder), generating a square crop only on first use.
             $photoPaths=$this->setPhotoFromPicker((string)$data['photo'], $existing);
-            if($photoPaths===false) return false;
-            $record['photo_full']=$photoPaths[0]; $record['photo']=$photoPaths[1];
+            if($photoPaths===false){
+                // The picker can post legacy or unresolved values (moved/deleted
+                // file, cross-version media path, 404 link). Never let that abort
+                // a legitimate profile edit: keep the record's current photo and
+                // surface a warning instead of silently dropping the whole save.
+                if($existing && (trim((string)($existing->photo ?? '')) !== '' || trim((string)($existing->photo_full ?? '')) !== '')){
+                    $record['photo_full']=$existing->photo_full; $record['photo']=$existing->photo;
+                    Factory::getApplication()->enqueueMessage(Text::_('COM_CLUBLEADDIR_ERROR_PHOTO_PICKER_KEPT'), 'warning');
+                }else{
+                    return false;
+                }
+            }else{
+                $record['photo_full']=$photoPaths[0]; $record['photo']=$photoPaths[1];
+            }
         }elseif(array_key_exists('photo',$data) && $existing){
             // Media picker posted an empty value: the admin explicitly cleared the photo.
             $record['photo']=''; $record['photo_full']='';
@@ -78,8 +91,8 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
     }
     private function validate(array $data){
         $vacant=!empty($data['vacant']);
-        if(!$vacant && mb_strlen(trim($data['name']??''))===0){ $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_NAME_REQUIRED')); return false; }
-        if(mb_strlen(trim($data['name']??''))>120){ $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_NAME_REQUIRED')); return false; }
+        if(!$vacant && ClubleaddirStore::mbStrlen(trim($data['name']??''))===0){ $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_NAME_REQUIRED')); return false; }
+        if(ClubleaddirStore::mbStrlen(trim($data['name']??''))>120){ $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_NAME_REQUIRED')); return false; }
         if(empty(trim($data['type']??''))){ $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_TYPE_REQUIRED')); return false; }
         $valid=['officer','director','director_league','staff']; if(!in_array($data['type'],$valid,true)){ $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_INVALID_TYPE')); return false; }
         if($data['type']==='director_league' && empty(trim($data['league_name']??''))){ $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_LEAGUE_REQUIRED')); return false; }
@@ -88,8 +101,8 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
             $allowed=['President','Vice President','Secretary','Treasurer']; $role=trim($data['role']??'');
             if($role==='' || !in_array($role,$allowed,true)){ $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_OFFICER_ROLE_INVALID')); return false; }
         }
-        if(isset($data['term']) && mb_strlen($data['term'])>9){ $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_INVALID_TYPE')); return false; }
-        if(isset($data['bio']) && mb_strlen($data['bio'])>5000){ $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_SAVING')); return false; }
+        if(isset($data['term']) && ClubleaddirStore::mbStrlen($data['term'])>9){ $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_INVALID_TYPE')); return false; }
+        if(isset($data['bio']) && ClubleaddirStore::mbStrlen($data['bio'])>5000){ $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_SAVING')); return false; }
         return $data;
     }
     protected function handlePhotoUpload($fileInfo){
@@ -107,11 +120,22 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
         if ($sqExt === 'webp' && !function_exists('imagewebp')) {
             $sqExt = 'jpg';
         }
-        $destDir=JPATH_ROOT.'/images/clubleaddir/photos';
-        if(!is_dir($destDir)){
-            $ok = @mkdir($destDir,0755,true);
-            if(!$ok && !is_dir($destDir)){ $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_PHOTO_UPLOAD_FAILED')); return false; }
+        $destBase = JPATH_ROOT . '/images/clubleaddir';
+        if (!is_dir($destBase)) {
+            @mkdir($destBase, 0755, true);
         }
+        if (is_dir($destBase)) {
+            @chmod($destBase, 0755);
+        }
+        $destDir = $destBase . '/photos';
+        if (!is_dir($destDir)) {
+            $ok = @mkdir($destDir, 0755, true);
+            if (!$ok && !is_dir($destDir)) { $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_PHOTO_UPLOAD_FAILED')); return false; }
+        }
+        // Photos are served statically by the web server; assert 0755 on the
+        // folder itself too (not just the parent above) so a tighter mode set
+        // by a previous upload path or host policy self-heals here.
+        @chmod($destDir, 0755);
         do {
             try { $base='photo_'.time().'_'.bin2hex(random_bytes(4)); }
             catch (\Throwable $e) { $base='photo_'.time().'_'.bin2hex(openssl_random_pseudo_bytes(4)); }
@@ -271,6 +295,7 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
     }
     public function delete(array $pks){
         $user = Factory::getUser();
+        if($this->store===null){ $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_SAVING')); return false; }
         $ok = true;
         foreach($pks as $pk) {
             $id = (int)$pk;
@@ -284,6 +309,7 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
     }
     public function publish(array $pks, $state=1){
         $user = Factory::getUser();
+        if($this->store===null){ $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_SAVING')); return false; }
         $ok = true;
         foreach($pks as $pk) {
             $id = (int)$pk;
@@ -297,6 +323,7 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
     }
     public function trash(array $pks){ return $this->publish($pks, -2); }
     public function reorderSingle($id, $dir){
+        if($this->store===null){ $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_SAVING')); return false; }
         $result = $this->store->reorderSingle((int)$id, (int)$dir);
         if ($result) {
             $this->logAudit('reorder', (int)$id, array('id' => (int)$id, 'direction' => (int)$dir));
@@ -304,7 +331,7 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
         return $result;
     }
     public function saveOrder(array $pks, array $order){
-        if($this->store===null) return false;
+        if($this->store===null){ $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_SAVING')); return false; }
         $user = Factory::getUser();
         $ok = false;
         try {
@@ -321,7 +348,7 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
         return $ok;
     }
     public function saveOrderWysiwyg(array $pks, array $order, $offset = 0){
-        if($this->store===null) return false;
+        if($this->store===null){ $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_SAVING')); return false; }
         $ok = false;
         try {
             $ok = (bool)$this->store->saveOrderAllWysiwyg($pks, $order, (int) $offset);
@@ -339,7 +366,7 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
     private function logAudit($action, $id, array $data) {
         try {
             $user = Factory::getUser();
-            $logDir = JPATH_ADMINISTRATOR . '/components/com_clubleaddir/logs';
+            $logDir = ClubleaddirStore::logDir();
             if (!is_dir($logDir) && !mkdir($logDir, 0700, true) && !is_dir($logDir)) {
                 Log::add('Clubleaddir audit log: cannot create log dir: ' . $logDir, Log::WARNING, 'com_clubleaddir');
                 return;
