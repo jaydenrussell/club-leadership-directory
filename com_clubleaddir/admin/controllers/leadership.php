@@ -13,6 +13,8 @@ use Joomla\CMS\Language\Text;
 use Joomla\CMS\MVC\Controller\BaseController;
 use Joomla\CMS\Session\Session;
 
+require_once __DIR__ . '/../store/Store.php';
+
 class ClubleaddirControllerLeadership extends BaseController
 {
     /**
