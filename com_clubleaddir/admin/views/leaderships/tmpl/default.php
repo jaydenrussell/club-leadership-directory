@@ -224,6 +224,7 @@ $search            = $this->filters['search'];
 
     <input type="hidden" name="task" value="">
     <input type="hidden" name="boxchecked" value="0">
+    <input type="hidden" name="state" value="1">
     <input type="hidden" name="limitstart" value="<?php echo (int) $this->limitstart; ?>">
     <input type="hidden" name="filter_order" value="<?php echo $listOrder; ?>">
     <input type="hidden" name="filter_order_Dir" value="<?php echo $listDirn; ?>">

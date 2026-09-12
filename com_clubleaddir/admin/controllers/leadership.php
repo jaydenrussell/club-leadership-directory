@@ -226,7 +226,7 @@ class ClubleaddirControllerLeadership extends BaseController
 
     public function publish()
     {
-        if (!$this->isPost()) {
+        if (strtoupper($this->input->getMethod()) !== 'POST') {
             $this->setRedirect('index.php?option=com_clubleaddir&view=leaderships', Text::_('JINVALID_TOKEN'), 'error');
             return false;
         }
