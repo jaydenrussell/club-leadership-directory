@@ -329,7 +329,7 @@ class com_clubleaddirInstallerScript
 		$records = array();
 
 		try {
-			$storePath = JPATH_ADMINISTRATOR . '/components/com_clubleaddir/admin/store/Store.php';
+			$storePath = JPATH_ADMINISTRATOR . '/components/com_clubleaddir/store/Store.php';
 
 			if (is_file($storePath)) {
 				require_once $storePath;
