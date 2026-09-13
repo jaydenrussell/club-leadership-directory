@@ -569,7 +569,10 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
                     $this->addWarning($result, Text::sprintf('COM_CLUBLEADDIR_IMPORT_SKIPPED_PHOTO', $base));
                     return true;
                 }
-                if (!$this->moveOrCopy($tmp, $stagingPhotos . '/' . $base)) {
+                // Re-encode through GD before staging: strips polyglot payloads
+                // that survive magic-byte checks. Skip (don't import raw) when
+                // re-encoding is impossible.
+                if (!$this->reencodeToStaging($tmp, $stagingPhotos . '/' . $base)) {
                     $this->addWarning($result, Text::sprintf('COM_CLUBLEADDIR_IMPORT_SKIPPED_PHOTO', $base));
                     return true;
                 }
@@ -893,6 +896,81 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
         // Accepted extensions are already whitelisted to image types, so any
         // image/* mime from the fallback is sufficient.
         return is_string($mime) && strpos($mime, 'image/') === 0;
+    }
+
+    /**
+     * PHP memory_limit in bytes; -1 when unlimited.
+     */
+    private function memoryLimitBytes()
+    {
+        $ini = trim((string) ini_get('memory_limit'));
+        if ($ini === '-1') {
+            return -1;
+        }
+        $unit = strtolower(substr($ini, -1));
+        $val  = (int) $ini;
+        switch ($unit) {
+            case 'g': return $val * 1024 * 1024 * 1024;
+            case 'm': return $val * 1024 * 1024;
+            case 'k': return $val * 1024;
+            default:  return (int) $ini;
+        }
+    }
+
+    /**
+     * Re-encode an imported photo through GD into the staging dir, keyed to
+     * the file's extension. Attackers cannot survive decode+encode, so a
+     * staged file is always a clean image. Returns false (caller skips) when
+     * GD is missing, the decode fails, or memory would be exceeded.
+     */
+    private function reencodeToStaging($src, $dest)
+    {
+        if (!function_exists('imagecreatefromstring')) {
+            return false;
+        }
+        gc_collect_cycles();
+        $dims = @getimagesize($src);
+        if (!$dims || !$dims[0] || !$dims[1]) {
+            return false;
+        }
+        if ($dims[0] > 2500 || $dims[1] > 2500 || ($dims[0] * $dims[1]) > 6250000) {
+            return false;
+        }
+        $memLimit  = $this->memoryLimitBytes();
+        $estimated = $dims[0] * $dims[1] * 12;
+        if ($memLimit > 0 && $estimated > $memLimit * 0.75) {
+            return false;
+        }
+        $raw = @file_get_contents($src);
+        if ($raw === false || $raw === '') {
+            return false;
+        }
+        $img = @imagecreatefromstring($raw);
+        unset($raw);
+        if ($img === false) {
+            return false;
+        }
+        $w   = imagesx($img);
+        $h   = imagesy($img);
+        $out = imagecreatetruecolor($w, $h);
+        if (!$out) {
+            imagedestroy($img);
+            return false;
+        }
+        imagefill($out, 0, 0, imagecolorallocate($out, 255, 255, 255));
+        imagealphablending($out, true);
+        imagecopyresampled($out, $img, 0, 0, 0, 0, $w, $h, $w, $h);
+        $ok  = false;
+        $ext = strtolower(pathinfo($dest, PATHINFO_EXTENSION));
+        switch ($ext) {
+            case 'png':  $ok = imagepng($out, $dest, 8); break;
+            case 'gif':  $ok = imagegif($out, $dest); break;
+            case 'webp': $ok = function_exists('imagewebp') ? imagewebp($out, $dest, 90) : false; break;
+            default:     $ok = imagejpeg($out, $dest, 90);
+        }
+        imagedestroy($img);
+        imagedestroy($out);
+        return (bool) $ok;
     }
 
     /**

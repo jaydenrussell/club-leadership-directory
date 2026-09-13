@@ -319,6 +319,56 @@ class ClubleaddirHelper
 		return $items;
 	}
 
+	/**
+	 * Single ACL decision point for record-mutating actions. Honours
+	 * core.edit.own the Joomla way: a user without core.edit may still edit a
+	 * record they created. Callers pass 0 for "new record" (edit.own never
+	 * applies to creations — those must carry core.create).
+	 *
+	 * @param   int  $id  Record id, or 0 for a new record
+	 * @return  boolean
+	 */
+	public static function canEdit($id = 0)
+	{
+		$user = Factory::getUser();
+		if ($user->authorise('core.edit', 'com_clubleaddir')) {
+			return true;
+		}
+		$id = (int) $id;
+		if ($id > 0 && $user->authorise('core.edit.own', 'com_clubleaddir')) {
+			try {
+				$store = ClubleaddirStore::getInstance();
+				$row   = $store->getById($id);
+				if ($row && (int) ($row->created_by ?? 0) === (int) $user->id && (int) $user->id > 0) {
+					return true;
+				}
+			} catch (\Throwable $e) {
+				error_log('Clubleaddir canEdit lookup failed: ' . $e->getMessage());
+			}
+		}
+		return false;
+	}
+
+	public static function canCreate()
+	{
+		return (bool) Factory::getUser()->authorise('core.create', 'com_clubleaddir');
+	}
+
+	public static function canDelete()
+	{
+		return (bool) Factory::getUser()->authorise('core.delete', 'com_clubleaddir');
+	}
+
+	public static function canEditState()
+	{
+		return (bool) Factory::getUser()->authorise('core.edit.state', 'com_clubleaddir');
+	}
+
+	public static function canAdmin()
+	{
+		return (bool) Factory::getUser()->authorise('core.admin', 'com_clubleaddir');
+	}
+
 	public static function getActions()
 	{
 		$user  = Factory::getUser();

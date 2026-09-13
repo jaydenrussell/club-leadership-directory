@@ -14,6 +14,7 @@ use Joomla\CMS\MVC\Controller\BaseController;
 use Joomla\CMS\Session\Session;
 
 require_once __DIR__ . '/../store/Store.php';
+require_once __DIR__ . '/../helpers.php';
 
 class ClubleaddirControllerLeadership extends BaseController
 {
@@ -46,10 +47,8 @@ class ClubleaddirControllerLeadership extends BaseController
             return false;
         }
 
-        $user = Factory::getUser();
         $id   = (int) ($this->input->post->get('jform', array(), 'array')['id'] ?? 0);
-        $can  = $id ? $user->authorise('core.edit', 'com_clubleaddir')
-                    : $user->authorise('core.create', 'com_clubleaddir');
+        $can  = $id ? ClubleaddirHelper::canEdit($id) : ClubleaddirHelper::canCreate();
         if (!$can) {
             Factory::getApplication()->enqueueMessage(Text::_('JERROR_ALERTNOAUTHOR'), 'error');
             $this->setRedirect('index.php?option=com_clubleaddir&view=leaderships');
@@ -112,8 +111,7 @@ class ClubleaddirControllerLeadership extends BaseController
             $this->setRedirect('index.php?option=com_clubleaddir&view=leaderships', Text::_('JINVALID_TOKEN'), 'error');
             return false;
         }
-        $user = Factory::getUser();
-        if (!$user->authorise('core.edit.state', 'com_clubleaddir')) {
+        if (!ClubleaddirHelper::canEditState()) {
             Factory::getApplication()->enqueueMessage(Text::_('JERROR_ALERTNOAUTHOR'), 'error');
             $this->setRedirect('index.php?option=com_clubleaddir&view=leaderships');
             return false;
@@ -131,8 +129,7 @@ class ClubleaddirControllerLeadership extends BaseController
             $this->setRedirect('index.php?option=com_clubleaddir&view=leaderships', Text::_('JINVALID_TOKEN'), 'error');
             return false;
         }
-        $user = Factory::getUser();
-        if (!$user->authorise('core.delete', 'com_clubleaddir')) {
+        if (!ClubleaddirHelper::canDelete()) {
             Factory::getApplication()->enqueueMessage(Text::_('JERROR_ALERTNOAUTHOR'), 'error');
             $this->setRedirect('index.php?option=com_clubleaddir&view=leaderships');
             return false;
@@ -238,8 +235,7 @@ class ClubleaddirControllerLeadership extends BaseController
             return false;
         }
 
-        $user = Factory::getUser();
-        if (!$user->authorise('core.edit.state', 'com_clubleaddir')) {
+        if (!ClubleaddirHelper::canEditState()) {
             Factory::getApplication()->enqueueMessage(Text::_('JERROR_ALERTNOAUTHOR'), 'error');
             $this->setRedirect('index.php?option=com_clubleaddir&view=leaderships');
             return false;
@@ -311,8 +307,7 @@ class ClubleaddirControllerLeadership extends BaseController
      */
     public function saveorderAjax()
     {
-        $user = Factory::getUser();
-        if (!$user->authorise('core.edit.state', 'com_clubleaddir')) {
+        if (!ClubleaddirHelper::canEditState()) {
             echo '0';
             Factory::getApplication()->close();
         }
@@ -337,7 +332,7 @@ class ClubleaddirControllerLeadership extends BaseController
 
         $model = $this->getModel('Leadership', 'ClubleaddirModel');
         foreach ($pks as $pk) {
-            if (!$user->authorise('core.edit', 'com_clubleaddir.leadership.' . (int) $pk)) {
+            if (!ClubleaddirHelper::canEdit($pk)) {
                 echo '0';
                 Factory::getApplication()->close();
             }
@@ -436,8 +431,7 @@ class ClubleaddirControllerLeadership extends BaseController
             $this->setRedirect('index.php?option=com_clubleaddir&view=leaderships', Text::_('JINVALID_TOKEN'), 'error');
             return false;
         }
-        $user = Factory::getUser();
-        if (!$user->authorise('core.admin', 'com_clubleaddir')) {
+        if (!ClubleaddirHelper::canAdmin()) {
             Factory::getApplication()->enqueueMessage(Text::_('JERROR_ALERTNOAUTHOR'), 'error');
             $this->setRedirect('index.php?option=com_clubleaddir&view=leaderships');
             return false;

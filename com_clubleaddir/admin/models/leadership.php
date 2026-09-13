@@ -141,7 +141,12 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
             catch (\Throwable $e) { $base='photo_'.time().'_'.bin2hex(openssl_random_pseudo_bytes(4)); }
             $orig=$base.'.'.$origExt; $square=$base.'_sq.'.$sqExt; $origPath=$destDir.'/'.$orig; $squarePath=$destDir.'/'.$square;
         } while (is_file($origPath) || is_file($squarePath));
-        if(!move_uploaded_file($fileInfo['tmp_name'],$origPath)){ $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_PHOTO_UPLOAD_FAILED')); return false; }
+        // Never persist attacker-supplied bytes: decode the upload into a GD
+        // resource and re-encode it. A polyglot that survives getimagesize/finfo
+        // loses its embedded payload here; if GD is unavailable we fail closed
+        // instead of storing raw bytes under a web-served directory.
+        if(!is_uploaded_file($fileInfo['tmp_name'])){ $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_PHOTO_UPLOAD_FAILED')); return false; }
+        if(!$this->reencodeImage($fileInfo['tmp_name'],$origPath,$mime)){ $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_PHOTO_UPLOAD_FAILED')); return false; }
         @chmod($origPath,0644);
         $this->makeSquareCrop($origPath,$squarePath,400);
         if(is_file($squarePath)){ @chmod($squarePath,0644); }
@@ -260,6 +265,34 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
         // GD absent or crop failed: keep the original as both files rather than
         // fail the save; the avatar still renders uncompressed.
         return array($canonical, $sq !== '' ? $sq : $canonical);
+    }
+    /**
+     * Decode an image from disk and re-encode it to $dest at its original
+     * dimensions (bounded upstream at 2500px/6.25MP). Strips any non-image
+     * payload (EXIF, embedded scripts). Returns false when GD is unavailable
+     * or memory would be exceeded — callers must fail closed.
+     */
+    private function reencodeImage($src,$dest,$mime){
+        if(!function_exists('imagecreatefromstring')){ return false; }
+        gc_collect_cycles();
+        $dims=@getimagesize($src); if(!$dims||!$dims[0]||!$dims[1]){ return false; }
+        $memLimit=$this->memoryLimitBytes(); $estimated=$dims[0]*$dims[1]*12;
+        if($memLimit>0 && $estimated>$memLimit*0.75){ return false; }
+        $raw=@file_get_contents($src); if($raw===false||$raw===''){ return false; }
+        $img=@imagecreatefromstring($raw); unset($raw); if($img===false){ return false; }
+        $w=imagesx($img); $h=imagesy($img);
+        $out=imagecreatetruecolor($w,$h); if(!$out){ imagedestroy($img); return false; }
+        imagefill($out,0,0,imagecolorallocate($out,255,255,255)); imagealphablending($out,true);
+        imagecopyresampled($out,$img,0,0,0,0,$w,$h,$w,$h);
+        $ok=false;
+        switch($mime){
+            case 'image/png':  $ok=imagepng($out,$dest,8); break;
+            case 'image/gif':  $ok=imagegif($out,$dest); break;
+            case 'image/webp': $ok=function_exists('imagewebp')?imagewebp($out,$dest,90):imagejpeg($out,$dest,90); break;
+            default:           $ok=imagejpeg($out,$dest,90);
+        }
+        imagedestroy($img); imagedestroy($out);
+        return (bool)$ok;
     }
     protected function makeSquareCrop($src,$dest,$size=400){
         if(!function_exists('imagecreatefromstring')) return false;

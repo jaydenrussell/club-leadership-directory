@@ -328,6 +328,39 @@ class ClubleaddirStoreJson
             $cursor += $n;
         }
         fflush($lock);
+        if (function_exists('fsync')) {
+            @fsync($lock);
+        }
+        // Post-write verification: re-read what actually landed and compare
+        // byte-for-byte. Cheap at this scale (~20 records) and detects torn
+        // writes on NFS / non-atomic truncate hosts instead of discovering
+        // corruption on the next page load.
+        rewind($lock);
+        $verify = stream_get_contents($lock);
+        if ($verify !== $json) {
+            Log::add('Clubleaddir Store: post-write verification failed, retrying from staging: ' . $this->file, self::LOG_LEVEL, 'com_clubleaddir');
+            if (!ftruncate($lock, 0)) {
+                return false;
+            }
+            rewind($lock);
+            $cursor = 0;
+            while ($cursor < $len) {
+                $n = fwrite($lock, substr($json, $cursor));
+                if ($n === false || $n === 0) {
+                    return false;
+                }
+                $cursor += $n;
+            }
+            fflush($lock);
+            if (function_exists('fsync')) {
+                @fsync($lock);
+            }
+            rewind($lock);
+            if (stream_get_contents($lock) !== $json) {
+                Log::add('Clubleaddir Store: write verification failed twice, keeping backups: ' . $this->file, self::LOG_LEVEL, 'com_clubleaddir');
+                return false;
+            }
+        }
         @unlink($tmp);
         $this->saveMaxId();
         return true;
