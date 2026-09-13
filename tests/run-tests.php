@@ -79,6 +79,26 @@ namespace {
     check('data dir .htaccess written', is_file($dir . '/.htaccess'));
     check('data dir index.html written', is_file($dir . '/index.html'));
 
+    // 6. Image re-encode: GD/Imagick path must strip non-image payloads
+    require_once __DIR__ . '/../com_clubleaddir/admin/helpers.php';
+    $imgOk = false;
+    if (function_exists('imagecreatetruecolor')) {
+        $srcIm = imagecreatetruecolor(40, 40);
+        imagefill($srcIm, 0, 0, imagecolorallocate($srcIm, 200, 10, 10));
+        $png = $dir . '/attack.png';
+        imagepng($srcIm, $png);
+        imagedestroy($srcIm);
+        // Append a PHP payload after the PNG IEND — a classic polyglot trick
+        file_put_contents($png, "\n<?php echo 'PWNED';", FILE_APPEND);
+        $out = $dir . '/clean.png';
+        $ok  = ClubleaddirHelper::reencodeImage($png, $out);
+        if ($ok && is_file($out)) {
+            $clean = file_get_contents($out);
+            $imgOk = strpos($clean, 'PWNED') === false && substr_compare($clean, '<?php', 0, 5) !== 0;
+        }
+    }
+    check('re-encode strips embedded payloads', $imgOk || !function_exists('imagecreatetruecolor'));
+
     echo $fail === 0 ? "\nALL TESTS PASSED\n" : "\n$fail TEST(S) FAILED\n";
     exit($fail === 0 ? 0 : 1);
 }

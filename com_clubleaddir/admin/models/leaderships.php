@@ -355,7 +355,9 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
         }
         // The staging files can hold names/emails and must not be world
         // readable even under a permissive umask.
-        @chmod($ndTmp, 0600);
+        if (!chmod($ndTmp, 0600)) {
+            Log::add('Clubleaddir export: cannot chmod staging file: ' . $ndTmp, self::LOG_LEVEL, 'com_clubleaddir');
+        }
         $entries[] = array('name' => 'records.ndjson', 'path' => $ndTmp);
 
         unset($ndEntries, $ndBody);
@@ -383,7 +385,9 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
         @unlink($ndTmp);
         // The finished backup zip also carries personal data; lock it down
         // the moment it exists (owner-only, on top of the HTTPS-only stream).
-        @chmod($tmpFile, 0600);
+        if (!chmod($tmpFile, 0600)) {
+            Log::add('Clubleaddir export: cannot chmod backup zip: ' . $tmpFile, self::LOG_LEVEL, 'com_clubleaddir');
+        }
 
         return array(
             'file'           => $tmpFile,
@@ -449,17 +453,21 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
         // ~umask, which under umask 0077 leaves /images/clubleaddir at 0700 —
         // the import "succeeds" (PHP writes fine) but every rendered photo
         // 403s. Reassert 0755 on both, matching the installer (script.php).
-        if (!is_dir($photoBase)) {
-            @mkdir($photoBase, 0755, true);
+        if (!is_dir($photoBase) && !mkdir($photoBase, 0755, true) && !is_dir($photoBase)) {
+            $this->removeDir($staging);
+            Log::add('Clubleaddir import: cannot create photo dir: ' . $photoBase, self::LOG_LEVEL, 'com_clubleaddir');
+            return array('error' => Text::_('COM_CLUBLEADDIR_IMPORT_ERROR_STAGING'));
         }
-        if (is_dir($photoBase)) {
-            @chmod($photoBase, 0755);
+        if (!chmod($photoBase, 0755)) {
+            Log::add('Clubleaddir import: cannot chmod 0755: ' . $photoBase, self::LOG_LEVEL, 'com_clubleaddir');
         }
-        if (!is_dir($photoDir)) {
-            @mkdir($photoDir, 0755, true);
+        if (!is_dir($photoDir) && !mkdir($photoDir, 0755, true) && !is_dir($photoDir)) {
+            $this->removeDir($staging);
+            Log::add('Clubleaddir import: cannot create photo dir: ' . $photoDir, self::LOG_LEVEL, 'com_clubleaddir');
+            return array('error' => Text::_('COM_CLUBLEADDIR_IMPORT_ERROR_STAGING'));
         }
-        if (is_dir($photoDir)) {
-            @chmod($photoDir, 0755);
+        if (!chmod($photoDir, 0755)) {
+            Log::add('Clubleaddir import: cannot chmod 0755: ' . $photoDir, self::LOG_LEVEL, 'com_clubleaddir');
         }
 
         // Defence-in-depth: the photos directory must never execute scripts
@@ -471,8 +479,11 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
         // .htaccess is never clobbered (same ruleset as the installer).
         $htPhotos = $photoDir . '/.htaccess';
         if (!is_file($htPhotos)) {
-            @file_put_contents($htPhotos, ClubleaddirHelper::photoHtaccessRules());
-            @chmod($htPhotos, 0444);
+            if (file_put_contents($htPhotos, ClubleaddirHelper::photoHtaccessRules()) === false) {
+                Log::add('Clubleaddir import: cannot write .htaccess: ' . $htPhotos, self::LOG_LEVEL, 'com_clubleaddir');
+            } elseif (!chmod($htPhotos, 0444)) {
+                Log::add('Clubleaddir import: cannot chmod .htaccess: ' . $htPhotos, self::LOG_LEVEL, 'com_clubleaddir');
+            }
         }
 
         $manifestRaw       = null;
@@ -576,7 +587,7 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
                     $this->addWarning($result, Text::sprintf('COM_CLUBLEADDIR_IMPORT_SKIPPED_PHOTO', $base));
                     return true;
                 }
-                if (!@chmod($stagingPhotos . '/' . $base, 0600)) {
+                if (!chmod($stagingPhotos . '/' . $base, 0600)) {
                     Log::add('Clubleaddir import: cannot chmod staged photo: ' . ($stagingPhotos . '/' . $base), self::LOG_LEVEL, 'com_clubleaddir');
                 }
                 $extracted[$base] = true;
@@ -689,7 +700,7 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
                 $result['warnings'][] = Text::sprintf('COM_CLUBLEADDIR_IMPORT_PHOTO_MOVE', $base);
                 continue;
             }
-            if (@chmod($photoDir . '/' . $base, 0644) === false) {
+            if (!chmod($photoDir . '/' . $base, 0644)) {
                 Log::add('Clubleaddir import: could not make photo world-readable (0644): ' . ($photoDir . '/' . $base), self::LOG_LEVEL, 'com_clubleaddir');
             }
             if (!is_file($photoDir . '/' . $base) || !is_readable($photoDir . '/' . $base)
@@ -899,78 +910,13 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
     }
 
     /**
-     * PHP memory_limit in bytes; -1 when unlimited.
-     */
-    private function memoryLimitBytes()
-    {
-        $ini = trim((string) ini_get('memory_limit'));
-        if ($ini === '-1') {
-            return -1;
-        }
-        $unit = strtolower(substr($ini, -1));
-        $val  = (int) $ini;
-        switch ($unit) {
-            case 'g': return $val * 1024 * 1024 * 1024;
-            case 'm': return $val * 1024 * 1024;
-            case 'k': return $val * 1024;
-            default:  return (int) $ini;
-        }
-    }
-
-    /**
-     * Re-encode an imported photo through GD into the staging dir, keyed to
-     * the file's extension. Attackers cannot survive decode+encode, so a
-     * staged file is always a clean image. Returns false (caller skips) when
-     * GD is missing, the decode fails, or memory would be exceeded.
+     * Re-encode an imported photo (GD or Imagick) into the staging dir so a
+     * staged file is always decoder-clean. Returns false (caller skips) when
+     * no image engine is available, the decode fails, or bounds are exceeded.
      */
     private function reencodeToStaging($src, $dest)
     {
-        if (!function_exists('imagecreatefromstring')) {
-            return false;
-        }
-        gc_collect_cycles();
-        $dims = @getimagesize($src);
-        if (!$dims || !$dims[0] || !$dims[1]) {
-            return false;
-        }
-        if ($dims[0] > 2500 || $dims[1] > 2500 || ($dims[0] * $dims[1]) > 6250000) {
-            return false;
-        }
-        $memLimit  = $this->memoryLimitBytes();
-        $estimated = $dims[0] * $dims[1] * 12;
-        if ($memLimit > 0 && $estimated > $memLimit * 0.75) {
-            return false;
-        }
-        $raw = @file_get_contents($src);
-        if ($raw === false || $raw === '') {
-            return false;
-        }
-        $img = @imagecreatefromstring($raw);
-        unset($raw);
-        if ($img === false) {
-            return false;
-        }
-        $w   = imagesx($img);
-        $h   = imagesy($img);
-        $out = imagecreatetruecolor($w, $h);
-        if (!$out) {
-            imagedestroy($img);
-            return false;
-        }
-        imagefill($out, 0, 0, imagecolorallocate($out, 255, 255, 255));
-        imagealphablending($out, true);
-        imagecopyresampled($out, $img, 0, 0, 0, 0, $w, $h, $w, $h);
-        $ok  = false;
-        $ext = strtolower(pathinfo($dest, PATHINFO_EXTENSION));
-        switch ($ext) {
-            case 'png':  $ok = imagepng($out, $dest, 8); break;
-            case 'gif':  $ok = imagegif($out, $dest); break;
-            case 'webp': $ok = function_exists('imagewebp') ? imagewebp($out, $dest, 90) : false; break;
-            default:     $ok = imagejpeg($out, $dest, 90);
-        }
-        imagedestroy($img);
-        imagedestroy($out);
-        return (bool) $ok;
+        return \ClubleaddirHelper::reencodeImage($src, $dest);
     }
 
     /**
@@ -993,13 +939,16 @@ class ClubleaddirModelLeaderships extends BaseDatabaseModel
         // anonymously while in progress. Apache installs get an explicit deny
         // rule; refuse-on-create is caught later by the caller's mkdir check.
         $webFail = JPATH_ROOT . '/tmp';
-        if (!is_dir($webFail)) {
-            @mkdir($webFail, 0700, true);
+        if (!is_dir($webFail) && !mkdir($webFail, 0700, true) && !is_dir($webFail)) {
+            Log::add('Clubleaddir tmpBase: cannot create fallback tmp dir: ' . $webFail, self::LOG_LEVEL, 'com_clubleaddir');
         }
         $htWeb = $webFail . '/.htaccess';
         if (!is_file($htWeb)) {
-            @file_put_contents($htWeb, "Require all denied\n");
-            @chmod($htWeb, 0444);
+            if (file_put_contents($htWeb, "Require all denied\n") === false) {
+                Log::add('Clubleaddir tmpBase: cannot write .htaccess: ' . $htWeb, self::LOG_LEVEL, 'com_clubleaddir');
+            } elseif (!chmod($htWeb, 0444)) {
+                Log::add('Clubleaddir tmpBase: cannot chmod .htaccess: ' . $htWeb, self::LOG_LEVEL, 'com_clubleaddir');
+            }
         }
         return $webFail;
     }

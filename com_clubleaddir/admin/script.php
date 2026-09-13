@@ -41,7 +41,9 @@ class com_clubleaddirInstallerScript
 		// "JFolder: :delete: Path is not a folder. Path: [ROOT]/media/com_clubleaddir"
 		$mediaDir = JPATH_ROOT . '/media/com_clubleaddir';
 		if (!is_dir($mediaDir)) {
-			@mkdir($mediaDir, 0755, true);
+			if (!mkdir($mediaDir, 0755, true) && !is_dir($mediaDir)) {
+				Log::add('Clubleaddir preflight: cannot create media dir: ' . $mediaDir, Log::WARNING, 'com_clubleaddir');
+			}
 		}
 
 		return true;
@@ -137,37 +139,47 @@ class com_clubleaddirInstallerScript
 		$base = JPATH_ROOT . '/images/clubleaddir';
 		$dir  = $base . '/photos';
 
-		if (!is_dir($base)) {
-			@mkdir($base, 0755, true);
+		if (!is_dir($base) && !mkdir($base, 0755, true) && !is_dir($base)) {
+			Log::add('Clubleaddir install: cannot create photo dir: ' . $base, Log::WARNING, 'com_clubleaddir');
+			return;
 		}
-		if (is_dir($base)) {
-			@chmod($base, 0755);
+		if (!chmod($base, 0755)) {
+			Log::add('Clubleaddir install: cannot chmod 0755: ' . $base, Log::WARNING, 'com_clubleaddir');
 		}
 
-		if (!is_dir($dir)) {
-			@mkdir($dir, 0755, true);
+		if (!is_dir($dir) && !mkdir($dir, 0755, true) && !is_dir($dir)) {
+			Log::add('Clubleaddir install: cannot create photo dir: ' . $dir, Log::WARNING, 'com_clubleaddir');
+			return;
 		}
 
 		if (is_dir($dir)) {
-			@chmod($dir, 0755);
+			if (!chmod($dir, 0755)) {
+				Log::add('Clubleaddir install: cannot chmod 0755: ' . $dir, Log::WARNING, 'com_clubleaddir');
+			}
 			$ht = $dir . '/.htaccess';
 			if (!is_file($ht)) {
-				file_put_contents($ht, ClubleaddirHelper::photoHtaccessRules());
+				if (file_put_contents($ht, ClubleaddirHelper::photoHtaccessRules()) === false) {
+					Log::add('Clubleaddir install: cannot write .htaccess: ' . $ht, Log::WARNING, 'com_clubleaddir');
+				}
 			}
 
 			$nx = $dir . '/nginx.conf';
 			if (!is_file($nx)) {
-				file_put_contents($nx,
+				$nginxRules =
 					"# Nginx: deny execution of script files in the uploads directory\n"
 					. "location ~* ^/images/clubleaddir/photos/.*\\.(php|phtml|phps|cgi|pl|py|asp|aspx|jsp|shtml)$ {\n"
 					. "    deny all;\n"
-					. "}\n"
-				);
+					. "}\n";
+				if (file_put_contents($nx, $nginxRules) === false) {
+					Log::add('Clubleaddir install: cannot write nginx.conf: ' . $nx, Log::WARNING, 'com_clubleaddir');
+				}
 			}
 
 			$idx = $dir . '/index.html';
 			if (!is_file($idx)) {
-				file_put_contents($idx, '');
+				if (file_put_contents($idx, '') === false) {
+					Log::add('Clubleaddir install: cannot write index.html: ' . $idx, Log::WARNING, 'com_clubleaddir');
+				}
 			}
 		}
 	}
@@ -381,8 +393,10 @@ class com_clubleaddirInstallerScript
 		$file = 'com_clubleaddir-backup-' . date('Ymd-His') . '-' . $rnd . '.json';
 		$backupPath = $backupDir . '/' . $file;
 
-		if (@file_put_contents($backupPath, json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)) !== false) {
-			@chmod($backupPath, 0600);
+		if (file_put_contents($backupPath, json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)) !== false) {
+			if (!chmod($backupPath, 0600)) {
+				Log::add('Clubleaddir uninstall: cannot chmod backup to 0600: ' . $backupPath, Log::WARNING, 'com_clubleaddir');
+			}
 			$this->backupPath = $backupPath;
 		} else {
 			Log::add('Clubleaddir uninstall: cannot write backup to ' . $backupPath, Log::WARNING, 'com_clubleaddir');
@@ -428,7 +442,9 @@ class com_clubleaddirInstallerScript
 			$media    = $manifest ? $manifest->media : null;
 
 			if ($media && (string) $media->attributes()->destination === 'com_clubleaddir' && count($media->children()) > 0) {
-				@mkdir($dir, 0755, true);
+				if (!mkdir($dir, 0755, true) && !is_dir($dir)) {
+					Log::add('Clubleaddir uninstall: cannot recreate media dir: ' . $dir, Log::WARNING, 'com_clubleaddir');
+				}
 			}
 		} catch (\Throwable $e) {
 			Log::add('Clubleaddir ensureMediaDirForCoreCleanup failed: ' . $e->getMessage(), Log::WARNING, 'com_clubleaddir');

@@ -515,6 +515,127 @@ class ClubleaddirHelper
 	}
 
 	/**
+	 * Decode an image from disk and re-encode it to $dest, stripping any
+	 * non-image payload (EXIF, embedded scripts, polyglots). Uses GD when
+	 * available, falling back to Imagick. Returns false when neither engine
+	 * is installed, the decode fails, dimensions exceed bounds, or memory
+	 * would be exceeded — callers MUST fail closed and never persist the
+	 * source bytes.
+	 *
+	 * @param   string  $src       Source image path
+	 * @param   string  $dest      Destination path; extension selects format
+	 *                             (webp falls back to jpeg without support)
+	 * @param   int     $maxDim    Per-side pixel cap
+	 * @param   int     $maxPixels Total pixel cap
+	 * @return  boolean
+	 */
+	public static function reencodeImage($src, $dest, $maxDim = 2500, $maxPixels = 6250000)
+	{
+		$dims = @getimagesize($src);
+		if (!$dims || empty($dims[0]) || empty($dims[1])) {
+			return false;
+		}
+		if ($dims[0] > $maxDim || $dims[1] > $maxDim || ($dims[0] * $dims[1]) > $maxPixels) {
+			return false;
+		}
+		$memLimit  = self::memoryLimitBytes();
+		$estimated = $dims[0] * $dims[1] * 12;
+		if ($memLimit > 0 && $estimated > $memLimit * 0.75) {
+			return false;
+		}
+		$ext = strtolower(pathinfo($dest, PATHINFO_EXTENSION));
+
+		// Preferred: GD
+		if (function_exists('imagecreatefromstring')) {
+			gc_collect_cycles();
+			$raw = @file_get_contents($src);
+			if ($raw === false || $raw === '') {
+				return false;
+			}
+			$img = @imagecreatefromstring($raw);
+			unset($raw);
+			if ($img === false) {
+				return false;
+			}
+			$w   = imagesx($img);
+			$h   = imagesy($img);
+			$out = imagecreatetruecolor($w, $h);
+			if (!$out) {
+				imagedestroy($img);
+				return false;
+			}
+			imagefill($out, 0, 0, imagecolorallocate($out, 255, 255, 255));
+			imagealphablending($out, true);
+			imagecopyresampled($out, $img, 0, 0, 0, 0, $w, $h, $w, $h);
+			$ok = false;
+			switch ($ext) {
+				case 'png':  $ok = imagepng($out, $dest, 8); break;
+				case 'gif':  $ok = imagegif($out, $dest); break;
+				case 'webp': $ok = function_exists('imagewebp') ? imagewebp($out, $dest, 90) : imagejpeg($out, $dest, 90); break;
+				default:     $ok = imagejpeg($out, $dest, 90);
+			}
+			imagedestroy($img);
+			imagedestroy($out);
+			return (bool) $ok;
+		}
+
+		// Fallback: Imagick (writeImages/format conversion also re-encodes)
+		if (extension_loaded('imagick') && class_exists('Imagick')) {
+			try {
+				$im = new \Imagick($src);
+				if ($im->getNumberImages() > 1) {
+					// Flatten animations/multipage to the first frame; the
+					// output must be a single still image.
+					$im = $im->mergeImageLayers(\Imagick::LAYERMETHOD_FLATTEN);
+				}
+				$im->setBackgroundColor(new \ImagickPixel('white'));
+				$im = $im->flattenImages();
+				$format = 'jpeg';
+				if ($ext === 'png') {
+					$format = 'png';
+				} elseif ($ext === 'gif') {
+					$format = 'gif';
+				} elseif ($ext === 'webp' && in_array('WEBP', $im->queryFormats('WEBP'), true)) {
+					$format = 'webp';
+				}
+				$im->setImageFormat($format);
+				$im->stripImage();
+				$im->setImageCompressionQuality(90);
+				$ok = $im->writeImage($dest);
+				$im->clear();
+				$im->destroy();
+				return (bool) $ok;
+			} catch (\Throwable $e) {
+				error_log('Clubleaddir Imagick re-encode failed: ' . $e->getMessage());
+				return false;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * PHP memory_limit in bytes; -1 when unlimited.
+	 *
+	 * @return  int
+	 */
+	public static function memoryLimitBytes()
+	{
+		$ini = trim((string) ini_get('memory_limit'));
+		if ($ini === '-1') {
+			return -1;
+		}
+		$unit = strtolower(substr($ini, -1));
+		$val  = (int) $ini;
+		switch ($unit) {
+			case 'g': return $val * 1024 * 1024 * 1024;
+			case 'm': return $val * 1024 * 1024;
+			case 'k': return $val * 1024;
+			default:  return (int) $ini;
+		}
+	}
+
+	/**
 	 * True when at least one record in the grouped roster is vacant.
 	 *
 	 * @param   array  $groups  Result of getGroupedRoster()
@@ -717,19 +838,13 @@ class ClubleaddirHelper
 				return '';
 			}
 
-			// SEF-compatible routing.
-			// For SEF to produce a pretty URL like /contacts/officers/president
-			// Joomla needs a menu Itemid for com_contact to use as routing
-			// context. We mirror what ContactHelperRoute does but ensure we
-			// never fall back to home Itemid 101 (com_content) which caused
-			// the bad /component/contact/contact/president?catid=8&Itemid=101.
+			// Routing: use Joomla's own contact route helper (handles SEF,
+			// modern vs legacy, IDs in URLs). No manual menu spelunking — the
+			// helper is authoritative, and when it cannot resolve a menu the
+			// raw non-SEF URL below always works.
 			$catid = (int) $row->catid;
 			$lang  = isset($row->language) ? (string) $row->language : '';
 
-			// Try Joomla's own helper first — it already handles SEF,
-			// modern vs legacy, and ID-in-URL. It returns a non-SEF route
-			// like index.php?option=com_contact&view=contact&id=2&catid=8&Itemid=XX
-			// with the correct alias/Itemid when a suitable menu exists.
 			$helperRoute = null;
 			try {
 				$j3h = JPATH_SITE . '/components/com_contact/helpers/route.php';
@@ -742,61 +857,11 @@ class ClubleaddirHelper
 			} catch (\Throwable $e) { $helperRoute = null; }
 
 			if (is_string($helperRoute) && $helperRoute !== '') {
-				// If helper injected home 101, ignore it — it is not a
-				// com_contact menu and will generate the bad component URL.
-				if (strpos($helperRoute, 'Itemid=101') === false) {
-					try { return Route::_($helperRoute); } catch (\Throwable $e) { /* fallback below */ }
-				}
+				try { return Route::_($helperRoute); } catch (\Throwable $e) { /* fallback below */ }
 			}
 
-			// Manual fallback: find a real com_contact menu item. Order:
-			// 1) exact contact, 2) its category, 3) any com_contact menu.
-			$menuId = 0;
-			$q = $db->getQuery(true)
-				->select($db->qn('id'))
-				->from($db->qn('#__menu'))
-				->where($db->qn('link') . ' = ' . $db->q('index.php?option=com_contact&view=contact&id=' . $contactId))
-				->where($db->qn('type') . ' = ' . $db->q('component'))
-				->where($db->qn('published') . ' = 1');
-			$db->setQuery($q);
-			$menuId = (int) $db->loadResult();
-
-			if ($menuId === 0 && $catid > 0) {
-				$q = $db->getQuery(true)
-					->select($db->qn('id'))
-					->from($db->qn('#__menu'))
-					->where($db->qn('link') . ' = ' . $db->q('index.php?option=com_contact&view=category&id=' . $catid))
-					->where($db->qn('type') . ' = ' . $db->q('component'))
-					->where($db->qn('published') . ' = 1');
-				$db->setQuery($q);
-				$menuId = (int) $db->loadResult();
-			}
-			if ($menuId === 0) {
-				$q = $db->getQuery(true)
-					->select($db->qn('id'))
-					->from($db->qn('#__menu'))
-					->where($db->qn('link') . ' LIKE ' . $db->q('%option=com_contact%'))
-					->where($db->qn('type') . ' = ' . $db->q('component'))
-					->where($db->qn('published') . ' = 1')
-					->order($db->qn('id') . ' ASC');
-				$db->setQuery($q, 0, 1);
-				$menuId = (int) $db->loadResult();
-				// Defensively reject home 101 if it somehow is com_contact.
-				if ($menuId === 101) { $menuId = 0; }
-			}
-			if ($menuId > 0) {
-				$raw = 'index.php?option=com_contact&view=contact&id=' . $contactId;
-				if ($catid > 0) { $raw .= '&catid=' . $catid; }
-				$raw .= '&Itemid=' . $menuId;
-				return Route::_($raw);
-			}
-
-			// No com_contact menu at all — return a raw non-SEF URL that
-			// is guaranteed to load the contact form regardless of SEF or
-			// modern/legacy/ID settings (your working example
-			// index.php?option=com_contact&view=contact&id=7&catid=11).
-			// This is the safe fallback; create a hidden com_contact Category
-			// menu item to get pretty SEF URLs instead of this.
+			// Guaranteed-safe raw URL (com_contact resolves its own menu
+			// context or renders without one).
 			if ($catid > 0) {
 				return 'index.php?option=com_contact&view=contact&id=' . $contactId . '&catid=' . $catid;
 			}

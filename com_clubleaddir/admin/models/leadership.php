@@ -5,6 +5,7 @@ use Joomla\CMS\Language\Text;
 use Joomla\CMS\Log\Log;
 use Joomla\CMS\MVC\Model\BaseDatabaseModel;
 require_once __DIR__ . '/../store/Store.php';
+require_once __DIR__ . '/../helpers.php';
 class ClubleaddirModelLeadership extends BaseDatabaseModel
 {
     private $store; public $item; public $lastSavedId = 0;
@@ -121,35 +122,40 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
             $sqExt = 'jpg';
         }
         $destBase = JPATH_ROOT . '/images/clubleaddir';
-        if (!is_dir($destBase)) {
-            @mkdir($destBase, 0755, true);
+        if (!is_dir($destBase) && !mkdir($destBase, 0755, true) && !is_dir($destBase)) {
+            $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_PHOTO_UPLOAD_FAILED'));
+            $this->logFs('cannot create photo dir: ' . $destBase);
+            return false;
         }
-        if (is_dir($destBase)) {
-            @chmod($destBase, 0755);
+        if (!chmod($destBase, 0755)) {
+            $this->logFs('cannot chmod 0755: ' . $destBase);
         }
         $destDir = $destBase . '/photos';
-        if (!is_dir($destDir)) {
-            $ok = @mkdir($destDir, 0755, true);
-            if (!$ok && !is_dir($destDir)) { $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_PHOTO_UPLOAD_FAILED')); return false; }
+        if (!is_dir($destDir) && !mkdir($destDir, 0755, true) && !is_dir($destDir)) {
+            $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_PHOTO_UPLOAD_FAILED'));
+            $this->logFs('cannot create photo dir: ' . $destDir);
+            return false;
         }
         // Photos are served statically by the web server; assert 0755 on the
         // folder itself too (not just the parent above) so a tighter mode set
         // by a previous upload path or host policy self-heals here.
-        @chmod($destDir, 0755);
+        if (!chmod($destDir, 0755)) {
+            $this->logFs('cannot chmod 0755: ' . $destDir);
+        }
         do {
             try { $base='photo_'.time().'_'.bin2hex(random_bytes(4)); }
             catch (\Throwable $e) { $base='photo_'.time().'_'.bin2hex(openssl_random_pseudo_bytes(4)); }
             $orig=$base.'.'.$origExt; $square=$base.'_sq.'.$sqExt; $origPath=$destDir.'/'.$orig; $squarePath=$destDir.'/'.$square;
         } while (is_file($origPath) || is_file($squarePath));
-        // Never persist attacker-supplied bytes: decode the upload into a GD
-        // resource and re-encode it. A polyglot that survives getimagesize/finfo
-        // loses its embedded payload here; if GD is unavailable we fail closed
-        // instead of storing raw bytes under a web-served directory.
+        // Never persist attacker-supplied bytes: decode and re-encode via GD
+        // or Imagick. A polyglot that survives getimagesize/finfo loses its
+        // embedded payload here; with no image engine we fail closed instead
+        // of storing raw bytes under a web-served directory.
         if(!is_uploaded_file($fileInfo['tmp_name'])){ $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_PHOTO_UPLOAD_FAILED')); return false; }
         if(!$this->reencodeImage($fileInfo['tmp_name'],$origPath,$mime)){ $this->setError(Text::_('COM_CLUBLEADDIR_ERROR_PHOTO_UPLOAD_FAILED')); return false; }
-        @chmod($origPath,0644);
+        if(!chmod($origPath,0644)){ $this->logFs('cannot chmod 0644: ' . $origPath); }
         $this->makeSquareCrop($origPath,$squarePath,400);
-        if(is_file($squarePath)){ @chmod($squarePath,0644); }
+        if(is_file($squarePath) && !chmod($squarePath,0644)){ $this->logFs('cannot chmod 0644: ' . $squarePath); }
         return ['/images/clubleaddir/photos/'.$orig,'/images/clubleaddir/photos/'.$square];
     }
     /**
@@ -273,26 +279,7 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
      * or memory would be exceeded — callers must fail closed.
      */
     private function reencodeImage($src,$dest,$mime){
-        if(!function_exists('imagecreatefromstring')){ return false; }
-        gc_collect_cycles();
-        $dims=@getimagesize($src); if(!$dims||!$dims[0]||!$dims[1]){ return false; }
-        $memLimit=$this->memoryLimitBytes(); $estimated=$dims[0]*$dims[1]*12;
-        if($memLimit>0 && $estimated>$memLimit*0.75){ return false; }
-        $raw=@file_get_contents($src); if($raw===false||$raw===''){ return false; }
-        $img=@imagecreatefromstring($raw); unset($raw); if($img===false){ return false; }
-        $w=imagesx($img); $h=imagesy($img);
-        $out=imagecreatetruecolor($w,$h); if(!$out){ imagedestroy($img); return false; }
-        imagefill($out,0,0,imagecolorallocate($out,255,255,255)); imagealphablending($out,true);
-        imagecopyresampled($out,$img,0,0,0,0,$w,$h,$w,$h);
-        $ok=false;
-        switch($mime){
-            case 'image/png':  $ok=imagepng($out,$dest,8); break;
-            case 'image/gif':  $ok=imagegif($out,$dest); break;
-            case 'image/webp': $ok=function_exists('imagewebp')?imagewebp($out,$dest,90):imagejpeg($out,$dest,90); break;
-            default:           $ok=imagejpeg($out,$dest,90);
-        }
-        imagedestroy($img); imagedestroy($out);
-        return (bool)$ok;
+        return ClubleaddirHelper::reencodeImage($src,$dest);
     }
     protected function makeSquareCrop($src,$dest,$size=400){
         if(!function_exists('imagecreatefromstring')) return false;
@@ -442,6 +429,15 @@ class ClubleaddirModelLeadership extends BaseDatabaseModel
         }
     }
     public function setError($msg){ Factory::getApplication()->enqueueMessage($msg,'error'); }
+    /**
+     * Non-fatal filesystem failure logging (permission issues on cheap hosts).
+     * Never suppressed: every failure lands in the Joomla log with its path
+     * so the next maintainer sees exactly what broke.
+     */
+    private function logFs($msg){
+        try { Log::add('Clubleaddir: ' . $msg, Log::WARNING, 'com_clubleaddir'); }
+        catch (\Throwable $e) { error_log('Clubleaddir: ' . $msg); }
+    }
     private function memoryLimitBytes()
     {
         $ini = trim((string) ini_get('memory_limit'));
