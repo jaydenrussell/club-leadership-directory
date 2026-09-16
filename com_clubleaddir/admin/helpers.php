@@ -907,6 +907,12 @@ class ClubleaddirHelper
 		$contactId     = (int) ($person->contact_id ?? 0);
 		$vacant        = (int) ($person->vacant ?? 0);
 
+		// Inline SVG icons shared by every branch: template-independent
+		// (IcoMoon is not guaranteed on frontend templates).
+		$mailIcon  = '<svg class="clubleaddir-contact-icon" aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg>';
+		$phoneIcon = '<svg class="clubleaddir-contact-icon" aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>';
+		$lockIcon  = '<svg class="clubleaddir-contact-icon" aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
+
 		// 1. Vacant position — uses ONLY the Vacant Enquiry Contact (component
 		//    Options). When that is 0, the Vacancy Default Email is used. A
 		//    vacant post never consults a record-level contact_id.
@@ -927,7 +933,7 @@ class ClubleaddirHelper
 			}
 			return '<div class="clubleadership-card-contact">'
 				. '<a href="' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . '" class="clubleadership-contact-link clubleaddir-vacancy-link">'
-				. '<span class="icon-mail" aria-hidden="true"></span>'
+				. $mailIcon
 				. '<span class="clubleadership-contact-text">' . htmlspecialchars(Text::_('COM_CLUBLEADDIR_VACANCY_INQUIRE'), ENT_QUOTES, 'UTF-8') . '</span></a>'
 				. '</div>';
 		}
@@ -939,7 +945,7 @@ class ClubleaddirHelper
 				$label = Text::_('COM_CLUBLEADDIR_CONTACT_LINK');
 				return '<div class="clubleadership-card-contact">'
 					. '<a href="' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . '" class="clubleadership-contact-link">'
-					. '<span class="icon-envelope" aria-hidden="true"></span>'
+					. $mailIcon
 					. '<span class="clubleadership-contact-text">' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</span></a>'
 					. '</div>';
 			}
@@ -955,17 +961,17 @@ class ClubleaddirHelper
 		if ($showContact) {
 			if (!empty($email)) {
 				$html .= '<a href="mailto:' . htmlspecialchars($email, ENT_QUOTES, 'UTF-8') . '" class="clubleadership-contact-link">'
-					. '<span class="icon-envelope" aria-hidden="true"></span>'
+					. $mailIcon
 					. '<span class="clubleadership-contact-text">Email</span></a>';
 			}
 			if (!empty($phone)) {
 				$html .= '<a href="tel:' . htmlspecialchars(preg_replace('/[^0-9+]/', '', $phone), ENT_QUOTES, 'UTF-8') . '" class="clubleadership-contact-link">'
-					. '<span class="icon-phone" aria-hidden="true"></span>'
+					. $phoneIcon
 					. '<span class="clubleadership-contact-text">' . htmlspecialchars($phone, ENT_QUOTES, 'UTF-8') . '</span></a>';
 			}
 		} else {
 			$html .= '<span class="clubleadership-contact-hidden">'
-				. '<span class="icon-lock" aria-hidden="true"></span> '
+				. $lockIcon . ' '
 				. htmlspecialchars($contactHiddenText, ENT_QUOTES, 'UTF-8') . '</span>';
 		}
 		$html .= '</div>';
