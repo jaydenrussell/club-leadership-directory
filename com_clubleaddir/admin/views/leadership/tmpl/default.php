@@ -156,7 +156,7 @@ $bioEnabled = !empty($item->bio);
                                 <select name="jform[league_name]" id="league_name" class="inputbox">
                                     <option value=""><?php echo Text::_('COM_CLUBLEADDIR_SELECT_LEAGUE'); ?></option>
                                     <?php foreach ($leagueOptions as $val => $label): ?>
-                                        <option value="<?php echo $val; ?>" <?php echo ($item->league_name ?? '') === $val ? 'selected' : ''; ?>><?php echo $label; ?></option>
+                                        <option value="<?php echo htmlspecialchars((string) $val, ENT_QUOTES, 'UTF-8'); ?>" <?php echo ($item->league_name ?? '') === $val ? 'selected' : ''; ?>><?php echo htmlspecialchars((string) $label, ENT_QUOTES, 'UTF-8'); ?></option>
                                     <?php endforeach; ?>
                                 </select>
                                 <p class="help-block"><?php echo Text::_('COM_CLUBLEADDIR_FIELD_LEAGUE_NAME_HELP'); ?></p>

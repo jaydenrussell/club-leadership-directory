@@ -55,17 +55,17 @@ $search            = $this->filters['search'];
             </select>
             <select name="filter_type" id="filter_type" class="inputbox" style="width:auto;margin-bottom:0;" onchange="this.form.submit();">
                 <?php foreach ($this->typeOptions as $value => $label): ?>
-                <option value="<?php echo $value; ?>" <?php echo $typeFilter === $value ? 'selected' : ''; ?>><?php echo $label; ?></option>
+                <option value="<?php echo $this->escape((string) $value); ?>" <?php echo $typeFilter === $value ? 'selected' : ''; ?>><?php echo $this->escape((string) $label); ?></option>
                 <?php endforeach; ?>
             </select>
             <select name="filter_published" id="filter_published" class="inputbox" style="width:auto;margin-bottom:0;" onchange="this.form.submit();">
                 <?php foreach ($this->publishedOptions as $value => $label): ?>
-                <option value="<?php echo $value; ?>" <?php echo $publishedFilter === $value ? 'selected' : ''; ?>><?php echo $label; ?></option>
+                <option value="<?php echo $this->escape((string) $value); ?>" <?php echo $publishedFilter === $value ? 'selected' : ''; ?>><?php echo $this->escape((string) $label); ?></option>
                 <?php endforeach; ?>
             </select>
             <select name="filter_status" id="filter_status" class="inputbox" style="width:auto;margin-bottom:0;" onchange="this.form.submit();">
                 <?php foreach ($this->statusOptions as $value => $label): ?>
-                <option value="<?php echo $value; ?>" <?php echo $statusFilter === $value ? 'selected' : ''; ?>><?php echo $label; ?></option>
+                <option value="<?php echo $this->escape((string) $value); ?>" <?php echo $statusFilter === $value ? 'selected' : ''; ?>><?php echo $this->escape((string) $label); ?></option>
                 <?php endforeach; ?>
             </select>
         </div>
@@ -114,9 +114,9 @@ $search            = $this->filters['search'];
                     $displayName = $item->name ?: ($item->role ?: Text::_('COM_CLUBLEADDIR_VACANT'));
                     $roleAlias   = $item->role ? ' (Alias: ' . $item->role . ')' : '';
                     // Category line mimics com_contact "Category: Officers" — map type label.
-                    $catLabel = $item->type_label;
+                    $catLabel = $this->escape($item->type_label);
                     if (!empty($item->league_name)) {
-                        $catLabel .= ' &middot; ' . $item->league_name;
+                        $catLabel .= ' &middot; ' . $this->escape($item->league_name);
                     }
                     ?>
                 <tr class="row<?php echo $i % 2; ?>" sortable-group-id="1">
